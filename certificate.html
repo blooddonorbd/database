@@ -9,7 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   
-  <!-- html2canvas for PNG generation -->
+  <!-- html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
   <!-- QRCode.js -->
@@ -135,19 +135,30 @@
       flex-wrap: wrap;
     }
     
-    /* Certificate Styling */
-    .certificate {
-      width: 100%;
+    /* ============================================ */
+    /* A4 LANDSCAPE CERTIFICATE - EXACT DIMENSIONS */
+    /* ============================================ */
+    
+    /* A4 Landscape = 297mm x 210mm */
+    /* At 96 DPI: 1123px x 794px */
+    /* At 3.78 px/mm: 1123px width */
+    
+    .certificate-a4 {
+      width: 1123px;
+      min-height: 794px;
       background: #fffbfb;
       border: 10px double #b34a4a;
       border-radius: 12px;
-      padding: 30px 40px;
+      padding: 25px 35px;
       font-family: 'Poppins', 'Segoe UI', sans-serif;
-      margin: 20px 0;
+      margin: 20px auto;
       position: relative;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
     }
     
-    .certificate::before {
+    .certificate-a4::before {
       content: "🩸";
       font-size: 200px;
       position: absolute;
@@ -160,7 +171,7 @@
       z-index: 0;
     }
     
-    .certificate > * { position: relative; z-index: 2; }
+    .certificate-a4 > * { position: relative; z-index: 2; }
     
     .cert-header {
       display: flex;
@@ -168,7 +179,7 @@
       justify-content: space-between;
       border-bottom: 4px solid #b33c3c;
       padding-bottom: 15px;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
     
     .logo-area {
@@ -178,8 +189,8 @@
     }
     
     .logo-img {
-      width: 70px;
-      height: 70px;
+      width: 65px;
+      height: 65px;
       object-fit: contain;
       background: white;
       border-radius: 50%;
@@ -190,7 +201,7 @@
     .logo-text { text-align: left; }
     
     .logo-bd {
-      font-size: 2.2rem;
+      font-size: 2rem;
       font-weight: 800;
       color: #941c1c;
       letter-spacing: 3px;
@@ -198,7 +209,7 @@
     }
     
     .logo-bd small {
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       font-weight: 400;
       color: #633737;
       display: block;
@@ -207,7 +218,7 @@
     .title-area { text-align: right; }
     
     .cert-title {
-      font-size: 2.2rem;
+      font-size: 2rem;
       font-weight: 700;
       text-transform: uppercase;
       color: #a11f1f;
@@ -216,7 +227,7 @@
     }
     
     .cert-sub {
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       font-weight: 500;
       color: #683b3b;
       letter-spacing: 5px;
@@ -224,27 +235,27 @@
     
     .content-row {
       display: flex;
-      gap: 30px;
-      margin: 10px 0 15px;
+      gap: 25px;
+      margin: 10px 0;
+      flex: 1;
     }
     
     .left-col { flex: 1.2; }
     .right-col { flex: 0.9; position: relative; }
     
-    .recipient-block { margin-bottom: 12px; }
+    .recipient-block { margin-bottom: 10px; }
     
     .presented-to {
-      font-size: 1.1rem;
+      font-size: 1rem;
       color: #5e3535;
       margin-bottom: 5px;
     }
     
-    /* FIXED: Solid red color instead of gradient for html2canvas compatibility */
     .donor-name {
-      font-size: 3rem;
+      font-size: 2.5rem;
       font-weight: 800;
       color: #a12222 !important;
-      margin: 5px 0 10px;
+      margin: 5px 0 8px;
       line-height: 1.2;
       letter-spacing: -0.5px;
       word-break: break-word;
@@ -255,10 +266,10 @@
       background: #b71c1c;
       color: white;
       display: inline-block;
-      padding: 8px 25px;
+      padding: 6px 20px;
       border-radius: 50px;
       font-weight: 700;
-      font-size: 1.2rem;
+      font-size: 1rem;
       box-shadow: 0 4px 10px rgba(170, 30, 30, 0.3);
       margin-top: 5px;
     }
@@ -267,15 +278,15 @@
       font-style: italic;
       color: #613d3d;
       font-weight: 500;
-      font-size: 1.1rem;
+      font-size: 1rem;
       border-top: 1px solid #dba5a5;
-      padding-top: 18px;
+      padding-top: 12px;
       margin-top: 8px;
     }
     
     .qr-section {
-      margin-top: 12px;
-      padding-top: 12px;
+      margin-top: 10px;
+      padding-top: 10px;
       border-top: 2px solid #dba5a5;
       display: flex;
       align-items: center;
@@ -284,31 +295,34 @@
     
     .qr-container {
       background: white;
-      padding: 8px;
+      padding: 6px;
       border-radius: 10px;
       box-shadow: 0 3px 10px rgba(140, 0, 0, 0.12);
       display: inline-block;
-      min-width: 106px;
-      min-height: 106px;
+      min-width: 95px;
+      min-height: 95px;
     }
+    
+    #qrcode { width: 83px; height: 83px; }
+    #qrcode img { width: 83px; height: 83px; }
     
     .qr-info { flex: 1; }
     
     .qr-title {
       font-weight: 700;
       color: #941c1c;
-      font-size: 0.95rem;
+      font-size: 0.85rem;
       margin-bottom: 3px;
     }
     
-    .qr-desc { font-size: 0.8rem; color: #5e3535; margin-bottom: 3px; }
+    .qr-desc { font-size: 0.7rem; color: #5e3535; margin-bottom: 3px; }
     
     .qr-verify {
-      font-size: 0.75rem;
+      font-size: 0.65rem;
       color: #782e2e;
       font-weight: 600;
       background: rgba(183, 28, 28, 0.08);
-      padding: 4px 10px;
+      padding: 3px 8px;
       border-radius: 20px;
       display: inline-block;
     }
@@ -316,7 +330,7 @@
     .details-panel {
       background: rgba(225, 170, 170, 0.08);
       border-radius: 30px;
-      padding: 20px 18px;
+      padding: 18px 16px;
       backdrop-filter: blur(4px);
       border: 1px dashed #bc6a6a;
       margin-top: 5px;
@@ -325,14 +339,14 @@
     .detail-row {
       display: flex;
       align-items: center;
-      margin-bottom: 18px;
+      margin-bottom: 14px;
     }
     
-    .detail-icon { width: 35px; font-size: 1.6rem; }
-    .detail-content { flex: 1; text-align: left;}
+    .detail-icon { width: 30px; font-size: 1.4rem; }
+    .detail-content { flex: 1; text-align: left; }
     
     .detail-label {
-      font-size: 0.8rem;
+      font-size: 0.7rem;
       text-transform: uppercase;
       letter-spacing: 2px;
       font-weight: 700;
@@ -342,23 +356,23 @@
     .blood-group-badge {
       background: #b71c1c;
       color: white;
-      padding: 6px 20px;
+      padding: 5px 18px;
       border-radius: 40px;
-      font-size: 1.8rem;
+      font-size: 1.5rem;
       font-weight: 800;
       display: inline-block;
       box-shadow: inset 0 -2px 0 #631010;
     }
     
     .detail-value {
-      font-size: 1.4rem;
+      font-size: 1.2rem;
       font-weight: 700;
       color: #281010;
       line-height: 1.2;
     }
     
     .detail-value-small {
-      font-size: 1.2rem;
+      font-size: 1rem;
       font-weight: 700;
       color: #281010;
       line-height: 1.2;
@@ -368,7 +382,7 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      margin-top: 30px;
+      margin-top: 15px;
     }
     
     .signature {
@@ -379,28 +393,28 @@
     }
     
     .e-signature-img {
-      max-width: 150px;
+      max-width: 120px;
       height: auto;
       display: block;
       margin-bottom: -5px;
     }
     
     .line {
-      width: 200px;
+      width: 180px;
       height: 1px;
       background: #333;
-      margin: 10px 0;
+      margin: 8px 0;
     }
     
     .founder-name {
       font-weight: 700;
-      font-size: 16px;
+      font-size: 14px;
       color: #1a1a1a;
       text-align: center;
     }
     
     .founder-title {
-      font-size: 14px;
+      font-size: 12px;
       color: #666;
       text-align: center;
     }
@@ -408,43 +422,52 @@
     .seal-container { text-align: center; }
     
     .e-seal-img {
-      width: 80px;
-      height: 80px;
+      width: 70px;
+      height: 70px;
       object-fit: contain;
       border-radius: 50%;
       background: #fcf3f3;
-      padding: 4px;
+      padding: 3px;
       border: 2px solid #ac4949;
     }
     
     .footer-note {
-      font-size: 0.75rem;
+      font-size: 0.65rem;
       color: #785757;
       text-align: center;
-      margin-top: 15px;
+      margin-top: 10px;
       border-top: 1px solid #d49f9f;
-      padding-top: 12px;
+      padding-top: 8px;
     }
     
     .hero-symbol-img {
       position: absolute;
-      top: -5px;
-      right: -5px;
-      width: 200px;
-      height: 200px;
+      top: 0;
+      right: 0;
+      width: 180px;
+      height: 180px;
       object-fit: contain;
       z-index: 1;
-      opacity: 0.08;
+      opacity: 0.06;
       pointer-events: none;
     }
     
+    /* Download Container - Fixed A4 Size */
+    #downloadContainer {
+      position: fixed;
+      left: -9999px;
+      top: 0;
+      width: 1123px;
+      background: transparent;
+    }
+    
     @media (max-width: 768px) {
-      .certificate { padding: 20px; }
+      .certificate-a4 { padding: 15px; width: 100%; }
       .content-row { flex-direction: column; }
       .cert-header { flex-direction: column; text-align: center; gap: 15px; }
       .title-area { text-align: center; }
       .signature-area { flex-direction: column; align-items: center; gap: 20px; }
-      .donor-name { font-size: 2rem; }
+      .donor-name { font-size: 1.8rem; }
       .action-buttons { flex-direction: column; }
       .btn { width: 100%; margin: 5px 0; }
     }
@@ -474,7 +497,6 @@
     
     const urlParams = new URLSearchParams(window.location.search);
     const certId = urlParams.get('id');
-    
     const displayDiv = document.getElementById('certificateDisplay');
     
     if (!certId) {
@@ -487,6 +509,101 @@
       `;
     } else {
       loadCertificate(certId);
+    }
+    
+    function generateCertificateHTML(cert, formattedDate, shortDonorId) {
+      return `
+        <div class="certificate-a4">
+          <div class="cert-header">
+            <div class="logo-area">
+              <img src="https://i.ibb.co/S4NpN5F5/1000010374.png" alt="Logo" class="logo-img" crossorigin="anonymous" />
+              <div class="logo-text">
+                <div class="logo-bd">BLOOD DONOR <small>BD</small></div>
+              </div>
+            </div>
+            <div class="title-area">
+              <div class="cert-title">Certificate of Registration</div>
+              <div class="cert-sub">LIFE SAVER COMMUNITY</div>
+            </div>
+          </div>
+
+          <div class="content-row">
+            <div class="left-col">
+              <div class="recipient-block">
+                <div class="presented-to">This certificate is proudly presented to</div>
+                <div class="donor-name">${cert.userName || 'Donor Name'}</div>
+                <div class="reg-badge">DONOR-${shortDonorId}</div>
+              </div>
+              <div class="message-box">
+                "Your selfless act gives the gift of life.<br>Thank you for being a hero."
+              </div>
+              
+              <div class="qr-section">
+                <div class="qr-container">
+                  <div id="qrcode-display"></div>
+                </div>
+                <div class="qr-info">
+                  <div class="qr-title">🔐 Official Verification</div>
+                  <div class="qr-desc">Scan to verify authenticity</div>
+                  <div class="qr-verify">Blood Donor BD · Official</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="right-col">
+              <img src="https://i.ibb.co/DPmrhmKk/1000010381.png" alt="Hero Symbol" class="hero-symbol-img" crossorigin="anonymous" />
+              <div class="details-panel">
+                <div class="detail-row">
+                  <div class="detail-icon">🩸</div>
+                  <div class="detail-content">
+                    <div class="detail-label">Blood Group</div>
+                    <div><span class="blood-group-badge">${cert.bloodGroup || 'N/A'}</span></div>
+                  </div>
+                </div>
+                <div class="detail-row">
+                  <div class="detail-icon">📅</div>
+                  <div class="detail-content">
+                    <div class="detail-label">Registered on</div>
+                    <div class="detail-value">${formattedDate}</div>
+                  </div>
+                </div>
+                <div class="detail-row">
+                  <div class="detail-icon">🆔</div>
+                  <div class="detail-content">
+                    <div class="detail-label">Donor ID</div>
+                    <div class="detail-value-small">${shortDonorId}</div>
+                  </div>
+                </div>
+                <div class="detail-row">
+                  <div class="detail-icon">✅</div>
+                  <div class="detail-content">
+                    <div class="detail-label">Verification Status</div>
+                    <div class="detail-value-small" style="color:#2d7a2d;">✔ Verified by Blood Donor BD</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="signature-area">
+            <div class="signature">
+              <img src="https://i.ibb.co/ynZ1skNd/1000010389.png" alt="E-Signature" class="e-signature-img" crossorigin="anonymous" />
+              <div class="line"></div>
+              <div style="font-size:13px; margin-top: -5px;">e-Signature</div>
+              <div class="founder-name">Md. Ashfaqur Rahman Tanim</div>
+              <div class="founder-title">Founder, Blood Donor BD</div>
+            </div>
+            <div class="seal-container">
+              <img src="https://i.ibb.co/zhZRkpMG/1000010361.png" alt="E-Seal" class="e-seal-img" crossorigin="anonymous" />
+              <div style="margin-top:4px; font-weight:600; color:#5e2f2f;">Official e-Seal</div>
+            </div>
+          </div>
+          
+          <div class="footer-note">
+            Certificate ID: ${cert.certificateId} · Blood Donor BD
+          </div>
+        </div>
+      `;
     }
     
     async function loadCertificate(certId) {
@@ -528,101 +645,12 @@
           
           <div class="certificate-preview">
             <div class="certificate-content">
-              <div id="certificateElement" class="certificate">
-                <div class="cert-header">
-                  <div class="logo-area">
-                    <img src="https://i.ibb.co/S4NpN5F5/1000010374.png" alt="Logo" class="logo-img" crossorigin="anonymous" />
-                    <div class="logo-text">
-                      <div class="logo-bd">BLOOD DONOR <small>BD</small></div>
-                    </div>
-                  </div>
-                  <div class="title-area">
-                    <div class="cert-title">Certificate of Registration</div>
-                    <div class="cert-sub">LIFE SAVER COMMUNITY</div>
-                  </div>
-                </div>
-
-                <div class="content-row">
-                  <div class="left-col">
-                    <div class="recipient-block">
-                      <div class="presented-to">This certificate is proudly presented to</div>
-                      <div class="donor-name">${cert.userName || 'Donor Name'}</div>
-                      <div class="reg-badge">DONOR-${shortDonorId}</div>
-                    </div>
-                    <div class="message-box">
-                      "Your selfless act gives the gift of life.<br>Thank you for being a hero."
-                    </div>
-                    
-                    <div class="qr-section">
-                      <div class="qr-container">
-                        <div id="qrcode"></div>
-                      </div>
-                      <div class="qr-info">
-                        <div class="qr-title">🔐 Official Verification</div>
-                        <div class="qr-desc">Scan to verify authenticity</div>
-                        <div class="qr-verify">Blood Donor BD · Official</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="right-col">
-                    <img src="https://i.ibb.co/DPmrhmKk/1000010381.png" alt="Hero Symbol" class="hero-symbol-img" crossorigin="anonymous" />
-                    <div class="details-panel">
-                      <div class="detail-row">
-                        <div class="detail-icon">🩸</div>
-                        <div class="detail-content">
-                          <div class="detail-label">Blood Group</div>
-                          <div><span class="blood-group-badge">${cert.bloodGroup || 'N/A'}</span></div>
-                        </div>
-                      </div>
-                      <div class="detail-row">
-                        <div class="detail-icon">📅</div>
-                        <div class="detail-content">
-                          <div class="detail-label">Registered on</div>
-                          <div class="detail-value">${formattedDate}</div>
-                        </div>
-                      </div>
-                      <div class="detail-row">
-                        <div class="detail-icon">🆔</div>
-                        <div class="detail-content">
-                          <div class="detail-label">Donor ID</div>
-                          <div class="detail-value-small">${shortDonorId}</div>
-                        </div>
-                      </div>
-                      <div class="detail-row">
-                        <div class="detail-icon">✅</div>
-                        <div class="detail-content">
-                          <div class="detail-label">Verification Status</div>
-                          <div class="detail-value-small" style="color:#2d7a2d;">✔ Verified by Blood Donor BD</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="signature-area">
-                  <div class="signature">
-                    <img src="https://i.ibb.co/ynZ1skNd/1000010389.png" alt="E-Signature" class="e-signature-img" crossorigin="anonymous" />
-                    <div class="line"></div>
-                    <div style="font-size:15px; margin-top: -5px;">e-Signature</div>
-                    <div class="founder-name">Md. Ashfaqur Rahman Tanim</div>
-                    <div class="founder-title">Founder, Blood Donor BD</div>
-                  </div>
-                  <div class="seal-container">
-                    <img src="https://i.ibb.co/zhZRkpMG/1000010361.png" alt="E-Seal" class="e-seal-img" crossorigin="anonymous" />
-                    <div style="margin-top:4px; font-weight:600; color:#5e2f2f;">Official e-Seal</div>
-                  </div>
-                </div>
-                
-                <div class="footer-note">
-                  Certificate ID: ${cert.certificateId} · This certificate is digitally generated and valid upon registration · Blood Donor BD
-                </div>
-              </div>
+              ${generateCertificateHTML(cert, formattedDate, shortDonorId)}
             </div>
           </div>
           
           <div class="action-buttons">
-            <button class="btn" id="downloadBtn"><i class="fas fa-download"></i> Download PNG</button>
+            <button class="btn" id="downloadBtn"><i class="fas fa-download"></i> Download PNG (A4 Landscape)</button>
             <button class="btn btn-outline" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
             <button class="btn btn-outline" onclick="window.location.href='index.html'"><i class="fas fa-home"></i> Home</button>
           </div>
@@ -630,16 +658,16 @@
         
         displayDiv.innerHTML = certHTML;
         
-        // Generate QR Code
+        // Generate QR Code for display
         setTimeout(() => {
-          const qrContainer = document.getElementById('qrcode');
+          const qrContainer = document.getElementById('qrcode-display');
           if (qrContainer) {
             qrContainer.innerHTML = '';
             try {
               new QRCode(qrContainer, {
                 text: verifyUrl,
-                width: 90,
-                height: 90,
+                width: 83,
+                height: 83,
                 colorDark: "#941c1c",
                 colorLight: "#ffffff",
                 correctLevel: QRCode.CorrectLevel.H
@@ -650,39 +678,73 @@
           }
         }, 200);
         
-        // Download function
+        // Download function - EXACT A4 LANDSCAPE SIZE
         document.getElementById('downloadBtn').addEventListener('click', async function(e) {
-          const element = document.getElementById('certificateElement');
           const btn = e.target;
           const originalText = btn.innerHTML;
           
           btn.disabled = true;
-          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating A4...';
           
           try {
-            await new Promise(r => setTimeout(r, 300));
+            // Create a fresh certificate element for download (ensures clean render)
+            const downloadDiv = document.createElement('div');
+            downloadDiv.id = 'downloadContainer';
+            downloadDiv.style.cssText = 'position: fixed; left: -9999px; top: 0; width: 1123px; background: #fffbfb;';
+            downloadDiv.innerHTML = generateCertificateHTML(cert, formattedDate, shortDonorId);
+            document.body.appendChild(downloadDiv);
             
-            const canvas = await html2canvas(element, {
-              scale: 2.5,
+            // Generate QR Code in download container
+            const downloadQrContainer = downloadDiv.querySelector('#qrcode-display');
+            if (downloadQrContainer) {
+              downloadQrContainer.innerHTML = '';
+              new QRCode(downloadQrContainer, {
+                text: verifyUrl,
+                width: 83,
+                height: 83,
+                colorDark: "#941c1c",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+              });
+            }
+            
+            // Wait for images and QR to render
+            await new Promise(r => setTimeout(r, 500));
+            
+            // Capture at exact A4 Landscape dimensions
+            const canvas = await html2canvas(downloadDiv.firstChild, {
+              width: 1123,
+              height: 794,
+              scale: 3.0,
               backgroundColor: '#fffbfb',
               allowTaint: true,
               useCORS: true,
               logging: false
             });
             
+            // Clean up
+            document.body.removeChild(downloadDiv);
+            
+            // Download as PNG
             const link = document.createElement('a');
             const safeName = (cert.userName || 'Donor').replace(/\s+/g, '_');
-            link.download = `BloodDonorBD_${safeName}_${certId}.png`;
+            link.download = `BloodDonorBD_A4_Landscape_${safeName}_${certId}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
             
             btn.disabled = false;
             btn.innerHTML = originalText;
+            
+            console.log('Downloaded: A4 Landscape (1123x794px)');
           } catch (error) {
             console.error('Download error:', error);
             alert('Download failed. Please try Print option instead.');
             btn.disabled = false;
             btn.innerHTML = originalText;
+            
+            // Clean up on error
+            const dc = document.getElementById('downloadContainer');
+            if (dc) document.body.removeChild(dc);
           }
         });
         
