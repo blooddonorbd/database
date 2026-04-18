@@ -530,7 +530,7 @@
         const shortDonorId = donorId.length > 10 ? donorId.slice(0, 10) : donorId;
         
         // Build verification URL for QR Code
-        const verifyUrl = `${window.location.origin}/certificate.html?id=${certId}`;
+        const verifyUrl = `${window.location.origin}/database/certificate.html?id=${certId}`;
         
         // Build the certificate HTML
         const certHTML = `
