@@ -12,8 +12,14 @@
   <!-- html2canvas for PNG generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   
+  <!-- QRCode.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -139,6 +145,25 @@
       padding: 30px 40px;
       font-family: 'Poppins', 'Segoe UI', sans-serif;
       margin: 20px 0;
+      position: relative;
+    }
+    
+    .certificate::before {
+      content: "🩸";
+      font-size: 200px;
+      position: absolute;
+      bottom: 30px;
+      right: 40px;
+      opacity: 0.04;
+      color: #8b2a2a;
+      transform: rotate(5deg);
+      pointer-events: none;
+      z-index: 0;
+    }
+    
+    .certificate > * {
+      position: relative;
+      z-index: 2;
     }
     
     .cert-header {
@@ -171,7 +196,7 @@
     }
     
     .logo-bd {
-      font-size: 2rem;
+      font-size: 2.2rem;
       font-weight: 800;
       color: #941c1c;
       letter-spacing: 3px;
@@ -179,7 +204,7 @@
     }
     
     .logo-bd small {
-      font-size: 0.8rem;
+      font-size: 0.9rem;
       font-weight: 400;
       color: #633737;
       display: block;
@@ -190,14 +215,16 @@
     }
     
     .cert-title {
-      font-size: 1.8rem;
+      font-size: 2.2rem;
       font-weight: 700;
       text-transform: uppercase;
       color: #a11f1f;
+      text-shadow: 2px 2px 0 #fad1d1;
+      line-height: 1.1;
     }
     
     .cert-sub {
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       font-weight: 500;
       color: #683b3b;
       letter-spacing: 5px;
@@ -217,21 +244,27 @@
       flex: 0.9;
     }
     
+    .recipient-block {
+      margin-bottom: 12px;
+    }
+    
     .presented-to {
-      font-size: 1rem;
+      font-size: 1.1rem;
       color: #5e3535;
       margin-bottom: 5px;
     }
     
     .donor-name {
-      font-size: 2.5rem;
+      font-size: 3rem;
       font-weight: 800;
       background: linear-gradient(145deg, #a12222, #521212);
       -webkit-background-clip: text;
       background-clip: text;
-      color: transparent;
+      color: transparent !important;
       margin: 5px 0 10px;
       line-height: 1.2;
+      letter-spacing: -0.5px;
+      word-break: break-word;
     }
     
     .reg-badge {
@@ -241,24 +274,75 @@
       padding: 8px 25px;
       border-radius: 50px;
       font-weight: 700;
-      font-size: 1.1rem;
+      font-size: 1.2rem;
+      box-shadow: 0 4px 10px rgba(170, 30, 30, 0.3);
+      margin-top: 5px;
     }
     
     .message-box {
       font-style: italic;
       color: #613d3d;
       font-weight: 500;
-      font-size: 1rem;
+      font-size: 1.1rem;
       border-top: 1px solid #dba5a5;
       padding-top: 18px;
       margin-top: 8px;
     }
     
+    /* QR Section */
+    .qr-section {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 2px solid #dba5a5;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .qr-container {
+      background: white;
+      padding: 8px;
+      border-radius: 10px;
+      box-shadow: 0 3px 10px rgba(140, 0, 0, 0.12);
+      display: inline-block;
+      min-width: 106px;
+      min-height: 106px;
+    }
+    
+    .qr-info {
+      flex: 1;
+    }
+    
+    .qr-title {
+      font-weight: 700;
+      color: #941c1c;
+      font-size: 0.95rem;
+      margin-bottom: 3px;
+    }
+    
+    .qr-desc {
+      font-size: 0.8rem;
+      color: #5e3535;
+      margin-bottom: 3px;
+    }
+    
+    .qr-verify {
+      font-size: 0.75rem;
+      color: #782e2e;
+      font-weight: 600;
+      background: rgba(183, 28, 28, 0.08);
+      padding: 4px 10px;
+      border-radius: 20px;
+      display: inline-block;
+    }
+    
     .details-panel {
       background: rgba(225, 170, 170, 0.08);
       border-radius: 30px;
-      padding: 20px;
+      padding: 20px 18px;
+      backdrop-filter: blur(4px);
       border: 1px dashed #bc6a6a;
+      margin-top: 5px;
     }
     
     .detail-row {
@@ -292,12 +376,21 @@
       font-size: 1.8rem;
       font-weight: 800;
       display: inline-block;
+      box-shadow: inset 0 -2px 0 #631010;
     }
     
     .detail-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #281010;
+      line-height: 1.2;
+    }
+    
+    .detail-value-small {
       font-size: 1.2rem;
       font-weight: 700;
       color: #281010;
+      line-height: 1.2;
     }
     
     .signature-area {
@@ -309,38 +402,46 @@
     
     .signature {
       text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     
-    .signature-img {
-      max-width: 120px;
+    .e-signature-img {
+      max-width: 150px;
       height: auto;
+      display: block;
+      margin-bottom: -5px;
     }
     
     .line {
-      width: 150px;
+      width: 200px;
       height: 1px;
       background: #333;
-      margin: 10px auto;
+      margin: 10px 0;
     }
     
     .founder-name {
       font-weight: 700;
-      font-size: 14px;
+      font-size: 16px;
       color: #1a1a1a;
+      text-align: center;
     }
     
     .founder-title {
-      font-size: 12px;
+      font-size: 14px;
       color: #666;
+      text-align: center;
     }
     
     .seal-container {
       text-align: center;
     }
     
-    .seal-img {
-      width: 70px;
-      height: 70px;
+    .e-seal-img {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
       border-radius: 50%;
       background: #fcf3f3;
       padding: 4px;
@@ -348,10 +449,10 @@
     }
     
     .footer-note {
-      font-size: 0.7rem;
+      font-size: 0.75rem;
       color: #785757;
       text-align: center;
-      margin-top: 20px;
+      margin-top: 15px;
       border-top: 1px solid #d49f9f;
       padding-top: 12px;
     }
@@ -362,6 +463,7 @@
       .cert-header { flex-direction: column; text-align: center; gap: 15px; }
       .title-area { text-align: center; }
       .signature-area { flex-direction: column; align-items: center; gap: 20px; }
+      .donor-name { font-size: 2rem; }
     }
   </style>
 </head>
@@ -424,13 +526,19 @@
           day: 'numeric', month: 'long', year: 'numeric' 
         });
         
+        const donorId = cert.donorId || cert.certificateId.slice(-8);
+        const shortDonorId = donorId.length > 10 ? donorId.slice(0, 10) : donorId;
+        
+        // Build verification URL for QR Code
+        const verifyUrl = `${window.location.origin}/certificate.html?id=${certId}`;
+        
         // Build the certificate HTML
         const certHTML = `
           <div class="certificate-info">
             <h3><i class="fas fa-check-circle" style="color:#2e7d32;"></i> Verified Certificate</h3>
             <div class="info-row"><span class="info-label">Certificate ID:</span><span class="info-value">${cert.certificateId}</span></div>
             <div class="info-row"><span class="info-label">Donor Name:</span><span class="info-value">${cert.userName}</span></div>
-            <div class="info-row"><span class="info-label">Donor ID:</span><span class="info-value">${cert.donorId || 'N/A'}</span></div>
+            <div class="info-row"><span class="info-label">Donor ID:</span><span class="info-value">${donorId}</span></div>
             <div class="info-row"><span class="info-label">Blood Group:</span><span class="info-value">${cert.bloodGroup}</span></div>
             <div class="info-row"><span class="info-label">Issued Date:</span><span class="info-value">${formattedDate}</span></div>
             <div class="info-row"><span class="info-label">Issued By:</span><span class="info-value">${cert.issuedByName || 'Blood Donor BD'}</span></div>
@@ -455,11 +563,24 @@
 
                 <div class="content-row">
                   <div class="left-col">
-                    <div class="presented-to">This certificate is proudly presented to</div>
-                    <div class="donor-name">${cert.userName}</div>
-                    <div class="reg-badge">DONOR-${cert.donorId || cert.certificateId.slice(-8)}</div>
+                    <div class="recipient-block">
+                      <div class="presented-to">This certificate is proudly presented to</div>
+                      <div class="donor-name" id="donorNameDisplay">${cert.userName}</div>
+                      <div class="reg-badge">DONOR-${shortDonorId}</div>
+                    </div>
                     <div class="message-box">
                       "Your selfless act gives the gift of life.<br>Thank you for being a hero."
+                    </div>
+                    
+                    <div class="qr-section">
+                      <div class="qr-container">
+                        <div id="qrcode"></div>
+                      </div>
+                      <div class="qr-info">
+                        <div class="qr-title">🔐 Official Verification</div>
+                        <div class="qr-desc">Scan to verify authenticity</div>
+                        <div class="qr-verify">Blood Donor BD · Official</div>
+                      </div>
                     </div>
                   </div>
 
@@ -471,6 +592,7 @@
                           <div class="detail-label">Blood Group</div>
                           <div><span class="blood-group-badge">${cert.bloodGroup}</span></div>
                         </div>
+                        <img src="https://i.ibb.co/DPmrhmKk/1000010381.png" alt="Hero Symbol" style="position:absolute;right:10px;width:200px;height:200px;opacity:0.1;pointer-events:none;" crossorigin="anonymous" />
                       </div>
                       <div class="detail-row">
                         <div class="detail-icon">📅</div>
@@ -483,14 +605,14 @@
                         <div class="detail-icon">🆔</div>
                         <div class="detail-content">
                           <div class="detail-label">Donor ID</div>
-                          <div class="detail-value">${cert.donorId || cert.certificateId.slice(-8)}</div>
+                          <div class="detail-value-small">${shortDonorId}</div>
                         </div>
                       </div>
                       <div class="detail-row">
                         <div class="detail-icon">✅</div>
                         <div class="detail-content">
                           <div class="detail-label">Verification Status</div>
-                          <div class="detail-value" style="color:#2d7a2d;">✔ Verified by Blood Donor BD</div>
+                          <div class="detail-value-small" style="color:#2d7a2d;">✔ Verified by Blood Donor BD</div>
                         </div>
                       </div>
                     </div>
@@ -499,15 +621,15 @@
 
                 <div class="signature-area">
                   <div class="signature">
-                    <img src="https://i.ibb.co/ynZ1skNd/1000010389.png" alt="E-Signature" class="signature-img" crossorigin="anonymous" />
+                    <img src="https://i.ibb.co/ynZ1skNd/1000010389.png" alt="E-Signature" class="e-signature-img" crossorigin="anonymous" />
                     <div class="line"></div>
-                    <div style="font-size:13px;">e-Signature</div>
+                    <div style="font-size:15px; margin-top: -5px;">e-Signature</div>
                     <div class="founder-name">Md. Ashfaqur Rahman Tanim</div>
                     <div class="founder-title">Founder, Blood Donor BD</div>
                   </div>
                   <div class="seal-container">
-                    <img src="https://i.ibb.co/zhZRkpMG/1000010361.png" alt="E-Seal" class="seal-img" crossorigin="anonymous" />
-                    <div style="margin-top:4px;font-weight:600;color:#5e2f2f;">Official e-Seal</div>
+                    <img src="https://i.ibb.co/zhZRkpMG/1000010361.png" alt="E-Seal" class="e-seal-img" crossorigin="anonymous" />
+                    <div style="margin-top:4px; font-weight:600; color:#5e2f2f;">Official e-Seal</div>
                   </div>
                 </div>
                 
@@ -527,8 +649,25 @@
         
         displayDiv.innerHTML = certHTML;
         
+        // Generate QR Code
+        setTimeout(() => {
+          const qrContainer = document.getElementById('qrcode');
+          if (qrContainer && typeof QRCode !== 'undefined') {
+            qrContainer.innerHTML = '';
+            new QRCode(qrContainer, {
+              text: verifyUrl,
+              width: 90,
+              height: 90,
+              colorDark: "#941c1c",
+              colorLight: "#ffffff",
+              correctLevel: QRCode.CorrectLevel.H
+            });
+          }
+        }, 100);
+        
         // Store cert data for download
         window.certificateData = cert;
+        window.certificateId = certId;
         
         // Define download function
         window.downloadCertificate = async function() {
@@ -540,6 +679,9 @@
           btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
           
           try {
+            // Ensure QR code is rendered
+            await new Promise(r => setTimeout(r, 300));
+            
             const canvas = await html2canvas(element, {
               scale: 2.5,
               backgroundColor: '#fffbfb',
@@ -549,7 +691,7 @@
             });
             
             const link = document.createElement('a');
-            link.download = `BloodDonorBD_${cert.userName.replace(/\s+/g, '_')}_${cert.certificateId}.png`;
+            link.download = `BloodDonorBD_${cert.userName.replace(/\s+/g, '_')}_${certId}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
             
@@ -562,6 +704,11 @@
             btn.innerHTML = '<i class="fas fa-download"></i> Download PNG';
           }
         };
+        
+        // Auto download if requested
+        if (urlParams.get('download') === 'true') {
+          setTimeout(() => window.downloadCertificate(), 1500);
+        }
         
       } catch (error) {
         console.error('Error:', error);
