@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blood Donor BD · Save Lives</title>
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loader"></div>
+    <p>Loading Blood Donor BD...</p>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Main App Container -->
+  <div id="appContainer" class="app-container" style="display: none;">
+    
+    <!-- Navigation Bar -->
+    <nav id="navbar" class="navbar">
+      <div class="nav-container">
+        <div class="nav-brand">
+          <img src="https://i.ibb.co/S4NpN5F5/1000010374.png" alt="Logo" style="width: 40px; height: 40px; border-radius: 50%; margin-right: 8px;">
+          <span>Blood Donor BD</span>
+        </div>
+        
+        <ul id="navMenu" class="nav-menu"></ul>
+        
+        <div class="nav-user">
+          <div id="userInfo" class="user-info"></div>
+          <button id="logoutBtn" class="btn-logout" style="display: none;">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+        </div>
+        
+        <button class="mobile-menu-btn">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main id="mainContent" class="main-content"></main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>Blood Donor BD</h3>
+          <p>Saving lives through blood donation</p>
+          <div class="social-links">
+            <a href="#"><i class="fab fa-facebook"></i></a>
+            <a href="#"><i class="fab fa-twitter"></i></a>
+            <a href="#"><i class="fab fa-instagram"></i></a>
+          </div>
+        </div>
+        <div class="footer-section">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="#" data-page="home" onclick="router.navigate('home'); return false;">Home</a></li>
+            <li><a href="#" data-page="about" onclick="router.navigate('about'); return false;">About Us</a></li>
+            <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors'); return false;">Find Donors</a></li>
+            <li><a href="#" data-page="contact" onclick="router.navigate('contact'); return false;">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h4>Emergency</h4>
+          <p><i class="fas fa-phone"></i> 16263 (Blood Bank)</p>
+          <p><i class="fas fa-phone-alt"></i> +880 1234-567890</p>
+          <p><i class="fas fa-envelope"></i> help@blooddonorbd.com</p>
+        </div>
+        <div class="footer-section">
+          <h4>Verify Certificate</h4>
+          <p><a href="#" onclick="router.navigate('verify-certificate'); return false;">Click here to verify a certificate</a></p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 Blood Donor BD. All rights reserved.</p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
