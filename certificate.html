@@ -36,7 +36,7 @@
     }
     
     .certificate-container { 
-      max-width: 1050px; 
+      max-width: 1150px; 
       width: 100%; 
       text-align: center;
     }
@@ -49,7 +49,11 @@
       margin-bottom: 20px;
     }
     
-    .certificate-content { padding: 20px; }
+    .certificate-content { 
+      padding: 20px; 
+      display: flex;
+      justify-content: center;
+    }
     
     .btn { 
       display: inline-block; 
@@ -75,6 +79,11 @@
     }
     
     .btn-outline:hover { background: #962d2d; color: white; }
+    
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
     
     .error { 
       text-align: center; 
@@ -135,14 +144,7 @@
       flex-wrap: wrap;
     }
     
-    /* ============================================ */
-    /* A4 LANDSCAPE CERTIFICATE - EXACT DIMENSIONS */
-    /* ============================================ */
-    
-    /* A4 Landscape = 297mm x 210mm */
-    /* At 96 DPI: 1123px x 794px */
-    /* At 3.78 px/mm: 1123px width */
-    
+    /* A4 LANDSCAPE CERTIFICATE - 1123px x 794px */
     .certificate-a4 {
       width: 1123px;
       min-height: 794px;
@@ -151,7 +153,6 @@
       border-radius: 12px;
       padding: 25px 35px;
       font-family: 'Poppins', 'Segoe UI', sans-serif;
-      margin: 20px auto;
       position: relative;
       display: flex;
       flex-direction: column;
@@ -259,7 +260,6 @@
       line-height: 1.2;
       letter-spacing: -0.5px;
       word-break: break-word;
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
     }
     
     .reg-badge {
@@ -303,8 +303,8 @@
       min-height: 95px;
     }
     
-    #qrcode { width: 83px; height: 83px; }
-    #qrcode img { width: 83px; height: 83px; }
+    #qrcode, #qrcode-download { width: 83px; height: 83px; }
+    #qrcode img, #qrcode-download img { width: 83px; height: 83px; }
     
     .qr-info { flex: 1; }
     
@@ -452,15 +452,6 @@
       pointer-events: none;
     }
     
-    /* Download Container - Fixed A4 Size */
-    #downloadContainer {
-      position: fixed;
-      left: -9999px;
-      top: 0;
-      width: 1123px;
-      background: transparent;
-    }
-    
     @media (max-width: 768px) {
       .certificate-a4 { padding: 15px; width: 100%; }
       .content-row { flex-direction: column; }
@@ -499,6 +490,11 @@
     const certId = urlParams.get('id');
     const displayDiv = document.getElementById('certificateDisplay');
     
+    // Store cert data globally
+    let currentCert = null;
+    let currentFormattedDate = '';
+    let currentShortDonorId = '';
+    
     if (!certId) {
       displayDiv.innerHTML = `
         <div class="error">
@@ -513,7 +509,7 @@
     
     function generateCertificateHTML(cert, formattedDate, shortDonorId) {
       return `
-        <div class="certificate-a4">
+        <div class="certificate-a4" id="certificateElement">
           <div class="cert-header">
             <div class="logo-area">
               <img src="https://i.ibb.co/S4NpN5F5/1000010374.png" alt="Logo" class="logo-img" crossorigin="anonymous" />
@@ -540,7 +536,7 @@
               
               <div class="qr-section">
                 <div class="qr-container">
-                  <div id="qrcode-display"></div>
+                  <div id="qrcode"></div>
                 </div>
                 <div class="qr-info">
                   <div class="qr-title">🔐 Official Verification</div>
@@ -623,12 +619,17 @@
         }
         
         const cert = doc.data();
+        currentCert = cert;
+        
         const formattedDate = new Date(cert.issuedDate).toLocaleDateString('en-GB', { 
           day: 'numeric', month: 'long', year: 'numeric' 
         });
+        currentFormattedDate = formattedDate;
         
         const donorId = cert.donorId || cert.certificateId.slice(-8);
         const shortDonorId = donorId.length > 12 ? donorId.slice(0, 12) : donorId;
+        currentShortDonorId = shortDonorId;
+        
         const verifyUrl = window.location.href;
         
         const certHTML = `
@@ -658,9 +659,9 @@
         
         displayDiv.innerHTML = certHTML;
         
-        // Generate QR Code for display
+        // Generate QR Code
         setTimeout(() => {
-          const qrContainer = document.getElementById('qrcode-display');
+          const qrContainer = document.getElementById('qrcode');
           if (qrContainer) {
             qrContainer.innerHTML = '';
             try {
@@ -674,77 +675,73 @@
               });
             } catch (e) {
               console.error('QR Error:', e);
+              qrContainer.innerHTML = '<div style="width:83px;height:83px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;">QR</div>';
             }
           }
-        }, 200);
+        }, 300);
         
-        // Download function - EXACT A4 LANDSCAPE SIZE
+        // Download function - captures the visible certificate
         document.getElementById('downloadBtn').addEventListener('click', async function(e) {
           const btn = e.target;
           const originalText = btn.innerHTML;
           
           btn.disabled = true;
-          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating A4...';
+          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
           
           try {
-            // Create a fresh certificate element for download (ensures clean render)
-            const downloadDiv = document.createElement('div');
-            downloadDiv.id = 'downloadContainer';
-            downloadDiv.style.cssText = 'position: fixed; left: -9999px; top: 0; width: 1123px; background: #fffbfb;';
-            downloadDiv.innerHTML = generateCertificateHTML(cert, formattedDate, shortDonorId);
-            document.body.appendChild(downloadDiv);
+            const element = document.getElementById('certificateElement');
             
-            // Generate QR Code in download container
-            const downloadQrContainer = downloadDiv.querySelector('#qrcode-display');
-            if (downloadQrContainer) {
-              downloadQrContainer.innerHTML = '';
-              new QRCode(downloadQrContainer, {
-                text: verifyUrl,
-                width: 83,
-                height: 83,
-                colorDark: "#941c1c",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-              });
-            }
-            
-            // Wait for images and QR to render
-            await new Promise(r => setTimeout(r, 500));
-            
-            // Capture at exact A4 Landscape dimensions
-            const canvas = await html2canvas(downloadDiv.firstChild, {
-              width: 1123,
-              height: 794,
-              scale: 3.0,
+            // Simple html2canvas with minimal options
+            const canvas = await html2canvas(element, {
+              scale: 2.5,
               backgroundColor: '#fffbfb',
               allowTaint: true,
               useCORS: true,
-              logging: false
+              logging: false,
+              windowWidth: 1123,
+              windowHeight: 794
             });
             
-            // Clean up
-            document.body.removeChild(downloadDiv);
-            
-            // Download as PNG
+            // Create download link
             const link = document.createElement('a');
-            const safeName = (cert.userName || 'Donor').replace(/\s+/g, '_');
-            link.download = `BloodDonorBD_A4_Landscape_${safeName}_${certId}.png`;
+            const safeName = (currentCert.userName || 'Donor').replace(/\s+/g, '_').replace(/\./g, '');
+            link.download = `BloodDonorBD_A4_${safeName}_${certId}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
             
             btn.disabled = false;
             btn.innerHTML = originalText;
             
-            console.log('Downloaded: A4 Landscape (1123x794px)');
+            console.log('Download successful!');
           } catch (error) {
             console.error('Download error:', error);
-            alert('Download failed. Please try Print option instead.');
-            btn.disabled = false;
-            btn.innerHTML = originalText;
             
-            // Clean up on error
-            const dc = document.getElementById('downloadContainer');
-            if (dc) document.body.removeChild(dc);
+            // Fallback: Try with different settings
+            try {
+              const element = document.getElementById('certificateElement');
+              const canvas = await html2canvas(element, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                allowTaint: true,
+                useCORS: false,
+                logging: false
+              });
+              
+              const link = document.createElement('a');
+              const safeName = (currentCert.userName || 'Donor').replace(/\s+/g, '_').replace(/\./g, '');
+              link.download = `BloodDonorBD_${safeName}_${certId}.png`;
+              link.href = canvas.toDataURL('image/png');
+              link.click();
+              
+              btn.disabled = false;
+              btn.innerHTML = originalText;
+              console.log('Download successful with fallback!');
+            } catch (fallbackError) {
+              console.error('Fallback error:', fallbackError);
+              alert('Download failed. Please use the Print option instead.');
+              btn.disabled = false;
+              btn.innerHTML = originalText;
+            }
           }
         });
         
