@@ -2,7 +2,7 @@
   "name": "Blood Donor BD",
   "short_name": "Blood Donor",
   "description": "Save lives through blood donation",
-  "start_url": "/",
+  "start_url": "https://blooddonorbd.github.io/database/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#b71c1c",
