@@ -397,6 +397,10 @@
       height: auto;
       display: block;
       margin-bottom: -5px;
+      opacity: 0.99;
+      pointer-events: none;             /* ড্রাগ করা যাবে না */
+      -webkit-user-drag: none;         /* ওয়েবকিট ব্রাউজারে ড্রাগ বন্ধ */
+      user-select: none;              /* সিলেক্ট করা যাবে না */
     }
     
     .line {
@@ -429,6 +433,10 @@
       background: #fcf3f3;
       padding: 3px;
       border: 2px solid #ac4949;
+      opacity: 0.99;
+      pointer-events: none;             /* ড্রাগ করা যাবে না */
+      -webkit-user-drag: none;         /* ওয়েবকিট ব্রাউজারে ড্রাগ বন্ধ */
+      user-select: none;              /* সিলেক্ট করা যাবে না */
     }
     
     .footer-note {
