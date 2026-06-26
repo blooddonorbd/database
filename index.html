@@ -822,6 +822,18 @@
 
   <div id="toastContainer" class="toast-container"></div>
 
+  <div id="registerModal" class="loading-overlay" style="display: none; background: rgba(0,0,0,0.5);">
+    <div style="background: white; padding: 24px; border-radius: 12px; max-width: 400px; text-align: center;">
+      <i class="fas fa-user-plus" style="font-size: 48px; color: var(--primary); margin-bottom: 16px;"></i>
+      <h3 style="margin-bottom: 16px;">Registration Required</h3>
+      <p style="margin-bottom: 24px;">Please register as a Blood Donor or Blood Seeker to contact donors directly.</p>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button onclick="document.getElementById('registerModal').style.display='none';" class="btn btn-outline">Cancel</button>
+        <button onclick="document.getElementById('registerModal').style.display='none'; router.navigate('register');" class="btn btn-primary">Register Now</button>
+      </div>
+    </div>
+  </div>
+
   <div id="appContainer" class="app-container" style="display: none;">
     
     <nav id="navbar" class="navbar">
@@ -838,57 +850,58 @@
           <button id="logoutBtn" class="btn-logout" style="display: none;">
             <i class="fas fa-sign-out-alt"></i>
           </button>
-        </div></div></mdiv>
-   
+        </div></div>
+        
         <div><button class="mobile-menu-btn">
           <i class="fas fa-bars"></i>
         </button>
+        </div>
       </div>
     </nav>
 
     <main id="mainContent" class="main-content"></main>
 
     <footer class="footer">
-  <div class="footer-content">
-    <div class="footer-section">
-      <h3>Blood Donor BD</h3>
-      <p>Saving lives through blood donation</p>
-      <div class="social-links">
-        <a href="https://www.facebook.com/groups/566092693108418/?ref=share&mibextid=NSMWBT" target="_blank" rel="noopener" title="Facebook Group">
-          <i class="fab fa-facebook"></i>
-        </a>
-        <a href="https://www.facebook.com/share/1GWU9qx6M2/" target="_blank" rel="noopener" title="Facebook Page">
-          <i class="fab fa-facebook-f"></i>
-        </a>
-        <a href="https://www.facebook.com/MD.Ashfaq01" target="_blank" rel="noopener" title="Administrator">
-          <i class="fas fa-user-shield"></i>
-        </a>
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>Blood Donor BD</h3>
+          <p>Saving lives through blood donation</p>
+          <div class="social-links">
+            <a href="https://www.facebook.com/groups/566092693108418/?ref=share&mibextid=NSMWBT" target="_blank" rel="noopener" title="Facebook Group">
+              <i class="fab fa-facebook"></i>
+            </a>
+            <a href="https://www.facebook.com/share/1GWU9qx6M2/" target="_blank" rel="noopener" title="Facebook Page">
+              <i class="fab fa-facebook-f"></i>
+            </a>
+            <a href="https://www.facebook.com/MD.Ashfaq01" target="_blank" rel="noopener" title="Administrator">
+              <i class="fas fa-user-shield"></i>
+            </a>
+          </div>
+        </div>
+        <div class="footer-section">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="#" data-page="home" onclick="router.navigate('home'); return false;">Home</a></li>
+            <li><a href="#" data-page="about" onclick="router.navigate('about'); return false;">About Us</a></li>
+            <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors'); return false;">Find Donors</a></li>
+            <li><a href="#" data-page="contact" onclick="router.navigate('contact'); return false;">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h4>Emergency</h4>
+          <p><i class="fas fa-phone"></i> +8801612018221 (Blood Bank)</p>
+          <p><i class="fas fa-phone-alt"></i> +8801931853063</p>
+          <p><i class="fas fa-envelope"></i> blooddonorbd025@gmail.com</p>
+        </div>
+        <div class="footer-section">
+          <h4>Verify Certificate</h4>
+          <p><a href="#" onclick="router.navigate('verify-certificate'); return false;">Click here to verify a certificate</a></p>
+        </div>
       </div>
-    </div>
-    <div class="footer-section">
-      <h4>Quick Links</h4>
-      <ul>
-        <li><a href="#" data-page="home" onclick="router.navigate('home'); return false;">Home</a></li>
-        <li><a href="#" data-page="about" onclick="router.navigate('about'); return false;">About Us</a></li>
-        <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors'); return false;">Find Donors</a></li>
-        <li><a href="#" data-page="contact" onclick="router.navigate('contact'); return false;">Contact</a></li>
-      </ul>
-    </div>
-    <div class="footer-section">
-      <h4>Emergency</h4>
-      <p><i class="fas fa-phone"></i> +8801612018221 (Blood Bank)</p>
-      <p><i class="fas fa-phone-alt"></i> +8801931853063</p>
-      <p><i class="fas fa-envelope"></i> blooddonorbd025@gmail.com</p>
-    </div>
-    <div class="footer-section">
-      <h4>Verify Certificate</h4>
-      <p><a href="#" onclick="router.navigate('verify-certificate'); return false;">Click here to verify a certificate</a></p>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <p>&copy; 2025 Blood Donor BD. All rights reserved.</p>
-  </div>
-</footer>
+      <div class="footer-bottom">
+        <p>&copy; 2025 Blood Donor BD. All rights reserved.</p>
+      </div>
+    </footer>
   </div>
 
   <script>
@@ -908,6 +921,7 @@
       'Pirojpur', 'Rajbari', 'Rajshahi', 'Rangamati', 'Rangpur', 'Satkhira', 'Shariatpur',
       'Sherpur', 'Sirajganj', 'Sunamganj', 'Sylhet', 'Tangail', 'Thakurgaon'
     ];
+    
     // Inject datalist globally for input hints
     const datalist = document.createElement('datalist');
     datalist.id = 'districtsList';
@@ -923,6 +937,7 @@
       messagingSenderId: "271945142840",
       appId: "1:271945142840:web:b0edefddb55cac5f604ccd"
     };
+    
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
@@ -932,7 +947,7 @@
     let currentUser = null;
     let userProfile = null;
     let currentPage = 'home';
-
+    
     // Role Mapping Utility
     function getRoleDisplayName(role) {
       if (role === 'main_admin') return '👑 Administrator';
@@ -942,9 +957,9 @@
     }
 
     function getRoleSymbol(role) {
-      if (role === 'main_admin') return '👑 ';
-      if (role === 'admin') return '🛡️ ';
-      if (role === 'moderator') return '🔰 ';
+      if (role === 'main_admin') return '[👑 Administrator] ';
+      if (role === 'admin') return '[🛡️ Admin] ';
+      if (role === 'moderator') return '[🔰 Moderator] ';
       return '';
     }
 
@@ -969,6 +984,11 @@
         setTimeout(() => toast.remove(), 5000);
       }
     }
+
+    // Global prompt to register function
+    window.promptRegistration = function() {
+      document.getElementById('registerModal').style.display = 'flex';
+    };
 
     // Router System
     const router = {
@@ -1021,11 +1041,7 @@
           await this.loadUserProfile(result.user.uid);
           Toast.show('Login successful!', 'success');
           
-          if (userProfile?.role === 'admin' || userProfile?.role === 'main_admin') {
-            window.location.href = 'admin.html';
-          } else {
-            router.navigate('dashboard');
-          }
+          router.navigate('dashboard');
           return true;
         } catch (error) {
           console.error('Login error:', error);
@@ -1063,6 +1079,7 @@
             role: 'user',
             certificates: []
           };
+          
           await db.collection('users').doc(result.user.uid).set(profile);
           userProfile = profile;
           currentUser = result.user;
@@ -1177,7 +1194,7 @@
         }
       }
     };
-    
+
     // Switch User Type Function
     async function switchUserType() {
       if (!currentUser || !userProfile) return;
@@ -1196,12 +1213,14 @@
           approvalStatus: isDonor ? 'pending' : 'approved',
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
+        
         if (!isDonor) {
           updates.bloodGroup = null;
         }
         
         await db.collection('users').doc(currentUser.uid).update(updates);
         await authSystem.loadUserProfile(currentUser.uid);
+        
         if (isDonor) {
           Toast.show('Switched to Blood Donor! Your account is pending approval.', 'success');
         } else {
@@ -1233,7 +1252,7 @@
               <button onclick="router.navigate('find-donors')" class="btn btn-outline" style="border-color: white; color: white;">Find Donors</button>
               <button onclick="router.navigate('dm-donor')" class="btn btn-outline" style="border-color: white; color: white;"><i class="fas fa-comments"></i> DM Donors</button>
               ${hasAdminAccess() ?
-                `
+              `
                 <a href="admin.html" class="btn btn-outline" style="border-color: #ffd700; color: #ffd700;">
                   <i class="fas fa-shield-alt"></i> Admin Panel
                 </a>
@@ -1259,7 +1278,50 @@
             <p>Chat directly with donors and seekers</p>
           </div>
         </div>
+
+        <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-top: 48px;">
+          <h3 style="margin-bottom: 20px;"><i class="fas fa-map-marked-alt"></i> Live Donors Map</h3>
+          <div id="homeMap" style="height: 350px; border-radius: 8px; z-index: 1; border: 1px solid #ddd;"></div>
+          <button onclick="router.navigate('live-map')" class="btn btn-primary btn-block mt-3"><i class="fas fa-expand-arrows-alt"></i> View Full Map</button>
+        </div>
       `;
+
+      setTimeout(async () => {
+          const mapContainer = document.getElementById('homeMap');
+          if(!mapContainer) return;
+          
+          const map = L.map('homeMap').setView([23.6850, 90.3563], 6);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+          try {
+              const snapshot = await db.collection('users')
+                  .where('isDonor', '==', true)
+                  .where('approvalStatus', '==', 'approved')
+                  .get();
+
+              snapshot.forEach(doc => {
+                  const donor = doc.data();
+                  if (donor.lat && donor.lng) {
+                      const marker = L.marker([donor.lat, donor.lng]).addTo(map);
+                      
+                      const callAction = currentUser ? 
+                          `<a href="tel:${donor.phoneNumber}" class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; color: white; margin-top: 8px; display: inline-block;"><i class="fas fa-phone"></i> Call Donor</a>` : 
+                          `<button onclick="promptRegistration()" class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; color: white; margin-top: 8px; border: none; cursor: pointer;"><i class="fas fa-phone"></i> Call Donor</button>`;
+
+                      marker.bindPopup(`
+                          <div style="text-align: center; padding: 5px;">
+                              <strong>${donor.fullName}</strong><br>
+                              <span style="background: var(--primary); color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; display: inline-block; margin: 4px 0;">${donor.bloodGroup}</span><br>
+                              <i class="fas fa-map-marker-alt"></i> ${donor.district}, ${donor.upazila}<br>
+                              ${callAction}
+                          </div>
+                      `);
+                  }
+              });
+          } catch (err) {
+              console.error("Home map donor load error:", err);
+          }
+      }, 100);
     }
 
     function renderAboutPage() {
@@ -1291,19 +1353,19 @@
             <div style="display: grid; gap: 20px;">
               <div style="display: flex; align-items: center; gap: 16px;">
                 <i class="fas fa-phone" style="font-size: 24px; color: #b71c1c;"></i>
-                <div><h4>Emergency Blood Bank</h4><p>16263 (24/7 Hotline)</p></div>
+                <div><h4>Emergency Blood Bank</h4><p>+8801612018221 (24/7 Hotline)</p></div>
               </div>
               <div style="display: flex; align-items: center; gap: 16px;">
                 <i class="fas fa-phone-alt" style="font-size: 24px; color: #b71c1c;"></i>
-                <div><h4>Helpline</h4><p>+880 1234-567890</p></div>
+                <div><h4>Helpline</h4><p>+8801931853063</p></div>
               </div>
               <div style="display: flex; align-items: center; gap: 16px;">
                 <i class="fas fa-envelope" style="font-size: 24px; color: #b71c1c;"></i>
-                <div><h4>Email</h4><p>help@blooddonorbd.com</p></div>
+                <div><h4>Email</h4><p>blooddonorbd025@gmail.com</p></div>
               </div>
               <div style="display: flex; align-items: center; gap: 16px;">
                 <i class="fas fa-map-marker-alt" style="font-size: 24px; color: #b71c1c;"></i>
-                <div><h4>Address</h4><p>Dhaka, Bangladesh</p></div>
+                <div><h4>Address</h4><p>Online platform</p></div>
               </div>
             </div>
           </div>
@@ -1536,6 +1598,7 @@
       
       const roleDisplayName = getRoleDisplayName(userProfile?.role);
       const roleSymbol = getRoleSymbol(userProfile?.role);
+      
       main.innerHTML = `
         <h1 style="margin-bottom: 24px;">Welcome, ${roleSymbol}${userProfile?.fullName?.split(' ')[0] || 'User'}!</h1>
         
@@ -1635,54 +1698,50 @@
 
       // Trigger Load of Requests and Leaflet Map
       setTimeout(async () => {
-    loadDashboardEmergencyRequests();
-    
-    const map = L.map('dashboardMap', { 
-        zoomControl: false, 
-        dragging: false,
-        scrollWheelZoom: false,
-        doubleClickZoom: false 
-    }).setView([23.6850, 90.3563], 6);
-    
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    map.on('click', () => router.navigate('live-map'));
-    
-    // Fetch and display donors on mini map
-    try {
-        const snapshot = await db.collection('users')
-            .where('isDonor', '==', true)
-            .where('approvalStatus', '==', 'approved')
-            .get();
+        loadDashboardEmergencyRequests();
+        const map = L.map('dashboardMap', { 
+            zoomControl: false, 
+            dragging: false,
+            scrollWheelZoom: false,
+            doubleClickZoom: false 
+        }).setView([23.6850, 90.3563], 6);
         
-        snapshot.forEach(doc => {
-            const donor = doc.data();
-            if (donor.lat && donor.lng) {
-                const marker = L.marker([donor.lat, donor.lng], {
-                    // Make markers smaller for mini map
-                    icon: L.divIcon({
-                        className: 'custom-marker',
-                        html: `<div style="background: #b71c1c; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3);"></div>`,
-                        iconSize: [12, 12],
-                        iconAnchor: [6, 6]
-                    })
-                }).addTo(map);
-                
-                // Simple popup
-                marker.bindPopup(`
-    <div style="text-align: center;">
-        <strong>${donor.fullName}</strong><br>
-        <span style="color: #b71c1c; font-weight: bold;">${donor.bloodGroup}</span><br>
-        ${donor.district}, ${donor.upazila}
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        map.on('click', () => router.navigate('live-map'));
         
-        <a href="tel:${donor.phoneNumber}" class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; color: white; margin-top: 8px; margin-left: 5px; display: inline-block;"><i class="fas fa-phone"></i></a>
-    </div>
-                `);
-            }
-        });
-    } catch (err) {
-        console.error("Mini map donor load error:", err);
-    }
-}, 100);
+        // Fetch and display donors on mini map
+        try {
+            const snapshot = await db.collection('users')
+                .where('isDonor', '==', true)
+                .where('approvalStatus', '==', 'approved')
+                .get();
+            snapshot.forEach(doc => {
+                const donor = doc.data();
+                if (donor.lat && donor.lng) {
+                    const marker = L.marker([donor.lat, donor.lng], {
+                        icon: L.divIcon({
+                            className: 'custom-marker',
+                            html: `<div style="background: #b71c1c; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3);"></div>`,
+                            iconSize: [12, 12],
+                            iconAnchor: [6, 6]
+                        })
+                    }).addTo(map);
+                    
+                    marker.bindPopup(`
+                        <div style="text-align: center;">
+                            <strong>${donor.fullName}</strong><br>
+                            <span style="color: #b71c1c; font-weight: bold;">${donor.bloodGroup}</span><br>
+                            ${donor.district}, ${donor.upazila}
+                            
+                            <a href="tel:${donor.phoneNumber}" class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; color: white; margin-top: 8px; margin-left: 5px; display: inline-block;"><i class="fas fa-phone"></i></a>
+                        </div>
+                    `);
+                }
+            });
+        } catch (err) {
+            console.error("Mini map donor load error:", err);
+        }
+      }, 100);
     }
 
     // Helper to fetch and display compact emergency requests
@@ -1701,7 +1760,6 @@
           const reqTimeStr = req.requiredTime || '23:59';
           const requiredDateTime = new Date(`${reqDateStr}T${reqTimeStr}`);
 
-          // Automatic deletion/filtering when requested time passes
           if (requiredDateTime < now) {
             db.collection('bloodRequests').doc(doc.id).delete();
             return;
@@ -1713,9 +1771,9 @@
           return;
         }
 
-        // Sort by emergency priority: 'emergency' -> 'urgent' -> 'normal'
         const urgencyWeight = { 'emergency': 3, 'urgent': 2, 'normal': 1 };
         activeRequests.sort((a, b) => (urgencyWeight[b.urgency] || 1) - (urgencyWeight[a.urgency] || 1));
+        
         container.innerHTML = `<div style="display: flex; flex-direction: column; gap: 10px; max-height: 260px; overflow-y: auto;">
           ${activeRequests.map(req => {
             const isEmg = req.urgency === 'emergency';
@@ -1735,7 +1793,7 @@
                 </div>
               </div>
             `;
-        }).join('')}
+          }).join('')}
         </div>`;
       } catch (err) {
         container.innerHTML = '<p style="color: #d32f2f; font-size: 13px;">Failed to fetch urgent requests.</p>';
@@ -1754,6 +1812,7 @@
       const container = document.getElementById('allRequestsList');
       if (!container) return;
       container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading requests...</div>';
+      
       try {
         const snapshot = await db.collection('bloodRequests').where('status', '==', 'active').get();
         const now = new Date();
@@ -1765,13 +1824,13 @@
             const reqTimeStr = req.requiredTime || '23:59';
             const requiredDateTime = new Date(`${reqDateStr}T${reqTimeStr}`);
 
-            // Automatically delete requests that have surpassed their required timeline
             if (requiredDateTime < now) {
                 db.collection('bloodRequests').doc(doc.id).delete();
                 return;
             }
             requests.push(req);
         });
+        
         if (requests.length === 0) {
           container.innerHTML = `<div class="empty-state"><i class="fas fa-clipboard-list"></i><p>No active requests found.</p></div>`;
           return;
@@ -1813,6 +1872,7 @@
             </div>
             <div id="fullLiveMap" style="height: 75vh; border-radius: 12px; z-index: 1; box-shadow: var(--shadow-lg); border: 2px solid #ddd;"></div>
         `;
+        
         setTimeout(async () => {
             const map = L.map('fullLiveMap').setView([23.6850, 90.3563], 7);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1827,12 +1887,17 @@
                     if(donor.lat && donor.lng) {
                         donorCount++;
                         const marker = L.marker([donor.lat, donor.lng]).addTo(map);
+                        
+                        const callAction = currentUser ? 
+                            `<a href="tel:${donor.phoneNumber}" class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; color: white; margin-top: 8px; display: inline-block;"><i class="fas fa-phone"></i> Call Donor</a>` : 
+                            `<button onclick="promptRegistration()" class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; color: white; margin-top: 8px; border: none; cursor: pointer;"><i class="fas fa-phone"></i> Call Donor</button>`;
+
                         marker.bindPopup(`
                             <div style="text-align: center; padding: 5px;">
                                 <strong>${donor.fullName}</strong><br/>
                                 <span style="background: var(--primary); color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; display: inline-block; margin: 4px 0;">${donor.bloodGroup}</span><br/>
                                 <i class="fas fa-map-marker-alt"></i> ${donor.district}, ${donor.upazila}<br/>
-                                <a href="tel:${donor.phoneNumber}" class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; Color: white; margin-top: 8px;"><i class="fas fa-phone"></i> Call Donor</a>
+                                ${callAction}
                             </div>
                         `);
                     }
@@ -1860,13 +1925,13 @@
               <span class="profile-badge">${userProfile?.isDonor ? 'Blood Donor' : 'Donor Seeker'}</span>
               <span class="profile-badge" style="margin-left: 8px; background: ${userProfile?.approvalStatus === 'approved' ? '#2e7d32' : '#f57c00'};">${userProfile?.approvalStatus || 'pending'}</span>
               ${userProfile?.role !== 'user' ?
-                `
+              `
                 <span class="profile-badge" style="margin-left: 8px; background: #ffd700; color: #333; font-weight: 700;">
                   ${roleDisplayName}
                 </span>
               ` : ''}
               ${hasAdminAccess() ?
-                `
+              `
                 <a href="admin.html" class="btn btn-primary" style="margin-top: 12px; display: inline-flex;">
                   <i class="fas fa-shield-alt"></i> Go to Admin Panel
                 </a>
@@ -1878,12 +1943,11 @@
             <h3><i class="fas fa-exchange-alt"></i> Switch Account Type</h3>
             <p style="margin-bottom: 16px; color: #666;">
               ${userProfile?.isDonor ?
-                'You are currently registered as a <strong>Blood Donor</strong>. You can switch to become a Donor Seeker.'
-                :
+                'You are currently registered as a <strong>Blood Donor</strong>. You can switch to become a Donor Seeker.' :
                 'You are currently registered as a <strong>Donor Seeker</strong>. You can switch to become a Blood Donor (requires approval).'}
             </p>
             ${!userProfile?.isDonor ?
-              `
+            `
               <div style="background: #fff3e0; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
                 <i class="fas fa-info-circle"></i> Switching to Donor will require admin approval.
               </div>
@@ -1898,7 +1962,7 @@
             <div class="form-group"><label>Phone Number</label><input type="tel" id="profilePhone" value="${userProfile?.phoneNumber || ''}" required></div>
             <div class="form-group"><label>NID / Birth Registration No.</label><input type="text" id="profileNid" value="${userProfile?.nidNumber || ''}" required></div>
             ${userProfile?.isDonor ?
-              `
+            `
               <div class="form-group">
                 <label>Blood Group</label>
                 <select id="profileBloodGroup">
@@ -1924,6 +1988,7 @@
           </form>
         </div>
       `;
+      
       document.getElementById('profileForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         try {
@@ -1978,6 +2043,7 @@
       const district = document.getElementById('searchDistrict')?.value || '';
       const results = document.getElementById('donorResults');
       if (!results) return;
+      
       results.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
       
       try {
@@ -1987,12 +2053,12 @@
         const snapshot = await query.limit(50).get();
         let donors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         if (district) donors = donors.filter(d => d.district === district);
+        
         if (donors.length === 0) {
           results.innerHTML = '<div class="empty-state"><i class="fas fa-users-slash"></i><p>No approved donors found.</p></div>';
           return;
         }
         
-        // Render 2 IN A ROW GRID Container
         results.innerHTML = `
           <h2 style="margin-bottom: 20px;">${donors.length} Donor(s) Found</h2>
           <div id="donorList" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;"></div>
@@ -2003,7 +2069,7 @@
           const roleSymbol = getRoleSymbol(donor.role);
           const card = document.createElement('div');
           card.className = 'request-card';
-          card.style.marginBottom = '0'; // Handled by CSS grid gap
+          card.style.marginBottom = '0';
           card.innerHTML = `
             <div class="request-header"><div><h3>${roleSymbol}${donor.fullName}</h3><span class="request-blood-group">${donor.bloodGroup}</span></div><span class="badge" style="background:#2e7d32;color:white;padding:4px 12px;border-radius:20px;"><i class="fas fa-check-circle"></i> Verified Donor</span></div>
             <div class="request-details"><div class="request-detail"><i class="fas fa-map-marker-alt"></i><span>${donor.district}, ${donor.upazila || ''}</span></div><div class="request-detail"><i class="fas fa-phone"></i><span>${donor.phoneNumber ? donor.phoneNumber.slice(0,8)+'***' : 'N/A'}</span></div></div>
@@ -2011,13 +2077,12 @@
               ${currentUser ? `
                 <button onclick="revealContact('${donor.id}', '${donor.phoneNumber}', '${donor.fullName}')" class="btn btn-primary" style="flex: 1;"><i class="fas fa-phone"></i> Reveal Contact</button>
                 <button onclick="router.navigate('dm-donor')" class="btn btn-outline" style="flex: 1;"><i class="fas fa-comment"></i> Message</button>
-              ` : `<button onclick="router.navigate('login')" class="btn btn-outline btn-block">Login to Contact</button>`}
+              ` : `<button onclick="promptRegistration()" class="btn btn-outline btn-block">Login to Contact</button>`}
             </div>
           `;
           donorList.appendChild(card);
         });
 
-        // Add media query rule dynamically for small mobile devices fallback to single column
         if (window.innerWidth < 768) {
           donorList.style.gridTemplateColumns = '1fr';
         }
@@ -2095,12 +2160,9 @@
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
           };
           
-          // 1. Save Request to DB
           await db.collection('bloodRequests').add(requestData);
           
-          // 2. Automatically share to Group Chat
           const chatMessage = `🚨 URGENT BLOOD REQUEST 🚨\nBlood Group: ${requestData.bloodGroup}\nPatient: ${requestData.patientName}\nUnits: ${requestData.unitsNeeded}\nHospital: ${requestData.hospitalName}\nDate: ${requestData.requiredBy} ${requestData.requiredTime}\nContact: ${requestData.contactNumber}`;
-          
           await db.collection('chatMessages').add({
             userId: currentUser.uid,
             userName: userProfile.fullName,
@@ -2109,23 +2171,18 @@
             message: chatMessage,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
           });
-
+          
           Toast.show('Request submitted successfully and shared in Group Chat!', 'success');
           
-          // 3. Prompt user for Facebook Official Group Post
           const fbConfirm = confirm('Do you want to post this blood request to the official "blood donor bd" Facebook group?');
           if (fbConfirm) {
             const fbText = `🚨 URGENT BLOOD REQUEST 🚨\n\nBlood Group: ${requestData.bloodGroup}\nPatient Name: ${requestData.patientName}\nHospital: ${requestData.hospitalName}\nUnits Needed: ${requestData.unitsNeeded}\nRequired Date: ${requestData.requiredBy} ${requestData.requiredTime}\nContact: ${requestData.contactNumber}\nNotes: ${requestData.additionalNotes}`;
-            
             try {
-              // Copy text to clipboard so the user can just paste it directly when Facebook opens
               await navigator.clipboard.writeText(fbText);
               Toast.show('Post content copied to clipboard! Please paste it in the group.', 'info');
             } catch (err) {
               console.warn('Could not copy to clipboard automatically', err);
             }
-            
-            // Redirect to Facebook group
             window.open('https://www.facebook.com/groups/566092693108418/?ref=share&mibextid=NSMWBT', '_blank');
           }
 
@@ -2162,13 +2219,13 @@
             const reqTimeStr = req.requiredTime || '23:59';
             const requiredDateTime = new Date(`${reqDateStr}T${reqTimeStr}`);
 
-            // Expire logic
             if (requiredDateTime < now) {
                 db.collection('bloodRequests').doc(doc.id).delete();
                 return;
             }
             requests.push(req);
         });
+        
         if (requests.length === 0) {
             container.innerHTML = `<div class="empty-state"><i class="fas fa-clipboard-list"></i><p>No active requests found.</p><button onclick="router.navigate('request-blood')" class="btn btn-primary" style="margin-top:16px;">Create Request</button></div>`;
             return;
