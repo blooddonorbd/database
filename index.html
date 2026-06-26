@@ -836,8 +836,8 @@
           <button id="logoutBtn" class="btn-logout" style="display: none;">
             <i class="fas fa-sign-out-alt"></i>
           </button>
-        </div></div>
-        
+        </div></div></mdiv>
+   
         <div><button class="mobile-menu-btn">
           <i class="fas fa-bars"></i>
         </button>
@@ -861,7 +861,6 @@
         <a href="https://www.facebook.com/MD.Ashfaq01" target="_blank" rel="noopener" title="Administrator">
           <i class="fas fa-user-shield"></i>
         </a>
-        
       </div>
     </div>
     <div class="footer-section">
@@ -907,7 +906,6 @@
       'Pirojpur', 'Rajbari', 'Rajshahi', 'Rangamati', 'Rangpur', 'Satkhira', 'Shariatpur',
       'Sherpur', 'Sirajganj', 'Sunamganj', 'Sylhet', 'Tangail', 'Thakurgaon'
     ];
-
     // Inject datalist globally for input hints
     const datalist = document.createElement('datalist');
     datalist.id = 'districtsList';
@@ -923,12 +921,11 @@
       messagingSenderId: "271945142840",
       appId: "1:271945142840:web:b0edefddb55cac5f604ccd"
     };
-
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
-
+    
     // App State
     let currentUser = null;
     let userProfile = null;
@@ -1111,7 +1108,7 @@
         }
       }
     };
-
+    
     // Live Location Update System
     function updateLiveLocation() {
         if (navigator.geolocation && currentUser && userProfile?.isDonor) {
@@ -1178,15 +1175,14 @@
         }
       }
     };
-
+    
     // Switch User Type Function
     async function switchUserType() {
       if (!currentUser || !userProfile) return;
       const newType = userProfile.isDonor ? 'seeker' : 'donor';
-      const confirmMsg = userProfile.isDonor ? 
+      const confirmMsg = userProfile.isDonor ?
         'Switch to Donor Seeker?\nYou will lose donor status.' :
         'Switch to Blood Donor?\nYour account will need admin approval.';
-      
       if (!confirm(confirmMsg)) return;
       
       try {
@@ -1538,7 +1534,6 @@
       
       const roleDisplayName = getRoleDisplayName(userProfile?.role);
       const roleSymbol = getRoleSymbol(userProfile?.role);
-
       main.innerHTML = `
         <h1 style="margin-bottom: 24px;">Welcome, ${roleSymbol}${userProfile?.fullName?.split(' ')[0] || 'User'}!</h1>
         
@@ -1546,7 +1541,8 @@
           <span class="badge" style="background: ${userProfile?.isDonor ? '#b71c1c' : '#1565c0'}; color: white; padding: 6px 16px; border-radius: 20px;">
             <i class="fas fa-${userProfile?.isDonor ? 'heart' : 'search'}"></i> ${userTypeLabel}
           </span>
-          ${userProfile?.role !== 'user' ? `
+          ${userProfile?.role !== 'user' ?
+            `
             <span class="badge" style="background: #ffd700; color: #333; padding: 6px 16px; border-radius: 20px; font-weight: 700;">
               ${roleDisplayName}
             </span>
@@ -1570,7 +1566,8 @@
         </div>
         
         <div class="dashboard-grid">
-          ${userProfile?.isDonor ? `
+          ${userProfile?.isDonor ?
+            `
             <div class="stat-card">
               <div class="stat-icon"><i class="fas fa-tint"></i></div>
               <div class="stat-info"><h3>Blood Group</h3><p>${userProfile?.bloodGroup || 'N/A'}</p></div>
@@ -1666,7 +1663,6 @@
           }
           activeRequests.push(req);
         });
-
         if (activeRequests.length === 0) {
           container.innerHTML = '<p style="color: #757575; font-size: 14px; margin: 0;">No urgent blood requests active right now.</p>';
           return;
@@ -1675,7 +1671,6 @@
         // Sort by emergency priority: 'emergency' -> 'urgent' -> 'normal'
         const urgencyWeight = { 'emergency': 3, 'urgent': 2, 'normal': 1 };
         activeRequests.sort((a, b) => (urgencyWeight[b.urgency] || 1) - (urgencyWeight[a.urgency] || 1));
-
         container.innerHTML = `<div style="display: flex; flex-direction: column; gap: 10px; max-height: 260px; overflow-y: auto;">
           ${activeRequests.map(req => {
             const isEmg = req.urgency === 'emergency';
@@ -1695,7 +1690,7 @@
                 </div>
               </div>
             `;
-          }).join('')}
+        }).join('')}
         </div>`;
       } catch (err) {
         container.innerHTML = '<p style="color: #d32f2f; font-size: 13px;">Failed to fetch urgent requests.</p>';
@@ -1714,7 +1709,6 @@
       const container = document.getElementById('allRequestsList');
       if (!container) return;
       container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading requests...</div>';
-
       try {
         const snapshot = await db.collection('bloodRequests').where('status', '==', 'active').get();
         const now = new Date();
@@ -1733,7 +1727,6 @@
             }
             requests.push(req);
         });
-
         if (requests.length === 0) {
           container.innerHTML = `<div class="empty-state"><i class="fas fa-clipboard-list"></i><p>No active requests found.</p></div>`;
           return;
@@ -1755,7 +1748,7 @@
                 <div class="request-detail"><i class="fas fa-clock"></i><span>Posted: ${createdAt.toLocaleString()}</span></div>
             </div>
             <div class="request-actions">
-               <a href="tel:${req.contactNumber}" class="btn btn-primary"><i class="fas fa-phone"></i> Call Now</a>
+                <a href="tel:${req.contactNumber}" class="btn btn-primary"><i class="fas fa-phone"></i> Call Now</a>
             </div>
           `;
           container.appendChild(card);
@@ -1821,12 +1814,14 @@
               <h2>${roleSymbol}${userProfile?.fullName}</h2>
               <span class="profile-badge">${userProfile?.isDonor ? 'Blood Donor' : 'Donor Seeker'}</span>
               <span class="profile-badge" style="margin-left: 8px; background: ${userProfile?.approvalStatus === 'approved' ? '#2e7d32' : '#f57c00'};">${userProfile?.approvalStatus || 'pending'}</span>
-              ${userProfile?.role !== 'user' ? `
+              ${userProfile?.role !== 'user' ?
+                `
                 <span class="profile-badge" style="margin-left: 8px; background: #ffd700; color: #333; font-weight: 700;">
                   ${roleDisplayName}
                 </span>
               ` : ''}
-              ${hasAdminAccess() ? `
+              ${hasAdminAccess() ?
+                `
                 <a href="admin.html" class="btn btn-primary" style="margin-top: 12px; display: inline-flex;">
                   <i class="fas fa-shield-alt"></i> Go to Admin Panel
                 </a>
@@ -1838,10 +1833,12 @@
             <h3><i class="fas fa-exchange-alt"></i> Switch Account Type</h3>
             <p style="margin-bottom: 16px; color: #666;">
               ${userProfile?.isDonor ?
-                'You are currently registered as a <strong>Blood Donor</strong>. You can switch to become a Donor Seeker.' :
+                'You are currently registered as a <strong>Blood Donor</strong>. You can switch to become a Donor Seeker.'
+                :
                 'You are currently registered as a <strong>Donor Seeker</strong>. You can switch to become a Blood Donor (requires approval).'}
             </p>
-            ${!userProfile?.isDonor ? `
+            ${!userProfile?.isDonor ?
+              `
               <div style="background: #fff3e0; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
                 <i class="fas fa-info-circle"></i> Switching to Donor will require admin approval.
               </div>
@@ -1855,7 +1852,8 @@
             <div class="form-group"><label>Full Name</label><input type="text" id="profileFullName" value="${userProfile?.fullName || ''}" required></div>
             <div class="form-group"><label>Phone Number</label><input type="tel" id="profilePhone" value="${userProfile?.phoneNumber || ''}" required></div>
             <div class="form-group"><label>NID / Birth Registration No.</label><input type="text" id="profileNid" value="${userProfile?.nidNumber || ''}" required></div>
-            ${userProfile?.isDonor ? `
+            ${userProfile?.isDonor ?
+              `
               <div class="form-group">
                 <label>Blood Group</label>
                 <select id="profileBloodGroup">
@@ -2051,8 +2049,41 @@
             status: 'active',
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
           };
+          
+          // 1. Save Request to DB
           await db.collection('bloodRequests').add(requestData);
-          Toast.show('Request submitted successfully!', 'success');
+          
+          // 2. Automatically share to Group Chat
+          const chatMessage = `🚨 URGENT BLOOD REQUEST 🚨\nBlood Group: ${requestData.bloodGroup}\nPatient: ${requestData.patientName}\nUnits: ${requestData.unitsNeeded}\nHospital: ${requestData.hospitalName}\nDate: ${requestData.requiredBy} ${requestData.requiredTime}\nContact: ${requestData.contactNumber}`;
+          
+          await db.collection('chatMessages').add({
+            userId: currentUser.uid,
+            userName: userProfile.fullName,
+            userRole: userProfile.role || 'user',
+            isDonor: userProfile.isDonor || false,
+            message: chatMessage,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          Toast.show('Request submitted successfully and shared in Group Chat!', 'success');
+          
+          // 3. Prompt user for Facebook Official Group Post
+          const fbConfirm = confirm('Do you want to post this blood request to the official "blood donor bd" Facebook group?');
+          if (fbConfirm) {
+            const fbText = `🚨 URGENT BLOOD REQUEST 🚨\n\nBlood Group: ${requestData.bloodGroup}\nPatient Name: ${requestData.patientName}\nHospital: ${requestData.hospitalName}\nUnits Needed: ${requestData.unitsNeeded}\nRequired Date: ${requestData.requiredBy} ${requestData.requiredTime}\nContact: ${requestData.contactNumber}\nNotes: ${requestData.additionalNotes}`;
+            
+            try {
+              // Copy text to clipboard so the user can just paste it directly when Facebook opens
+              await navigator.clipboard.writeText(fbText);
+              Toast.show('Post content copied to clipboard! Please paste it in the group.', 'info');
+            } catch (err) {
+              console.warn('Could not copy to clipboard automatically', err);
+            }
+            
+            // Redirect to Facebook group
+            window.open('https://www.facebook.com/groups/566092693108418/?ref=share&mibextid=NSMWBT', '_blank');
+          }
+
           router.navigate('my-requests');
         } catch (error) {
           Toast.show('Failed to submit request', 'error');
@@ -2093,7 +2124,6 @@
             }
             requests.push(req);
         });
-
         if (requests.length === 0) {
             container.innerHTML = `<div class="empty-state"><i class="fas fa-clipboard-list"></i><p>No active requests found.</p><button onclick="router.navigate('request-blood')" class="btn btn-primary" style="margin-top:16px;">Create Request</button></div>`;
             return;
@@ -2338,7 +2368,7 @@
                   </div>
                 ` : ''}
                 
-                <div style="background: ${isOwnMessage ? '#b71c1c' : '#f0f0f0'}; color: ${isOwnMessage ? 'white' : '#333'}; padding: 10px 15px; border-radius: 18px; word-wrap: break-word;">
+                <div style="background: ${isOwnMessage ? '#b71c1c' : '#f0f0f0'}; color: ${isOwnMessage ? 'white' : '#333'}; padding: 10px 15px; border-radius: 18px; word-wrap: break-word; white-space: pre-wrap;">
                   ${msg.message}
                 </div>
                 <div style="font-size: 10px; color: #999; margin-top: 4px; ${isOwnMessage ? 'text-align: right;' : ''}">
@@ -2454,28 +2484,28 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('logoutBtn')?.addEventListener('click', () => authSystem.logout());
-  
-  const mobileBtn = document.querySelector('.mobile-menu-btn');
-  const navMenu = document.getElementById('navMenu');
-  
-  if (mobileBtn && navMenu) {
-    // Toggle menu on hamburger click
-    mobileBtn.addEventListener('click', () => navMenu.classList.toggle('active'));
-    
-    // Close menu when any nav link is clicked
-    navMenu.addEventListener('click', (e) => {
-      if (e.target.tagName === 'A' || e.target.closest('a')) {
-        navMenu.classList.remove('active');
+      document.getElementById('logoutBtn')?.addEventListener('click', () => authSystem.logout());
+      
+      const mobileBtn = document.querySelector('.mobile-menu-btn');
+      const navMenu = document.getElementById('navMenu');
+      
+      if (mobileBtn && navMenu) {
+        // Toggle menu on hamburger click
+        mobileBtn.addEventListener('click', () => navMenu.classList.toggle('active'));
+        
+        // Close menu when any nav link is clicked
+        navMenu.addEventListener('click', (e) => {
+          if (e.target.tagName === 'A' || e.target.closest('a')) {
+            navMenu.classList.remove('active');
+          }
+        });
       }
+      
+      window.addEventListener('popstate', () => {
+        const hash = window.location.hash.substring(1);
+        router.navigate(hash && router.routes[hash] ? hash : 'home');
+      });
     });
-  }
-  
-  window.addEventListener('popstate', () => {
-    const hash = window.location.hash.substring(1);
-    router.navigate(hash && router.routes[hash] ? hash : 'home');
-  });
-});
 
     // Export to global scope
     window.router = router;
