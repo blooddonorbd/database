@@ -2,435 +2,788 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Panel · Blood Donor BD</title>
-  
-  <!-- Firebase SDK -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <title>Blood Donor BD · Admin Panel</title>
+  <!-- Firebase & Libraries -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-  
-  <!-- External Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
   <!-- Fonts & Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="admin.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #dc2626; --primary-dark: #991b1b; --primary-light: #fecaca;
+      --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+      --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --text-secondary: #475569;
+      --border: #e2e8f0; --shadow: 0 4px 12px rgba(0,0,0,0.05);
+      --radius: 20px; --radius-sm: 14px;
+      --sidebar-width: 280px;
+    }
+    body {
+      font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
+      line-height: 1.5; -webkit-font-smoothing: antialiased; height: 100vh; overflow: hidden;
+    }
+    .app-container { display: flex; height: 100vh; background: var(--bg); }
+    .sidebar {
+      width: var(--sidebar-width); background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-right: 1px solid var(--border); display: flex; flex-direction: column;
+      box-shadow: var(--shadow); z-index: 20; transition: transform 0.3s ease;
+    }
+    .sidebar-header { padding: 28px 20px 20px; text-align: center; border-bottom: 1px solid var(--border); }
+    .logo { width: 56px; height: 56px; border-radius: 28px; margin-bottom: 8px; box-shadow: 0 8px 16px rgba(220,38,38,0.2); }
+    .sidebar-header h2 { font-size: 20px; font-weight: 700; }
+    .sidebar-header p { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+    .nav-menu { flex: 1; padding: 16px 12px; overflow-y: auto; list-style: none; }
+    .nav-item {
+      display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+      margin-bottom: 4px; border-radius: var(--radius-sm); color: var(--text-secondary);
+      font-weight: 500; transition: all 0.2s; cursor: pointer; font-size: 15px;
+    }
+    .nav-item i { width: 24px; font-size: 18px; text-align: center; }
+    .nav-item.active { background: var(--primary); color: white; box-shadow: 0 8px 16px rgba(220,38,38,0.25); }
+    .nav-item .badge { background: var(--danger); color: white; padding: 2px 10px; border-radius: 20px; font-size: 12px; margin-left: auto; }
+    .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
+    .admin-profile { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding: 12px; background: #f1f5f9; border-radius: 16px; }
+    .avatar { width: 40px; height: 40px; background: var(--primary); border-radius: 20px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; }
+    .btn-logout {
+      width: 100%; padding: 12px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 14px; color: var(--danger); font-weight: 600; display: flex; align-items: center;
+      justify-content: center; gap: 8px; cursor: pointer; transition: 0.2s;
+    }
+    .btn-logout:hover { background: var(--danger); color: white; }
+    .back-link { display: block; text-align: center; margin-top: 12px; color: var(--text-secondary); font-size: 13px; text-decoration: none; }
+    
+    .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .top-bar {
+      background: rgba(255,255,255,0.8); backdrop-filter: blur(12px); padding: 12px 24px;
+      display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border);
+    }
+    .menu-toggle { display: none; background: none; border: none; font-size: 24px; cursor: pointer; }
+    .page-title { font-size: 22px; font-weight: 700; }
+    .content-scroll { flex: 1; overflow-y: auto; padding: 24px; }
+    
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--surface); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow);
+      display: flex; align-items: center; gap: 16px;
+    }
+    .stat-icon { width: 52px; height: 52px; border-radius: 16px; background: #fee2e2; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 24px; }
+    .table-card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); overflow: auto; margin-bottom: 24px; }
+    .table { width: 100%; border-collapse: collapse; }
+    .table th { background: #f8fafc; padding: 14px 16px; text-align: left; font-weight: 600; font-size: 13px; color: var(--text-secondary); position: sticky; top: 0; }
+    .table td { padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .blood-badge { background: var(--primary); color: white; padding: 4px 12px; border-radius: 30px; font-weight: 600; font-size: 13px; display: inline-block; }
+    .status-badge { padding: 4px 12px; border-radius: 30px; font-size: 12px; font-weight: 600; color: white; display: inline-block; }
+    .role-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 30px; font-size: 12px; font-weight: 600; background: #f1f5f9; }
+    .btn-icon { background: #f1f5f9; border: none; width: 34px; height: 34px; border-radius: 10px; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; margin-right: 4px; }
+    .btn-icon:hover { background: var(--primary); color: white; }
+    .btn-icon.success:hover { background: var(--success); color: white; }
+    .btn-primary {
+      padding: 12px 24px; background: var(--primary); color: white; border: none;
+      border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.2s;
+    }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .form-input {
+      padding: 12px; border-radius: 12px; border: 1px solid var(--border); width: 100%;
+      font-size: 14px; margin-bottom: 10px;
+    }
+    .form-select {
+      padding: 12px; border-radius: 12px; border: 1px solid var(--border); font-size: 14px;
+    }
+    
+    .toast-container { position: fixed; top: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: white; padding: 14px 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 10px; }
+    
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    
+    /* Contact Log specific styles */
+    .contact-log-card {
+      background: white; padding: 16px; border-radius: 12px; margin-bottom: 12px;
+      border-left: 4px solid var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .contact-log-card .timestamp { font-size: 12px; color: var(--text-secondary); }
+    .contact-log-card .phone-number { 
+      background: #f1f5f9; padding: 4px 12px; border-radius: 20px; 
+      font-family: monospace; font-size: 14px; letter-spacing: 0.5px;
+    }
+    
+    @media (max-width: 768px) {
+      .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .menu-toggle { display: block; }
+    }
+  </style>
 </head>
 <body>
-  <div id="loadingOverlay" class="loading-overlay">
-    <div class="loader"></div>
-    <p>Loading Admin Panel...</p>
+  <div class="toast-container" id="toastContainer"></div>
+  <div id="userModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:white; padding:24px; border-radius:20px; width:90%; max-width:500px; max-height:80vh; overflow-y:auto; position:relative;">
+    <button onclick="document.getElementById('userModal').style.display='none'" style="position:absolute; top:10px; right:10px; border:none; background:none; cursor:pointer;"><i class="fas fa-times"></i></button>
+    <h3>User Details</h3>
+    <div id="userModalContent" style="margin-top:15px;"></div>
   </div>
-
-  <div id="toastContainer" class="toast-container"></div>
-
-  <div id="adminWrapper" class="admin-container" style="display: none;">
-    <aside class="admin-sidebar" id="sidebar">
+</div>
+  
+  <div class="app-container" id="appContainer" style="display: none;">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
-        <img src="https://i.ibb.co/S4NpN5F5/1000010374.png" alt="Logo" style="width:50px;height:50px;border-radius:50%;margin-bottom:10px;">
+        <img src="https://i.ibb.co/S4NpN5F5/1000010374.png" alt="logo" class="logo">
         <h2>Blood Donor BD</h2>
-        <p>Administrator Panel</p>
+        <p>Administration</p>
       </div>
-      
-      <ul class="sidebar-menu">
-        <li class="menu-item active" data-tab="dashboard"><a href="#"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
-        <li class="menu-item" data-tab="pending"><a href="#"><i class="fas fa-clock"></i> Pending Approvals <span class="badge" id="pendingCount">0</span></a></li>
-        <li class="menu-item" data-tab="users"><a href="#"><i class="fas fa-users"></i> All Users</a></li>
-        <li class="menu-item" data-tab="donors"><a href="#"><i class="fas fa-heart"></i> Approved Donors</a></li>
-        <li class="menu-item" data-tab="requests"><a href="#"><i class="fas fa-bell"></i> Blood Requests</a></li>
-        <li class="menu-item" data-tab="certificates"><a href="#"><i class="fas fa-certificate"></i> Certificates</a></li>
-        <li class="menu-item" data-tab="email"><a href="#"><i class="fas fa-envelope"></i> Email Donors</a></li>
-        <li class="menu-item" data-tab="admins"><a href="#"><i class="fas fa-shield-alt"></i> Administrators</a></li>
-        <li class="menu-item" data-tab="settings"><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+      <ul class="nav-menu" id="navMenu">
+        <li class="nav-item active" data-tab="dashboard"><i class="fas fa-chart-pie"></i>Dashboard</li>
+        <li class="nav-item" data-tab="pending"><i class="fas fa-clock"></i>Pending<span class="badge" id="pendingBadge">0</span></li>
+        <li class="nav-item" data-tab="users"><i class="fas fa-users"></i>All Users</li>
+        <li class="nav-item" data-tab="donors"><i class="fas fa-heart"></i>Donors</li>
+        <li class="nav-item" data-tab="requests"><i class="fas fa-bell"></i>Blood Requests</li>
+        <li class="nav-item" data-tab="contact-logs"><i class="fas fa-phone-alt"></i>Contact Reveals</li>
+        <li class="nav-item" data-tab="certificates"><i class="fas fa-certificate"></i>Certificates</li>
+        <li class="nav-item" data-tab="roles"><i class="fas fa-shield-haltered"></i>Roles</li>
       </ul>
-      
       <div class="sidebar-footer">
-        <div class="admin-info">
-          <div class="admin-avatar" id="adminAvatar">A</div>
-          <div><strong id="adminName">Admin</strong><small id="adminEmail">admin@email.com</small></div>
+        <div class="admin-profile">
+          <div class="avatar" id="adminAvatar">A</div>
+          <div><strong id="adminName">Admin</strong><small id="adminEmail">admin@bd.com</small></div>
         </div>
-        <button class="btn-logout" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
-        <a href="index.html" class="back-to-site"><i class="fas fa-arrow-left"></i> Back to Website</a>
+        <button class="btn-logout" id="logoutBtn"><i class="fas fa-right-from-bracket"></i>Logout</button>
+        <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> Back to site</a>
       </div>
     </aside>
-
-    <main class="admin-main">
-      <header class="admin-header">
-        <div class="header-left">
-          <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
-          <h1 id="pageTitle">Dashboard</h1>
+    
+    <main class="main-content">
+      <div class="top-bar">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+          <span class="page-title" id="pageTitle">Dashboard</span>
         </div>
-        <div class="header-right">
-          <span class="header-date" id="currentDateTime"></span>
-        </div>
-      </header>
-      <div class="admin-content-area" id="contentArea">
-        <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+        <span style="color: var(--text-secondary);" id="currentDate"></span>
       </div>
+      <div class="content-scroll" id="contentArea"></div>
     </main>
   </div>
 
-  <div class="modal-overlay" id="modalOverlay"></div>
-  <div class="modal" id="modal">
-    <div class="modal-header"><h3 id="modalTitle">Modal</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
-    <div class="modal-body" id="modalBody"></div>
-    <div class="modal-footer" id="modalFooter"></div>
-  </div>
-
   <script>
-    // Firebase Config
-    const firebaseConfig = {
-      apiKey: "AIzaSyCnky8bzx3KuFoujU5DSlLRYSZgiAF8840",
-      authDomain: "blood-donor-bd-2025.firebaseapp.com",
-      projectId: "blood-donor-bd-2025",
-      storageBucket: "blood-donor-bd-2025.firebasestorage.app",
-      messagingSenderId: "271945142840",
-      appId: "1:271945142840:web:b0edefddb55cac5f604ccd"
-    };
-    
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    
-    let currentAdmin = null, currentTab = 'dashboard';
-    let pendingUsers = [], allUsers = [], allDonors = [], allRequests = [], allCertificates = [];
-    
-    class Toast {
-      static show(msg, type='info') {
-        const c = document.getElementById('toastContainer');
-        const t = document.createElement('div');
-        t.className = `toast ${type}`;
-        t.innerHTML = `<i class="fas fa-${type==='success'?'check-circle':type==='error'?'exclamation-circle':'info-circle'}"></i><span>${msg}</span>`;
-        c.appendChild(t); setTimeout(() => t.remove(), 5000);
+    (function() {
+      const firebaseConfig = {
+        apiKey: "AIzaSyCnky8bzx3KuFoujU5DSlLRYSZgiAF8840",
+        authDomain: "blood-donor-bd-2025.firebaseapp.com",
+        projectId: "blood-donor-bd-2025",
+        storageBucket: "blood-donor-bd-2025.firebasestorage.app",
+        messagingSenderId: "271945142840",
+        appId: "1:271945142840:web:b0edefddb55cac5f604ccd"
+      };
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const db = firebase.firestore();
+
+      const SUPER_ADMINS = ['blooddonorbd025@gmail.com', 'mdashfaqurrahmantanim@gmail.com'];
+      
+      let currentUser = null;
+      let currentRole = 'user';
+      
+      function showToast(msg, type='info') {
+        const container = document.getElementById('toastContainer');
+        const el = document.createElement('div');
+        el.className = `toast ${type}`;
+        let icon = type==='success'?'check-circle':type==='error'?'exclamation-circle':'info-circle';
+        el.innerHTML = `<i class="fas fa-${icon}" style="color:var(--${type})"></i> ${msg}`;
+        container.appendChild(el);
+        setTimeout(() => el.remove(), 4000);
       }
-    }
+
+      function getRoleSymbol(role) {
+        if (role === 'main_admin') return '👑';
+        if (role === 'admin') return '🛡️';
+        if (role === 'moderator') return '🔰';
+        return '👤';
+      }
+
+      function getRoleDisplayName(role) {
+        if (role === 'main_admin') return '👑 Administrator';
+        if (role === 'admin') return '🛡️ Admin';
+        if (role === 'moderator') return '🔰 Moderator';
+        return '👤 User';
+      }
+
+      function updateRoleUI() {
+        const rolesTab = document.querySelector('[data-tab="roles"]');
+        if (rolesTab) {
+          rolesTab.style.display = (currentRole === 'main_admin' || currentRole === 'admin') ? 'flex' : 'none';
+        }
+      }
+
+      function canManageRoles() { return currentRole === 'main_admin' || currentRole === 'admin'; }
+      function canDelete() { return currentRole === 'main_admin' || currentRole === 'admin'; }
+      function canManageCertificates() { return currentRole === 'main_admin' || currentRole === 'admin'; }
+      function canViewContactLogs() { return currentRole === 'main_admin' || currentRole === 'admin'; }
+
+      async function refreshPendingCount() {
+        const snap = await db.collection('users').where('approvalStatus','==','pending').get();
+        const badge = document.getElementById('pendingBadge');
+        if(badge) badge.textContent = snap.size;
+        return snap.size;
+      }
+
+      function generateCertificateId() {
+        return 'BDC-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
+      }
+
+      function generateDonorId() {
+        return 'DNR-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+      }
+
+      auth.onAuthStateChanged(async (user) => {
+        if (!user) { window.location.href = 'index.html'; return; }
+        try {
+          const userDoc = await db.collection('users').doc(user.uid).get();
+          if (!userDoc.exists) { showToast('User profile not found', 'error'); auth.signOut(); return; }
+          const userData = userDoc.data();
+          
+          if (SUPER_ADMINS.includes(user.email)) currentRole = 'main_admin';
+          else if (userData.role === 'admin' || userData.role === 'main_admin') currentRole = userData.role;
+          else if (userData.role === 'moderator') currentRole = 'moderator';
+          else { showToast('Access denied', 'error'); auth.signOut(); return; }
+          
+          currentUser = { uid: user.uid, email: user.email, ...userData, role: currentRole };
+          
+          document.getElementById('adminAvatar').textContent = (userData.fullName || 'A').charAt(0);
+          document.getElementById('adminName').innerHTML = `${getRoleSymbol(currentRole)} ${userData.fullName || 'Admin'}`;
+          document.getElementById('adminEmail').textContent = user.email;
+          document.getElementById('appContainer').style.display = 'flex';
+          
+          updateRoleUI();
+          await refreshPendingCount();
+          setupNavigation();
+          loadTab('dashboard');
+          
+          setInterval(() => {
+            document.getElementById('currentDate').textContent = new Date().toLocaleString('en-GB', {dateStyle:'medium', timeStyle:'short'});
+          }, 1000);
+        } catch (e) {
+          showToast('Error: '+e.message, 'error');
+        }
+      });
+
+      function setupNavigation() {
+        document.getElementById('menuToggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+        document.querySelectorAll('.nav-item').forEach(item => {
+          item.addEventListener('click', (e) => {
+            const tab = item.dataset.tab;
+            if (!tab) return;
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            document.getElementById('pageTitle').textContent = item.textContent.replace(/\d/g,'').trim();
+            loadTab(tab);
+            if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
+          });
+        });
+        document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut().then(() => window.location.href='index.html'));
+      }
+
+      function loadTab(tab) {
+        const area = document.getElementById('contentArea');
+        switch(tab) {
+          case 'dashboard': loadDashboard(); break;
+          case 'pending': loadPending(); break;
+          case 'users': loadUsers(); break;
+          case 'donors': loadDonors(); break;
+          case 'requests': loadRequests(); break;
+          case 'contact-logs': loadContactLogs(); break;
+          case 'certificates': loadCertificates(); break;
+          case 'roles': loadRolesManagement(); break;
+        }
+      }
+
+      async function loadDashboard() {
+        const area = document.getElementById('contentArea');
+        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading stats...</p>';
+        const usersSnap = await db.collection('users').get();
+        const donorsSnap = await db.collection('users').where('isDonor','==',true).where('approvalStatus','==','approved').get();
+        const requestsSnap = await db.collection('bloodRequests').where('status','==','active').get();
+        const certsSnap = await db.collection('certificates').get();
+        const contactLogsSnap = await db.collection('contactLogs').get();
+        
+        area.innerHTML = `
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-icon"><i class="fas fa-users"></i></div><div><small>Total Users</small><h3>${usersSnap.size}</h3></div></div>
+            <div class="stat-card"><div class="stat-icon" style="background:#fecaca;"><i class="fas fa-heart"></i></div><div><small>Active Donors</small><h3>${donorsSnap.size}</h3></div></div>
+            <div class="stat-card"><div class="stat-icon" style="background:#fef3c7; color:var(--warning)"><i class="fas fa-bell"></i></div><div><small>Active Requests</small><h3>${requestsSnap.size}</h3></div></div>
+            <div class="stat-card"><div class="stat-icon" style="background:#ddd6fe; color:#7c3aed"><i class="fas fa-certificate"></i></div><div><small>Certificates</small><h3>${certsSnap.size}</h3></div></div>
+            <div class="stat-card"><div class="stat-icon" style="background:#dbeafe; color:#2563eb"><i class="fas fa-phone-alt"></i></div><div><small>Contact Reveals</small><h3>${contactLogsSnap.size}</h3></div></div>
+          </div>
+          
+          <div class="grid-2">
+            <div class="table-card" style="padding:20px;">
+              <h3 style="margin-bottom:16px;"><i class="fas fa-bell"></i> Recent Contact Reveals</h3>
+              <div id="dashboardRecentLogs">Loading...</div>
+            </div>
+            <div class="table-card" style="padding:20px;">
+              <h3 style="margin-bottom:16px;"><i class="fas fa-chart-bar"></i> Quick Overview</h3>
+              <p>Total Users: <strong>${usersSnap.size}</strong></p>
+              <p>Pending Approvals: <strong id="dashPendingCount">-</strong></p>
+              <p>Contact Reveals Today: <strong id="dashTodayReveals">-</strong></p>
+            </div>
+          </div>
+        `;
+        
+        // Load recent contact logs for dashboard
+        loadRecentContactLogsForDashboard();
+        refreshPendingCount().then(count => {
+          const el = document.getElementById('dashPendingCount');
+          if(el) el.textContent = count;
+        });
+        loadTodayRevealsCount();
+      }
+
+      async function loadRecentContactLogsForDashboard() {
+        const container = document.getElementById('dashboardRecentLogs');
+        if (!container) return;
+        try {
+          const snap = await db.collection('contactLogs').orderBy('timestamp','desc').limit(5).get();
+          if (snap.empty) {
+            container.innerHTML = '<p style="color:var(--text-secondary);">No contact reveals yet.</p>';
+            return;
+          }
+          container.innerHTML = snap.docs.map(d => {
+            const log = d.data();
+            const time = log.timestamp?.toDate?.() || new Date();
+            return `
+              <div class="contact-log-card">
+                <strong>${log.seekerName || 'Unknown'}</strong> revealed 
+                <strong>${log.donorName || 'Unknown'}</strong>'s number
+                <span class="phone-number">${log.contactType || 'phone'}</span>
+                <div class="timestamp">${time.toLocaleString('en-GB')}</div>
+              </div>
+            `;
+          }).join('');
+        } catch(e) {
+          container.innerHTML = '<p>Error loading logs.</p>';
+        }
+      }
+
+      async function loadTodayRevealsCount() {
+        const el = document.getElementById('dashTodayReveals');
+        if (!el) return;
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const snap = await db.collection('contactLogs')
+          .where('timestamp','>=', today)
+          .get();
+        el.textContent = snap.size;
+      }
+
+      // ==================== CONTACT LOGS TAB ====================
+      async function loadContactLogs() {
+        if (!canViewContactLogs()) {
+          document.getElementById('contentArea').innerHTML = '<p>Access denied. Only Administrators can view contact reveal logs.</p>';
+          return;
+        }
+        
+        const area = document.getElementById('contentArea');
+        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading contact reveal logs...</p>';
+        
+        try {
+          const snap = await db.collection('contactLogs').orderBy('timestamp','desc').limit(100).get();
+          
+          if (snap.empty) {
+            area.innerHTML = `
+              <div class="table-card" style="padding: 40px; text-align: center;">
+                <i class="fas fa-phone-slash" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
+                <h3>No Contact Reveals Yet</h3>
+                <p style="color: var(--text-secondary);">When users click "Reveal Contact", all information will appear here.</p>
+              </div>`;
+            return;
+          }
+          
+          let html = `
+            <div class="table-card">
+              <div style="padding:16px; display:flex; justify-content:space-between; align-items:center;">
+                <h3>📞 Contact Reveal Logs (${snap.size})</h3>
+                ${canDelete() ? `<button class="btn-primary" onclick="window._clearAllContactLogs()" style="background:var(--danger);"><i class="fas fa-trash"></i> Clear All Logs</button>` : ''}
+              </div>
+              <table class="table">
+                <tr>
+                  <th>Date/Time</th>
+                  <th>Seeker</th>
+                  <th>Donor</th>
+                  <th>Donor ID</th>
+                  <th>Seeker ID</th>
+                  <th>Type</th>
+                  <th>Actions</th>
+                </tr>`;
+          
+          snap.docs.forEach(d => {
+            const log = d.data();
+            const time = log.timestamp?.toDate?.() || new Date();
+            html += `<tr>
+              <td><small>${time.toLocaleString('en-GB', {dateStyle:'medium', timeStyle:'short'})}</small></td>
+              <td><strong>${log.seekerName || 'Unknown'}</strong></td>
+              <td><strong>${log.donorName || 'Unknown'}</strong></td>
+              <td><code>${log.donorId || 'N/A'}</code></td>
+              <td><code>${log.seekerId || 'N/A'}</code></td>
+              <td><span class="status-badge" style="background:var(--primary);">${log.contactType || 'reveal'}</span></td>
+              <td>
+                ${canDelete() ? `<button class="btn-icon" onclick="window._deleteContactLog('${d.id}')" title="Delete Log"><i class="fas fa-trash" style="color:var(--danger)"></i></button>` : ''}
+              </td>
+            </tr>`;
+          });
+          
+          html += `</table></div>`;
+          area.innerHTML = html;
+          
+          window._deleteContactLog = async (logId) => {
+            if (confirm('Delete this contact log entry?')) {
+              await db.collection('contactLogs').doc(logId).delete();
+              showToast('Log deleted', 'success');
+              loadContactLogs();
+            }
+          };
+          
+          window._clearAllContactLogs = async () => {
+            if (confirm('⚠️ Are you sure you want to delete ALL contact reveal logs? This cannot be undone.')) {
+              const batch = db.batch();
+              snap.docs.forEach(d => batch.delete(d.ref));
+              await batch.commit();
+              showToast('All contact logs cleared', 'success');
+              loadContactLogs();
+            }
+          };
+        } catch (e) {
+          area.innerHTML = `<p style="color:var(--danger);">Error loading contact logs: ${e.message}</p>`;
+        }
+      }
+
+      async function loadPending() {
+        const area = document.getElementById('contentArea');
+        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Fetching pending requests...</p>';
+        const snap = await db.collection('users').where('approvalStatus','==','pending').get();
+        if(snap.empty) { area.innerHTML = '<p>No pending approvals.</p>'; return; }
+        
+        const users = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        let html = `<div class="table-card"><table class="table"><tr><th>Name</th><th>Blood</th><th>Location</th><th>Action</th></tr>`;
+        users.forEach(u => {
+          html += `<tr>
+            <td><strong>${u.fullName}</strong><br><small>${u.phoneNumber || 'No phone'}</small></td>
+            <td><span class="blood-badge">${u.bloodGroup || 'N/A'}</span></td>
+            <td>${u.district || 'N/A'}, ${u.upazila || ''}</td>
+            <td>
+              <button class="btn-icon success" onclick="window._approveDonor('${u.id}')" title="Approve"><i class="fas fa-check"></i></button>
+              <button class="btn-icon" onclick="window._rejectDonor('${u.id}')" title="Reject"><i class="fas fa-times" style="color:var(--danger)"></i></button>
+            </td>
+          </tr>`;
+        });
+        area.innerHTML = html + `</table></div>`;
+        
+        window._approveDonor = async (id) => {
+          await db.collection('users').doc(id).update({approvalStatus:'approved', isDonor:true});
+          showToast('Approved','success'); loadPending(); refreshPendingCount();
+        };
+        window._rejectDonor = async (id) => {
+          if(confirm("Reject this donor?")) {
+            await db.collection('users').doc(id).update({approvalStatus:'rejected'});
+            showToast('Rejected','success'); loadPending(); refreshPendingCount();
+          }
+        };
+      }
+
+      async function loadUsers() { 
+  const area = document.getElementById('contentArea');
+  area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading all users...</p>';
+  const snap = await db.collection('users').get();
+  
+  let html = `<div class="table-card"><table class="table"><tr><th>User Details</th><th>Type</th><th>Status</th><th>Role</th><th>Actions</th></tr>`;
+  
+  snap.docs.forEach(d => {
+    const u = d.data();
+    const uId = d.id; // User ID
+    let bgStatus = u.approvalStatus === 'approved' ? 'var(--success)' : (u.approvalStatus === 'pending' ? 'var(--warning)' : 'var(--danger)');
     
-    function updateDateTime() {
-      const el = document.getElementById('currentDateTime');
-      if(el) el.textContent = new Date().toLocaleString('en-GB', {weekday:'short', day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
+    // কনভার্ট ইউজার ডাটা টু JSON স্ট্রিং পপ-আপে দেখানোর জন্য
+    const userDataJson = JSON.stringify(u).replace(/"/g, '&quot;');
+
+    html += `<tr style="cursor:pointer;" onclick="window._showUserDetails('${userDataJson}')">
+      <td><strong>${getRoleSymbol(u.role || 'user')} ${u.fullName || 'Unknown'}</strong><br><small>${u.email}</small></td>
+      <td>${u.isDonor ? '🩸 Donor' : '🔍 Seeker'}</td>
+      <td><span class="status-badge" style="background:${bgStatus}">${u.approvalStatus || 'N/A'}</span></td>
+      <td><span class="role-badge">${getRoleSymbol(u.role || 'user')} ${u.role || 'user'}</span></td>
+      <td>`;
+    if(canDelete() && u.email !== currentUser.email && !SUPER_ADMINS.includes(u.email)) {
+      html += `<button class="btn-icon" onclick="event.stopPropagation(); window._deleteDoc('users', '${d.id}')" title="Delete User"><i class="fas fa-trash" style="color:var(--danger)"></i></button>`;
     }
-    
-    async function loadPendingCount() {
-      try { const s = await db.collection('users').where('approvalStatus','==','pending').get(); document.getElementById('pendingCount').textContent = s.size; return s.size; }
-      catch(e) { return 0; }
-    }
-    
-    auth.onAuthStateChanged(async (user) => {
-      if(!user) { window.location.href='index.html'; return; }
-      try {
-        const doc = await db.collection('users').doc(user.uid).get();
-        if(!doc.exists || doc.data().role !== 'admin') { 
-          Toast.show('Access denied', 'error'); 
-          setTimeout(() => window.location.href='index.html', 2000); 
+    html += `</td></tr>`;
+  });
+  area.innerHTML = html + `</table></div>`;
+}
+
+// পপ-আপ দেখানোর ফাংশন
+window._showUserDetails = (dataStr) => {
+  const u = JSON.parse(dataStr);
+  const content = document.getElementById('userModalContent');
+  content.innerHTML = `
+    <p><strong>Name:</strong> ${u.fullName || 'N/A'}</p>
+    <p><strong>Email:</strong> ${u.email || 'N/A'}</p>
+    <p><strong>Phone:</strong> ${u.phoneNumber || 'N/A'}</p>
+    <p><strong>Blood Group:</strong> ${u.bloodGroup || 'N/A'}</p>
+    <p><strong>District:</strong> ${u.district || 'N/A'}</p>
+    <p><strong>Upazila:</strong> ${u.upazila || 'N/A'}</p>
+    <p><strong>Role:</strong> ${u.role || 'user'}</p>
+    <p><strong>Status:</strong> ${u.approvalStatus || 'N/A'}</p>
+    <p><strong>Is Donor:</strong> ${u.isDonor ? 'Yes' : 'No'}</p>
+  `;
+  document.getElementById('userModal').style.display = 'flex';
+};
+
+      async function loadDonors() { 
+        const area = document.getElementById('contentArea');
+        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading donors...</p>';
+        const snap = await db.collection('users').where('isDonor','==',true).where('approvalStatus','==','approved').get();
+        
+        let html = `<div class="table-card"><table class="table"><tr><th>Name</th><th>Blood Group</th><th>Phone</th><th>District</th><th>Certificate</th></tr>`;
+        snap.docs.forEach(d => {
+          const u = d.data();
+          html += `<tr>
+            <td>${getRoleSymbol(u.role || 'user')} ${u.fullName}</td>
+            <td><span class="blood-badge">${u.bloodGroup}</span></td>
+            <td>📱 ${u.phoneNumber || 'N/A'}</td>
+            <td>${u.district || 'N/A'}, ${u.upazila || ''}</td>
+            <td>
+              ${canManageCertificates() ? `<button class="btn-icon" onclick="window._issueCertificate('${d.id}')" title="Issue Certificate"><i class="fas fa-certificate" style="color:#7c3aed"></i></button>` : ''}
+            </td>
+          </tr>`;
+        });
+        area.innerHTML = html + `</table></div>`;
+      }
+
+      async function loadRequests() { 
+        const area = document.getElementById('contentArea');
+        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading blood requests...</p>';
+        const snap = await db.collection('bloodRequests').get();
+        
+        let html = `<div class="table-card"><table class="table"><tr><th>Patient</th><th>Blood</th><th>Contact</th><th>Hospital</th><th>Urgency</th><th>Status</th><th>Actions</th></tr>`;
+        snap.docs.forEach(d => {
+          const req = d.data();
+          let bgStatus = req.status === 'active' ? 'var(--success)' : 'var(--text-secondary)';
+          let urgencyColor = req.urgency === 'emergency' ? 'var(--danger)' : (req.urgency === 'urgent' ? 'var(--warning)' : 'var(--text-secondary)');
+          html += `<tr>
+            <td><strong>${req.patientName}</strong><br><small>Req by: ${req.requesterName || 'N/A'}</small></td>
+            <td><span class="blood-badge">${req.bloodGroup}</span><br><small>${req.unitsNeeded || 1} Unit(s)</small></td>
+            <td>📱 ${req.contactNumber || 'N/A'}</td>
+            <td>${req.hospitalName || 'N/A'}</td>
+            <td><span class="status-badge" style="background:${urgencyColor}">${req.urgency || 'normal'}</span></td>
+            <td><span class="status-badge" style="background:${bgStatus}">${req.status || 'unknown'}</span></td>
+            <td>
+              ${canDelete() ? `<button class="btn-icon" onclick="window._deleteDoc('bloodRequests', '${d.id}')" title="Delete Request"><i class="fas fa-trash" style="color:var(--danger)"></i></button>` : ''}
+            </td>
+          </tr>`;
+        });
+        area.innerHTML = html + `</table></div>`;
+      }
+
+      async function loadCertificates() {
+        if (!canManageCertificates()) { 
+          document.getElementById('contentArea').innerHTML = '<p>Access denied. Only Administrators can manage certificates.</p>'; 
           return; 
         }
-        currentAdmin = { id: user.uid, ...doc.data() };
-        document.getElementById('adminAvatar').textContent = currentAdmin.fullName?.charAt(0) || 'A';
-        document.getElementById('adminName').textContent = currentAdmin.fullName || 'Admin';
-        document.getElementById('adminEmail').textContent = currentAdmin.email || '';
-        document.getElementById('loadingOverlay').style.display = 'none';
-        document.getElementById('adminWrapper').style.display = 'flex';
-        updateDateTime(); setInterval(updateDateTime, 1000);
-        await loadPendingCount();
-        setupNav(); setupSidebar(); loadDashboard();
-      } catch(e) { Toast.show('Error: '+e.message, 'error'); }
-    });
-    
-    function setupSidebar() {
-      document.getElementById('sidebarToggle')?.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('active'));
-    }
-    
-    function setupNav() {
-      document.querySelectorAll('.menu-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-          e.preventDefault(); const tab = item.dataset.tab;
-          document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active')); item.classList.add('active');
-          currentTab = tab;
-          document.getElementById('pageTitle').textContent = tab.split('-').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
-          if(window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('active');
-          const actions = { dashboard: loadDashboard, pending: loadPendingApprovals, users: loadAllUsers, donors: loadApprovedDonors, requests: loadBloodRequests, certificates: loadCertificates, email: loadEmailDonors, admins: loadAdmins, settings: loadSettings };
-          if(actions[tab]) actions[tab]();
+        const area = document.getElementById('contentArea');
+        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading certificates...</p>';
+        
+        const certsSnap = await db.collection('certificates').orderBy('issuedDate', 'desc').get();
+        
+        if (certsSnap.empty) {
+          area.innerHTML = `
+            <div class="table-card" style="padding: 40px; text-align: center;">
+              <i class="fas fa-certificate" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
+              <h3>No Certificates Issued Yet</h3>
+              <p style="color: var(--text-secondary); margin-bottom: 20px;">Approve donors and issue certificates from the Donors tab</p>
+            </div>`;
+          return;
+        }
+        
+        let html = `<div class="table-card">
+          <h3 style="padding:16px;">📜 All Certificates (${certsSnap.size})</h3>
+          <table class="table">
+            <tr>
+              <th>Certificate ID</th>
+              <th>Donor</th>
+              <th>Donor ID</th>
+              <th>Blood Group</th>
+              <th>Issued Date</th>
+              <th>Actions</th>
+            </tr>`;
+        
+        certsSnap.docs.forEach(d => {
+          const cert = d.data();
+          html += `<tr>
+            <td><code style="background:#f1f5f9; padding:4px 8px; border-radius:4px;">${cert.certificateId}</code></td>
+            <td><strong>${cert.userName}</strong></td>
+            <td>${cert.donorId || 'N/A'}</td>
+            <td><span class="blood-badge">${cert.bloodGroup}</span></td>
+            <td>${new Date(cert.issuedDate).toLocaleDateString('en-GB', {dateStyle:'medium'})}</td>
+            <td>
+              <button class="btn-icon" onclick="window._viewCertificate('${cert.certificateId}')" title="View"><i class="fas fa-eye" style="color:#3b82f6"></i></button>
+              ${canDelete() ? `<button class="btn-icon" onclick="window._revokeCertificate('${d.id}')" title="Revoke"><i class="fas fa-times-circle" style="color:var(--danger)"></i></button>` : ''}
+            </td>
+          </tr>`;
         });
-      });
-      document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut().then(() => window.location.href='index.html'));
-    }
-    
-    // ============================================
-    // SIMPLE CERTIFICATE - DIRECT DOWNLOAD (NO STORAGE)
-    // ============================================
-    function generateDonorId(baseName) {
-      let hash = 0;
-      const str = (baseName + Date.now()).toUpperCase().replace(/\s+/g, '');
-      for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; }
-      const absHash = Math.abs(hash).toString(16).slice(0,6).toUpperCase();
-      return `BD-${absHash.slice(0,3) || '240'}-${absHash.slice(3,6) || '782'}`;
-    }
-    
-    async function generateCertificate(donorData) {
-      try {
-        Toast.show('Generating certificate...', 'info');
         
-        const certificateId = 'CERT-' + Date.now().toString(36).toUpperCase();
-        const formattedDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-        const donorId = generateDonorId(donorData.fullName);
-        
-        // Create simple certificate div
-        const div = document.createElement('div');
-        div.style.cssText = 'position:fixed;left:-9999px;top:0;width:900px;padding:40px;background:white;font-family:Arial;';
-        div.innerHTML = `
-          <div style="border:5px solid #b71c1c;padding:30px;text-align:center;background:#fffbfb;">
-            <img src="https://i.ibb.co/S4NpN5F5/1000010374.png" style="width:80px;height:80px;border-radius:50%;" crossorigin="anonymous">
-            <h1 style="color:#b71c1c;font-size:36px;margin:20px 0 10px;">BLOOD DONOR BD</h1>
-            <h2 style="color:#333;margin-bottom:30px;">Certificate of Registration</h2>
-            <p style="font-size:18px;margin-bottom:10px;">This certifies that</p>
-            <h2 style="color:#b71c1c;font-size:40px;margin:20px 0;">${donorData.fullName}</h2>
-            <p style="font-size:16px;margin-bottom:30px;">is a registered voluntary blood donor.</p>
-            <table style="width:100%;margin:30px 0;border-collapse:collapse;">
-              <tr><td style="padding:15px;border:1px solid #ddd;font-weight:bold;">Blood Group:</td><td style="padding:15px;border:1px solid #ddd;font-size:28px;color:#b71c1c;">${donorData.bloodGroup}</td></tr>
-              <tr><td style="padding:15px;border:1px solid #ddd;font-weight:bold;">Certificate ID:</td><td style="padding:15px;border:1px solid #ddd;">${certificateId}</td></tr>
-              <tr><td style="padding:15px;border:1px solid #ddd;font-weight:bold;">Donor ID:</td><td style="padding:15px;border:1px solid #ddd;">${donorId}</td></tr>
-              <tr><td style="padding:15px;border:1px solid #ddd;font-weight:bold;">Registration Date:</td><td style="padding:15px;border:1px solid #ddd;">${formattedDate}</td></tr>
-              <tr><td style="padding:15px;border:1px solid #ddd;font-weight:bold;">Location:</td><td style="padding:15px;border:1px solid #ddd;">${donorData.district || 'Bangladesh'}</td></tr>
-            </table>
-            <div style="display:flex;justify-content:space-between;margin-top:40px;">
-              <div style="text-align:center;"><div style="width:150px;border-top:1px solid #333;margin-bottom:5px;"></div>Authorized Signature</div>
-              <div style="text-align:center;"><div style="width:80px;height:80px;border:2px solid #b71c1c;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto;">🩸</div>Official Seal</div>
-            </div>
-            <p style="font-size:11px;color:#666;margin-top:30px;">Certificate ID: ${certificateId} · Blood Donor BD</p>
+        html += `</table></div>
+        <div class="grid-2" style="margin-top:20px;">
+          <div style="background:white; padding:20px; border-radius:20px; box-shadow:var(--shadow)">
+            <h4>➕ Issue Manual Certificate</h4>
+            <input id="manualCertEmail" placeholder="Donor Email" class="form-input">
+            <button onclick="window._issueManualCertificate()" class="btn-primary" style="width:100%">Issue Certificate</button>
           </div>
-        `;
-        document.body.appendChild(div);
+        </div>`;
         
-        // Wait for image
-        await new Promise(r => setTimeout(r, 500));
+        area.innerHTML = html;
         
-        // Generate canvas and download
-        const canvas = await html2canvas(div.firstChild, { scale: 2.5, backgroundColor: '#fffbfb', allowTaint: true, useCORS: true, logging: false });
-        document.body.removeChild(div);
-        
-        // Auto download
-        const link = document.createElement('a');
-        link.download = `BloodDonorBD_${donorData.fullName.replace(/\s+/g,'_')}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        
-        // Save ONLY metadata to Firestore (no image)
-        const certificateData = {
-          certificateId, userId: donorData.uid, userName: donorData.fullName,
-          userEmail: donorData.email || '', bloodGroup: donorData.bloodGroup, donorId,
-          issuedDate: new Date().toISOString(),
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          issuedBy: currentAdmin?.id || 'system', issuedByName: currentAdmin?.fullName || 'Admin'
+        window._revokeCertificate = async (certId) => {
+          if (confirm('Are you sure you want to revoke this certificate?')) {
+            await db.collection('certificates').doc(certId).delete();
+            showToast('Certificate revoked', 'success');
+            loadCertificates();
+          }
         };
-        
-        await db.collection('certificates').doc(certificateId).set(certificateData);
-        await db.collection('users').doc(donorData.uid).update({
-          certificates: firebase.firestore.FieldValue.arrayUnion({ certificateId, issuedDate: certificateData.issuedDate, donorId }),
-          certificateGenerated: true
-        });
-        
-        Toast.show('Certificate downloaded!', 'success');
-        return { certificateId };
-      } catch(e) {
-        console.error(e);
-        Toast.show('Certificate failed: '+e.message, 'error');
-        
-        // Fallback: Still approve but no certificate
-        const certificateId = 'CERT-' + Date.now().toString(36).toUpperCase();
-        await db.collection('certificates').doc(certificateId).set({
-          certificateId, userId: donorData.uid, userName: donorData.fullName,
-          bloodGroup: donorData.bloodGroup, issuedDate: new Date().toISOString(),
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        await db.collection('users').doc(donorData.uid).update({
-          certificates: firebase.firestore.FieldValue.arrayUnion({ certificateId }),
-          certificateGenerated: true
-        });
-        
-        Toast.show('Donor approved! (Certificate download failed but record saved)', 'warning');
-        throw e;
       }
-    }
-    
-    async function approveDonor(userId) {
-      try {
-        const ref = db.collection('users').doc(userId); const doc = await ref.get();
-        if(!doc.exists) { Toast.show('User not found','error'); return; }
-        const data = doc.data();
-        await ref.update({
-          approvalStatus: 'approved', isDonor: true, isVerified: true,
-          approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          approvedBy: currentAdmin.id, approvedByName: currentAdmin.fullName
+
+      window._issueCertificate = async (userId) => {
+        if (!canManageCertificates()) {
+          showToast('Only Administrators can issue certificates', 'error');
+          return;
+        }
+        
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (!userDoc.exists) { showToast('User not found', 'error'); return; }
+        
+        const userData = userDoc.data();
+        
+        const existingSnap = await db.collection('certificates')
+          .where('userId', '==', userId)
+          .get();
+        
+        if (!existingSnap.empty) {
+          showToast('Certificate already exists for this donor', 'warning');
+          return;
+        }
+        
+        const certificateId = generateCertificateId();
+        const donorId = generateDonorId();
+        
+        await db.collection('certificates').doc(certificateId).set({
+          certificateId: certificateId,
+          userId: userId,
+          userName: userData.fullName,
+          donorId: donorId,
+          bloodGroup: userData.bloodGroup,
+          issuedDate: new Date().toISOString(),
+          issuedBy: currentUser.email,
+          validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
         });
-        Toast.show('Approved! Generating certificate...', 'success');
-        await generateCertificate({...data, uid: userId});
-        await loadPendingCount();
-        if(currentTab === 'pending') loadPendingApprovals(); else if(currentTab === 'donors') loadApprovedDonors();
-      } catch(e) { Toast.show('Error: '+e.message, 'error'); }
-    }
-    
-    async function rejectDonor(userId) {
-      if(!confirm('Reject this donor?')) return;
-      try { await db.collection('users').doc(userId).update({ approvalStatus: 'rejected', rejectedAt: firebase.firestore.FieldValue.serverTimestamp(), rejectedBy: currentAdmin.id }); Toast.show('Rejected', 'info'); await loadPendingCount(); if(currentTab === 'pending') loadPendingApprovals(); }
-      catch(e) { Toast.show('Error: '+e.message, 'error'); }
-    }
-    
-    async function loadDashboard() {
-      const content = document.getElementById('contentArea');
-      content.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
-      try {
-        const [users, donors, pending, active, certs] = await Promise.all([
-          db.collection('users').get(),
-          db.collection('users').where('approvalStatus','==','approved').where('isDonor','==',true).get(),
-          db.collection('users').where('approvalStatus','==','pending').get(),
-          db.collection('bloodRequests').where('status','==','active').get(),
-          db.collection('certificates').get()
-        ]);
-        const bgs = ['A+','A-','B+','B-','O+','O-','AB+','AB-']; const bgCounts = {};
-        for(const bg of bgs) { const s = await db.collection('users').where('bloodGroup','==',bg).where('approvalStatus','==','approved').get(); bgCounts[bg] = s.size; }
-        const recent = await db.collection('users').orderBy('createdAt','desc').limit(5).get();
-        content.innerHTML = `
-          <div class="admin-stats-grid">
-            <div class="admin-stat-card"><div class="stat-icon"><i class="fas fa-users"></i></div><div class="stat-info"><h3>Total Users</h3><p>${users.size}</p></div></div>
-            <div class="admin-stat-card"><div class="stat-icon" style="background:#2e7d32;"><i class="fas fa-heart"></i></div><div class="stat-info"><h3>Approved Donors</h3><p>${donors.size}</p></div></div>
-            <div class="admin-stat-card"><div class="stat-icon" style="background:#f57c00;"><i class="fas fa-clock"></i></div><div class="stat-info"><h3>Pending</h3><p>${pending.size}</p></div></div>
-            <div class="admin-stat-card"><div class="stat-icon" style="background:#1565c0;"><i class="fas fa-bell"></i></div><div class="stat-info"><h3>Active Requests</h3><p>${active.size}</p></div></div>
-            <div class="admin-stat-card"><div class="stat-icon" style="background:#c62828;"><i class="fas fa-certificate"></i></div><div class="stat-info"><h3>Certificates</h3><p>${certs.size}</p></div></div>
-          </div>
-          <div class="admin-charts-row">
-            <div class="admin-chart-card"><h3>Blood Group Distribution</h3><canvas id="bgChart"></canvas></div>
-            <div class="admin-chart-card"><h3>Recent Registrations</h3><div class="activity-list">${recent.docs.map(d => { const u = d.data(); return `<div class="activity-item"><div class="activity-icon"><i class="fas fa-user"></i></div><div class="activity-info"><strong>${u.fullName}</strong><span>${u.email}</span><small>${u.approvalStatus||'pending'}</small></div></div>`; }).join('')}</div></div>
-          </div>
-        `;
-        new Chart(document.getElementById('bgChart'), { type:'bar', data:{ labels:bgs, datasets:[{ label:'Donors', data:bgs.map(bg=>bgCounts[bg]), backgroundColor:'#dc2626' }] }, options:{ responsive:true, plugins:{ legend:{ display:false } } } });
-      } catch(e) { content.innerHTML = `<div class="error-message">Error: ${e.message}</div>`; }
-    }
-    
-    async function loadPendingApprovals() {
-      const content = document.getElementById('contentArea');
-      content.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
-      try {
-        const snap = await db.collection('users').where('approvalStatus','==','pending').orderBy('createdAt','desc').get();
-        pendingUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        if(pendingUsers.length === 0) { content.innerHTML = '<div class="admin-section-header"><h2>Pending Approvals</h2></div><div class="empty-state"><i class="fas fa-check-circle"></i><p>No pending approvals</p></div>'; return; }
-        content.innerHTML = `
-          <div class="admin-section-header"><h2>Pending Approvals (${pendingUsers.length})</h2></div>
-          <div class="admin-table-wrapper"><table class="admin-table"><thead><tr><th>Name</th><th>Contact</th><th>Blood</th><th>Location</th><th>Date</th><th>Actions</th></tr></thead>
-          <tbody>${pendingUsers.map(u => `<tr><td><strong>${u.fullName}</strong><br><small>${u.email}</small></td><td>${u.phoneNumber||'-'}</td><td><span class="blood-group-badge">${u.bloodGroup}</span></td><td>${u.district||'-'}, ${u.upazila||''}</td><td>${u.createdAt?.toDate().toLocaleDateString()||'-'}</td><td><div class="action-buttons"><button class="btn-icon" onclick="viewPendingDetails('${u.id}')"><i class="fas fa-eye"></i></button><button class="btn-icon success" onclick="approveDonor('${u.id}')"><i class="fas fa-check"></i></button><button class="btn-icon danger" onclick="rejectDonor('${u.id}')"><i class="fas fa-times"></i></button></div></td></tr>`).join('')}</tbody></table></div>
-        `;
-      } catch(e) { content.innerHTML = `<div class="error-message">Error: ${e.message}</div>`; }
-    }
-    
-    function viewPendingDetails(userId) {
-      const u = pendingUsers.find(x => x.id === userId); if(!u) return;
-      document.getElementById('modalTitle').textContent = 'Application Details';
-      document.getElementById('modalBody').innerHTML = `<p><strong>Name:</strong> ${u.fullName}</p><p><strong>Email:</strong> ${u.email}</p><p><strong>Phone:</strong> ${u.phoneNumber}</p><p><strong>Blood:</strong> ${u.bloodGroup}</p><p><strong>District:</strong> ${u.district}</p><p><strong>Upazila:</strong> ${u.upazila}</p>`;
-      document.getElementById('modalFooter').innerHTML = `<button class="btn-icon" onclick="closeModal()">Close</button><button class="btn-icon success" onclick="approveDonor('${u.id}');closeModal()">Approve</button><button class="btn-icon danger" onclick="rejectDonor('${u.id}');closeModal()">Reject</button>`;
-      document.getElementById('modalOverlay').style.display = 'block'; document.getElementById('modal').style.display = 'block';
-    }
-    
-    async function loadAllUsers() {
-      const content = document.getElementById('contentArea');
-      content.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
-      try {
-        const snap = await db.collection('users').orderBy('createdAt','desc').get();
-        allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        content.innerHTML = `<div class="admin-section-header"><h2>All Users (${allUsers.length})</h2><input type="text" id="userSearch" placeholder="Search..." class="admin-search" onkeyup="filterUsers()"></div><div class="admin-table-wrapper"><table class="admin-table" id="usersTable"><thead><tr><th>User</th><th>Blood</th><th>Status</th><th>Role</th><th>Joined</th></tr></thead><tbody></tbody></table></div>`;
-        renderUserTable(allUsers);
-      } catch(e) { content.innerHTML = `<div class="error-message">Error: ${e.message}</div>`; }
-    }
-    
-    function renderUserTable(users) {
-      const tbody = document.querySelector('#usersTable tbody');
-      tbody.innerHTML = users.map(u => `<tr><td><strong>${u.fullName}</strong><br><small>${u.email}</small></td><td><span class="blood-group-badge">${u.bloodGroup}</span></td><td><span class="status-badge status-${u.approvalStatus==='approved'?'active':u.approvalStatus==='pending'?'pending':'cancelled'}">${u.approvalStatus||'pending'}</span></td><td>${u.role||'user'}</td><td>${u.createdAt?.toDate().toLocaleDateString()}</td></tr>`).join('');
-    }
-    
-    function filterUsers() { const s = document.getElementById('userSearch').value.toLowerCase(); renderUserTable(allUsers.filter(u => (u.fullName||'').toLowerCase().includes(s) || (u.email||'').toLowerCase().includes(s))); }
-    
-    async function loadApprovedDonors() {
-      const content = document.getElementById('contentArea');
-      content.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
-      try {
-        const snap = await db.collection('users').where('approvalStatus','==','approved').where('isDonor','==',true).get();
-        allDonors = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        content.innerHTML = `<div class="admin-section-header"><h2>Approved Donors (${allDonors.length})</h2></div><div class="admin-table-wrapper"><table class="admin-table"><thead><tr><th>Donor</th><th>Blood</th><th>Contact</th><th>Location</th><th>Certificate</th></tr></thead><tbody>${allDonors.map(d => `<tr><td><strong>${d.fullName}</strong><br><small>${d.email}</small></td><td><span class="blood-group-badge">${d.bloodGroup}</span></td><td>${d.phoneNumber}</td><td>${d.district}, ${d.upazila||''}</td><td>${d.certificateGenerated?'✅ Generated':'⏳ Pending'}</td></tr>`).join('')}</tbody></table></div>`;
-      } catch(e) { content.innerHTML = `<div class="error-message">Error: ${e.message}</div>`; }
-    }
-    
-    async function loadBloodRequests() {
-      const content = document.getElementById('contentArea');
-      content.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
-      try {
-        const snap = await db.collection('bloodRequests').get();
-        allRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        allRequests.sort((a,b) => (b.createdAt?.toDate?.()||0) - (a.createdAt?.toDate?.()||0));
-        const now = new Date();
-        const active = allRequests.filter(r => r.status!=='active' || (r.createdAt?.toDate() && (now - r.createdAt.toDate())/(1000*60*60) <= 24));
-        content.innerHTML = `<div class="admin-section-header"><h2>Blood Requests (${active.length})</h2></div><div class="admin-table-wrapper"><table class="admin-table"><thead><tr><th>Patient</th><th>Blood</th><th>Units</th><th>Hospital</th><th>Urgency</th><th>Status</th><th>Actions</th></tr></thead><tbody>${active.map(r => `<tr><td>${r.patientName}<br><small>${r.patientAge}y, ${r.patientGender}</small></td><td><span class="blood-group-badge">${r.bloodGroup}</span></td><td>${r.unitsNeeded}</td><td>${r.hospitalName}</td><td><span class="status-badge status-${r.urgency}">${r.urgency}</span></td><td><span class="status-badge status-${r.status==='active'?'pending':r.status}">${r.status}</span></td><td>${r.status==='active'?`<button class="btn-icon success" onclick="fulfillRequest('${r.id}')"><i class="fas fa-check"></i></button>`:''}</td></tr>`).join('')}</tbody></table></div>`;
-      } catch(e) { content.innerHTML = `<div class="error-message">Error: ${e.message}</div>`; }
-    }
-    
-    async function fulfillRequest(id) { await db.collection('bloodRequests').doc(id).update({ status:'fulfilled', fulfilledAt:firebase.firestore.FieldValue.serverTimestamp() }); Toast.show('Request fulfilled', 'success'); loadBloodRequests(); }
-    
-    async function loadCertificates() {
-      const content = document.getElementById('contentArea');
-      content.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
-      try {
-        const snap = await db.collection('certificates').get();
-        allCertificates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        allCertificates.sort((a,b) => new Date(b.issuedDate) - new Date(a.issuedDate));
-        content.innerHTML = `<div class="admin-section-header"><h2>Certificates (${allCertificates.length})</h2></div><div class="admin-table-wrapper"><table class="admin-table"><thead><tr><th>ID</th><th>Donor</th><th>Blood</th><th>Date</th></tr></thead><tbody>${allCertificates.map(c => `<tr><td><code>${c.certificateId}</code></td><td>${c.userName}<br><small>${c.userEmail||''}</small></td><td><span class="blood-group-badge">${c.bloodGroup}</span></td><td>${new Date(c.issuedDate).toLocaleDateString()}</td></tr>`).join('')}</tbody></table></div>`;
-      } catch(e) { content.innerHTML = `<div class="error-message">Error: ${e.message}</div>`; }
-    }
-    
-    async function loadEmailDonors() {
-      const content = document.getElementById('contentArea');
-      content.innerHTML = `<div class="admin-section-header"><h2>Email Donors</h2></div><div class="settings-section"><h3>Compose Email</h3><div class="form-group"><label>Subject</label><input type="text" id="emailSubject" class="admin-search" value="Update from Blood Donor BD"></div><div class="form-group"><label>Message</label><textarea id="emailMessage" rows="6" style="width:100%;padding:12px;">Dear Donor,&#10;&#10;Thank you for being part of Blood Donor BD.&#10;&#10;Best regards,&#10;Blood Donor BD Team</textarea></div><button class="btn btn-primary" onclick="sendBulkEmail()"><i class="fas fa-paper-plane"></i> Send Bulk Email</button><button class="btn btn-outline" onclick="exportEmails()"><i class="fas fa-download"></i> Export Emails</button></div>`;
-      const snap = await db.collection('users').where('approvalStatus','==','approved').where('isDonor','==',true).get();
-      window.emailDonors = snap.docs.map(d => d.data());
-    }
-    
-    function sendBulkEmail() {
-      const emails = window.emailDonors?.map(d => d.email).filter(Boolean) || [];
-      if(!emails.length) { Toast.show('No emails found', 'warning'); return; }
-      const subject = document.getElementById('emailSubject')?.value || 'Blood Donor BD';
-      const body = document.getElementById('emailMessage')?.value || '';
-      window.open(`mailto:?bcc=${emails.join(',')}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
-      Toast.show(`Opening email with ${emails.length} recipients`, 'success');
-    }
-    
-    function exportEmails() {
-      const donors = window.emailDonors || [];
-      const csv = 'Name,Email,Blood,District,Phone\n' + donors.map(d => `"${d.fullName}","${d.email}","${d.bloodGroup}","${d.district}","${d.phoneNumber}"`).join('\n');
-      const blob = new Blob([csv], {type:'text/csv'}); const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob); a.download = `donors_${new Date().toISOString().split('T')[0]}.csv`; a.click();
-    }
-    
-    async function loadAdmins() {
-      const content = document.getElementById('contentArea');
-      const snap = await db.collection('users').where('role','==','admin').get();
-      const admins = snap.docs.map(d => d.data());
-      content.innerHTML = `<div class="admin-section-header"><h2>Administrators</h2></div><div class="admin-table-wrapper"><table class="admin-table"><thead><tr><th>Name</th><th>Email</th></tr></thead><tbody>${admins.map(a => `<tr><td>${a.fullName}</td><td>${a.email}</td></tr>`).join('')}</tbody></table></div>`;
-    }
-    
-    function loadSettings() {
-      document.getElementById('contentArea').innerHTML = `<div class="settings-section"><h3>General Settings</h3><div class="settings-form"><div class="form-group"><label>Site Name</label><input value="Blood Donor BD"></div><div class="form-group"><label>Contact Email</label><input value="help@blooddonorbd.com"></div><button class="btn btn-primary" onclick="Toast.show('Settings saved','success')">Save</button></div></div><div class="settings-section"><h3>System Info</h3><p>Version: 2.0.0</p><p>Firebase: blood-donor-bd-2025</p></div>`;
-    }
-    
-    function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; document.getElementById('modal').style.display = 'none'; }
-    document.getElementById('modalOverlay').addEventListener('click', closeModal);
-    
-    window.approveDonor = approveDonor;
-    window.rejectDonor = rejectDonor;
-    window.viewPendingDetails = viewPendingDetails;
-    window.filterUsers = filterUsers;
-    window.fulfillRequest = fulfillRequest;
-    window.closeModal = closeModal;
-    window.sendBulkEmail = sendBulkEmail;
-    window.exportEmails = exportEmails;
+        
+        await db.collection('users').doc(userId).update({
+          donorId: donorId,
+          certificates: firebase.firestore.FieldValue.arrayUnion(certificateId)
+        });
+        
+        showToast('Certificate issued successfully!', 'success');
+        loadTab('certificates');
+      };
+
+      window._issueManualCertificate = async () => {
+        const email = document.getElementById('manualCertEmail').value.trim();
+        if (!email) { showToast('Please enter donor email', 'warning'); return; }
+        
+        const userSnap = await db.collection('users').where('email', '==', email).get();
+        if (userSnap.empty) { showToast('Donor not found', 'error'); return; }
+        
+        const userId = userSnap.docs[0].id;
+        await window._issueCertificate(userId);
+      };
+
+      window._viewCertificate = (certId) => {
+        window.open(`certificate.html?id=${certId}`, '_blank');
+      };
+
+      async function loadRolesManagement() {
+        if (!canManageRoles()) { document.getElementById('contentArea').innerHTML = '<p>Access denied.</p>'; return; }
+        const area = document.getElementById('contentArea');
+        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading administrators...</p>';
+        const snap = await db.collection('users').where('role', 'in', ['main_admin','admin','moderator']).get();
+        const admins = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        
+        let html = `<div class="table-card"><h3 style="padding:16px;">👑 Administrators & Moderators</h3>
+        <table class="table"><tr><th>User</th><th>Email</th><th>Phone</th><th>Role</th><th>Action</th></tr>`;
+        admins.forEach(a => {
+          const symbol = getRoleSymbol(a.role);
+          html += `<tr><td>${a.fullName || 'N/A'}</td><td>${a.email}</td><td>📱 ${a.phoneNumber || 'N/A'}</td>
+            <td><span class="role-badge">${symbol} ${getRoleDisplayName(a.role)}</span></td>
+            <td>`;
+          if (currentRole === 'main_admin' && !SUPER_ADMINS.includes(a.email)) {
+            html += `<select onchange="window._changeRole('${a.id}', this.value)" class="form-select">
+              <option value="">Change</option>
+              <option value="user">👤 User (Demote)</option>
+              <option value="main_admin">👑 Main Admin</option>
+              <option value="admin">🛡️ Admin</option>
+              <option value="moderator">🔰 Moderator</option>
+            </select>`;
+          } else if (currentRole === 'admin' && a.role !== 'main_admin') {
+            html += `<select onchange="window._changeRole('${a.id}', this.value)" class="form-select">
+              <option value="">Change</option>
+              <option value="user">👤 User (Demote)</option>
+              <option value="moderator">🔰 Moderator</option>
+            </select>`;
+          }
+          html += `</td></tr>`;
+        });
+        html += `</table></div>
+        <div style="margin-top:20px; background:white; padding:20px; border-radius:20px; box-shadow:var(--shadow)">
+          <h4>➕ Appoint new role</h4>
+          <input id="newAdminEmail" placeholder="user@email.com" class="form-input">
+          <select id="newRoleSelect" class="form-select" style="margin-bottom:10px;">
+            <option value="admin">🛡️ Admin</option>
+            <option value="moderator">🔰 Moderator</option>
+          </select>
+          <button onclick="window._appointRole()" class="btn-primary" style="width:100%">Appoint</button>
+        </div>`;
+        area.innerHTML = html;
+      }
+
+      window._changeRole = async (userId, newRole) => {
+        if (!newRole) return;
+        if (currentRole === 'admin' && newRole === 'main_admin') { showToast('Only main admin can assign main admin', 'error'); return; }
+        await db.collection('users').doc(userId).update({ role: newRole });
+        showToast('Role updated', 'success'); loadRolesManagement();
+      };
+
+      window._appointRole = async () => {
+        const email = document.getElementById('newAdminEmail').value.trim();
+        const role = document.getElementById('newRoleSelect').value;
+        if (!email) return;
+        const snap = await db.collection('users').where('email','==',email).get();
+        if (snap.empty) { showToast('User not found', 'error'); return; }
+        const doc = snap.docs[0];
+        if (currentRole === 'admin' && role === 'main_admin') { showToast('Cannot appoint main admin', 'error'); return; }
+        await db.collection('users').doc(doc.id).update({ role: role });
+        showToast('Appointed!', 'success'); loadRolesManagement();
+      };
+
+      window._deleteDoc = async (collection, id) => {
+        if(confirm(`Are you sure you want to permanently delete this record from ${collection}?`)) {
+          await db.collection(collection).doc(id).delete();
+          showToast('Deleted successfully', 'success');
+          const activeTab = document.querySelector('.nav-item.active').dataset.tab;
+          loadTab(activeTab);
+        }
+      };
+
+    })();
   </script>
 </body>
 </html>
