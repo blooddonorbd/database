@@ -1633,12 +1633,51 @@
       `;
 
       // Trigger Load of Requests and Leaflet Map
-      setTimeout(() => {
-        loadDashboardEmergencyRequests();
-        const map = L.map('dashboardMap', { zoomControl: false, dragging: false }).setView([23.6850, 90.3563], 6);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        map.on('click', () => router.navigate('live-map'));
-      }, 100);
+      setTimeout(async () => {
+    loadDashboardEmergencyRequests();
+    
+    const map = L.map('dashboardMap', { 
+        zoomControl: false, 
+        dragging: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false 
+    }).setView([23.6850, 90.3563], 6);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    map.on('click', () => router.navigate('live-map'));
+    
+    // Fetch and display donors on mini map
+    try {
+        const snapshot = await db.collection('users')
+            .where('isDonor', '==', true)
+            .where('approvalStatus', '==', 'approved')
+            .get();
+        
+        snapshot.forEach(doc => {
+            const donor = doc.data();
+            if (donor.lat && donor.lng) {
+                const marker = L.marker([donor.lat, donor.lng], {
+                    // Make markers smaller for mini map
+                    icon: L.divIcon({
+                        className: 'custom-marker',
+                        html: `<div style="background: #b71c1c; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3);"></div>`,
+                        iconSize: [12, 12],
+                        iconAnchor: [6, 6]
+                    })
+                }).addTo(map);
+                
+                // Simple popup
+                marker.bindPopup(`
+                    <strong>${donor.fullName}</strong><br>
+                    <span style="color: #b71c1c; font-weight: bold;">${donor.bloodGroup}</span><br>
+                    ${donor.district}
+                `);
+            }
+        });
+    } catch (err) {
+        console.error("Mini map donor load error:", err);
+    }
+}, 100);
     }
 
     // Helper to fetch and display compact emergency requests
