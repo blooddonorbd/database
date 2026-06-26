@@ -5,34 +5,827 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Blood Donor BD · Save Lives</title>
   
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   
-  <!-- Fonts & Icons -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="styles.css">
+  
+  <style>
+    /* ============================================
+       BLOOD DONOR BD - COMPLETE STYLESHEET
+       ============================================ */
+
+    :root {
+      --primary: #b71c1c;
+      --primary-dark: #8b0000;
+      --primary-light: #ff5252;
+      --secondary: #1a1a1a;
+      --success: #2e7d32;
+      --warning: #f57c00;
+      --danger: #d32f2f;
+      --light: #f5f5f5;
+      --dark: #212121;
+      --gray: #757575;
+      --white: #ffffff;
+      --shadow: 0 2px 10px rgba(0,0,0,0.1);
+      --shadow-lg: 0 5px 20px rgba(0,0,0,0.15);
+      --radius: 8px;
+      --radius-lg: 12px;
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #fafafa;
+      color: var(--dark);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--white);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .loader {
+      width: 50px;
+      height: 50px;
+      border: 4px solid var(--light);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Toast Notifications */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+    }
+
+    .toast {
+      background: var(--white);
+      padding: 16px 20px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideIn 0.3s ease;
+      max-width: 350px;
+    }
+
+    .toast.success { border-left: 4px solid var(--success); }
+    .toast.error { border-left: 4px solid var(--danger); }
+    .toast.warning { border-left: 4px solid var(--warning); }
+    .toast.info { border-left: 4px solid var(--primary); }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Navigation */
+    .navbar {
+      background: var(--white);
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .nav-brand i { font-size: 32px; }
+
+    .nav-menu {
+      display: flex;
+      list-style: none;
+      gap: 8px;
+    }
+
+    .nav-menu li a {
+      padding: 10px 16px;
+      text-decoration: none;
+      color: var(--dark);
+      font-weight: 500;
+      border-radius: var(--radius);
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .nav-menu li a:hover,
+    .nav-menu li a.active {
+      background: var(--primary);
+      color: var(--white);
+    }
+
+    .nav-user {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--white);
+      font-weight: 600;
+    }
+
+    .btn-logout {
+      padding: 8px 16px;
+      background: transparent;
+      border: 1px solid var(--gray);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .btn-logout:hover {
+      background: var(--danger);
+      color: var(--white);
+      border-color: var(--danger);
+    }
+
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      margin-left: auto;
+      margin-right: 32px;
+      margin-top: -20px;
+    }
+
+    /* Main Content */
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px;
+      min-height: calc(100vh - 200px);
+    }
+
+    /* Footer */
+    .footer {
+      background: var(--secondary);
+      color: var(--white);
+      padding: 48px 24px 24px;
+    }
+
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 40px;
+    }
+
+    .footer-section h3,
+    .footer-section h4 {
+      margin-bottom: 20px;
+      color: var(--primary-light);
+    }
+
+    .footer-section ul { list-style: none; }
+    .footer-section ul li { margin-bottom: 10px; }
+
+    .footer-section a {
+      color: var(--gray);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .footer-section a:hover { color: var(--white); }
+
+    .social-links {
+      display: flex;
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .social-links a {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .social-links a:hover {
+      background: var(--primary);
+      transform: translateY(-3px);
+    }
+
+    .footer-bottom {
+      max-width: 1200px;
+      margin: 40px auto 0;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      text-align: center;
+      color: var(--gray);
+    }
+
+    /* Auth Pages */
+    .auth-container {
+      max-width: 450px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .auth-card {
+      background: var(--white);
+      padding: 40px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .auth-header h2 {
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .auth-header i {
+      font-size: 48px;
+      color: var(--primary);
+      margin-bottom: 16px;
+    }
+
+    .form-group { margin-bottom: 24px; }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--dark);
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: var(--radius);
+      font-size: 16px;
+      font-family: inherit;
+      transition: var(--transition);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .form-group small {
+      display: block;
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--gray);
+    }
+
+    .btn {
+      padding: 14px 28px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--white);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .btn-outline:hover {
+      background: var(--primary);
+      color: var(--white);
+    }
+
+    .btn-block { width: 100%; }
+
+    .auth-footer {
+      text-align: center;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .auth-footer a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    /* Dashboard */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--white);
+      padding: 24px;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      transition: var(--transition);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .stat-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(183, 28, 28, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: var(--primary);
+    }
+
+    .stat-info h3 {
+      font-size: 14px;
+      color: var(--gray);
+      margin-bottom: 8px;
+    }
+
+    .stat-info p {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    /* Profile Page */
+    .profile-container {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: 32px;
+    }
+
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      color: var(--white);
+    }
+
+    .profile-info h2 { margin-bottom: 8px; }
+
+    .profile-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: var(--primary);
+      color: var(--white);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .profile-form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    /* Blood Request Cards */
+    .request-card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-bottom: 20px;
+      transition: var(--transition);
+    }
+
+    .request-card:hover { box-shadow: var(--shadow-lg); }
+
+    .request-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 16px;
+    }
+
+    .request-blood-group {
+      display: inline-block;
+      padding: 8px 20px;
+      background: var(--primary);
+      color: var(--white);
+      border-radius: 40px;
+      font-weight: 700;
+      font-size: 20px;
+    }
+
+    .request-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .request-detail {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .request-detail i {
+      width: 20px;
+      color: var(--primary);
+    }
+
+    .request-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    /* Certificate Page */
+    .certificate-list {
+      display: grid;
+      gap: 20px;
+    }
+
+    .certificate-item {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .certificate-info {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .certificate-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: var(--radius);
+      background: rgba(183, 28, 28, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      color: var(--primary);
+    }
+
+    .certificate-details h4 { margin-bottom: 8px; }
+
+    .certificate-details p {
+      font-size: 14px;
+      color: var(--gray);
+      margin-bottom: 4px;
+    }
+
+    .certificate-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    /* Hero Section */
+    .hero-section {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      padding: 80px 20px;
+      border-radius: 20px;
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--gray);
+    }
+
+    .empty-state i {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-state p { margin-bottom: 16px; }
+
+    .loading-spinner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px;
+      color: var(--gray);
+    }
+
+    .loading-spinner i { margin-right: 8px; }
+
+    /* Badge */
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    /* Search Input */
+    .search-input {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: var(--radius);
+      font-size: 16px;
+      font-family: inherit;
+      transition: var(--transition);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    /* Status Colors */
+    .status-active { background: #e8f5e9; color: #2e7d32; }
+    .status-pending { background: #fff3e0; color: #f57c00; }
+    .status-fulfilled { background: #e3f2fd; color: #1565c0; }
+    .status-cancelled,
+    .status-rejected,
+    .status-expired { background: #ffebee; color: #c62828; }
+    .status-emergency { background: #ffebee; color: #c62828; }
+    .status-urgent { background: #fff3e0; color: #f57c00; }
+
+    /* Admin Button */
+    .admin-btn {
+      margin-left: 8px;
+      padding: 4px 12px;
+      background: #b71c1c;
+      color: white;
+      border-radius: 20px;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.3s ease;
+    }
+
+    .admin-btn:hover {
+      background: #8b0000;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    /* Switch Type Section */
+    .switch-type-section {
+      background: #f0f9ff;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      border-left: 4px solid #3b82f6;
+    }
+
+    .switch-type-section h3 {
+      margin-bottom: 12px;
+      color: #1e40af;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .nav-menu { display: none; }
+      .mobile-menu-btn { display: block; }
+      
+      .nav-menu.active {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--white);
+        padding: 20px;
+        box-shadow: var(--shadow);
+        z-index: 999;
+      }
+      
+      .nav-menu.active li { width: 100%; }
+      .nav-menu.active li a { display: block; width: 100%; }
+      
+      .dashboard-grid { grid-template-columns: 1fr; }
+      .certificate-item { flex-direction: column; text-align: center; }
+      .certificate-info { flex-direction: column; text-align: center; }
+      .certificate-actions { margin-top: 20px; }
+      
+      .hero-section { padding: 50px 20px; }
+      .hero-section h1 { font-size: 36px !important; }
+      .hero-section p { font-size: 18px !important; }
+      
+      .profile-header { flex-direction: column; text-align: center; }
+      .request-header { flex-direction: column; gap: 12px; }
+      .request-actions { flex-direction: column; }
+      .request-actions .btn { width: 100%; }
+    }
+
+    /* Tablet Responsive */
+    @media (min-width: 769px) and (max-width: 1024px) {
+      .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+      .profile-form { grid-template-columns: 1fr; }
+    }
+
+    /* Utilities */
+    .text-center { text-align: center; }
+    .text-left { text-align: left; }
+    .text-right { text-align: right; }
+    .hidden { display: none !important; }
+
+    .mt-1 { margin-top: 8px; }
+    .mt-2 { margin-top: 16px; }
+    .mt-3 { margin-top: 24px; }
+    .mt-4 { margin-top: 32px; }
+
+    .mb-1 { margin-bottom: 8px; }
+    .mb-2 { margin-bottom: 16px; }
+    .mb-3 { margin-bottom: 24px; }
+    .mb-4 { margin-bottom: 32px; }
+
+    .ml-1 { margin-left: 8px; }
+    .ml-2 { margin-left: 16px; }
+    .mr-1 { margin-right: 8px; }
+    .mr-2 { margin-right: 16px; }
+
+    .p-1 { padding: 8px; }
+    .p-2 { padding: 16px; }
+    .p-3 { padding: 24px; }
+    .p-4 { padding: 32px; }
+
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .items-center { align-items: center; }
+    .justify-center { justify-content: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-1 { gap: 8px; }
+    .gap-2 { gap: 16px; }
+    .gap-3 { gap: 24px; }
+
+    .w-full { width: 100%; }
+    .h-full { height: 100%; }
+
+    .rounded { border-radius: var(--radius); }
+    .rounded-lg { border-radius: var(--radius-lg); }
+    .shadow { box-shadow: var(--shadow); }
+    .shadow-lg { box-shadow: var(--shadow-lg); }
+
+    .bg-white { background: var(--white); }
+    .bg-primary { background: var(--primary); }
+    .bg-light { background: var(--light); }
+
+    .text-white { color: var(--white); }
+    .text-primary { color: var(--primary); }
+    .text-gray { color: var(--gray); }
+    .text-dark { color: var(--dark); }
+
+    .font-bold { font-weight: 700; }
+    .font-semibold { font-weight: 600; }
+    .font-medium { font-weight: 500; }
+
+    .text-sm { font-size: 14px; }
+    .text-base { font-size: 16px; }
+    .text-lg { font-size: 18px; }
+    .text-xl { font-size: 20px; }
+    .text-2xl { font-size: 24px; }
+    .text-3xl { font-size: 30px; }
+  </style>
 </head>
 <body>
-  <!-- Loading Overlay -->
   <div id="loadingOverlay" class="loading-overlay">
     <div class="loader"></div>
     <p>Loading Blood Donor BD...</p>
   </div>
 
-  <!-- Toast Notification Container -->
   <div id="toastContainer" class="toast-container"></div>
 
-  <!-- Main App Container -->
   <div id="appContainer" class="app-container" style="display: none;">
     
-    <!-- Navigation Bar -->
     <nav id="navbar" class="navbar">
       <div class="nav-container">
         <div class="nav-brand">
-          <img src="https://i.ibb.co/S4NpN5F5/1000010374.png" alt="Logo" style="width: 40px; height: 40px; border-radius: 50%; margin-right: 8px;">
+          <img src="https://i.ibb.co/S4NpN5F5/1000010374.png" alt="Logo" style="width: 50px; height: 50px; border-radius: 50%; margin-right: 8px;">
           <span>Blood Donor BD</span>
         </div>
         
@@ -43,18 +836,16 @@
           <button id="logoutBtn" class="btn-logout" style="display: none;">
             <i class="fas fa-sign-out-alt"></i>
           </button>
-        </div>
+        </div></div>
         
-        <button class="mobile-menu-btn">
+        <div><button class="mobile-menu-btn">
           <i class="fas fa-bars"></i>
         </button>
       </div>
     </nav>
 
-    <!-- Main Content Area -->
     <main id="mainContent" class="main-content"></main>
 
-    <!-- Footer -->
     <footer class="footer">
       <div class="footer-content">
         <div class="footer-section">
@@ -92,6 +883,1592 @@
     </footer>
   </div>
 
-  <script src="app.js"></script>
+  <script>
+    // ============================================
+    // BLOOD DONOR BD - MAIN APPLICATION
+    // ============================================
+
+    // Bangladesh Districts List (64 Districts)
+    const bangladeshDistricts = [
+      'Bagerhat', 'Bandarban', 'Barguna', 'Barisal', 'Bhola', 'Bogra', 'Brahmanbaria', 'Chandpur',
+      'Chapainawabganj', 'Chattogram', 'Chuadanga', 'Comilla', 'Cox\'s Bazar', 'Dhaka', 'Dinajpur',
+      'Faridpur', 'Feni', 'Gaibandha', 'Gazipur', 'Gopalganj', 'Habiganj', 'Jamalpur', 'Jashore',
+      'Jhalokathi', 'Jhenaidah', 'Joypurhat', 'Khagrachari', 'Khulna', 'Kishoreganj', 'Kurigram',
+      'Kushtia', 'Lakshmipur', 'Lalmonirhat', 'Madaripur', 'Magura', 'Manikganj', 'Meherpur',
+      'Moulvibazar', 'Munshiganj', 'Mymensingh', 'Naogaon', 'Narail', 'Narayanganj', 'Narsingdi',
+      'Natore', 'Netrokona', 'Nilphamari', 'Noakhali', 'Pabna', 'Panchagarh', 'Patuakhali',
+      'Pirojpur', 'Rajbari', 'Rajshahi', 'Rangamati', 'Rangpur', 'Satkhira', 'Shariatpur',
+      'Sherpur', 'Sirajganj', 'Sunamganj', 'Sylhet', 'Tangail', 'Thakurgaon'
+    ];
+
+    // Inject datalist globally for input hints
+    const datalist = document.createElement('datalist');
+    datalist.id = 'districtsList';
+    datalist.innerHTML = bangladeshDistricts.map(d => `<option value="${d}">`).join('');
+    document.body.appendChild(datalist);
+
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnky8bzx3KuFoujU5DSlLRYSZgiAF8840",
+      authDomain: "blood-donor-bd-2025.firebaseapp.com",
+      projectId: "blood-donor-bd-2025",
+      storageBucket: "blood-donor-bd-2025.firebasestorage.app",
+      messagingSenderId: "271945142840",
+      appId: "1:271945142840:web:b0edefddb55cac5f604ccd"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // App State
+    let currentUser = null;
+    let userProfile = null;
+    let currentPage = 'home';
+
+    // Role Mapping Utility
+    function getRoleDisplayName(role) {
+      if (role === 'main_admin') return '👑 Administrator';
+      if (role === 'admin') return '🛡️ Admin';
+      if (role === 'moderator') return '🔰 Moderator';
+      return 'User';
+    }
+
+    function getRoleSymbol(role) {
+      if (role === 'main_admin') return '👑 ';
+      if (role === 'admin') return '🛡️ ';
+      if (role === 'moderator') return '🔰 ';
+      return '';
+    }
+
+    // Check if user has admin access
+    function hasAdminAccess() {
+      return ['main_admin', 'admin', 'moderator'].includes(userProfile?.role);
+    }
+
+    // Toast Notification System
+    class Toast {
+      static show(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+        
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `
+          <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+          <span>${message}</span>
+        `;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+      }
+    }
+
+    // Router System
+    const router = {
+      routes: {
+        home: renderHomePage,
+        about: renderAboutPage,
+        contact: renderContactPage,
+        'find-donors': renderFindDonorsPage,
+        login: renderLoginPage,
+        register: renderRegisterPage,
+        dashboard: renderDashboard,
+        profile: renderProfilePage,
+        certificates: renderCertificatesPage,
+        'request-blood': renderRequestBloodPage,
+        'my-requests': renderMyRequestsPage,
+        'all-requests': renderAllRequestsPage,
+        'verify-certificate': renderVerifyCertificatePage,
+        'dm-donor': renderDmDonorPage,
+        'live-map': renderLiveMapPage
+      },
+      
+      navigate(page) {
+        currentPage = page;
+        const renderFunc = this.routes[page] || renderHomePage;
+        renderFunc();
+        this.updateActiveNav(page);
+        
+        if (page !== 'home') {
+          window.history.pushState({}, '', `#${page}`);
+        } else {
+          window.history.pushState({}, '', '#');
+        }
+      },
+      
+      updateActiveNav(page) {
+        document.querySelectorAll('.nav-menu a').forEach(link => {
+          link.classList.remove('active');
+          if (link.dataset.page === page) {
+            link.classList.add('active');
+          }
+        });
+      }
+    };
+
+    // Authentication System
+    const authSystem = {
+      async login(email, password) {
+        try {
+          const result = await auth.signInWithEmailAndPassword(email, password);
+          await this.loadUserProfile(result.user.uid);
+          Toast.show('Login successful!', 'success');
+          
+          if (userProfile?.role === 'admin' || userProfile?.role === 'main_admin') {
+            window.location.href = 'admin.html';
+          } else {
+            router.navigate('dashboard');
+          }
+          return true;
+        } catch (error) {
+          console.error('Login error:', error);
+          let message = 'Login failed';
+          if (error.code === 'auth/user-not-found') message = 'No account found with this email';
+          else if (error.code === 'auth/wrong-password') message = 'Incorrect password';
+          else if (error.code === 'auth/invalid-email') message = 'Invalid email address';
+          else message = error.message;
+          Toast.show(message, 'error');
+          return false;
+        }
+      },
+      
+      async register(userData) {
+        try {
+          const result = await auth.createUserWithEmailAndPassword(userData.email, userData.password);
+          const isDonorType = userData.userType === 'donor';
+          
+          const profile = {
+            uid: result.user.uid,
+            email: userData.email,
+            fullName: userData.fullName,
+            phoneNumber: userData.phoneNumber,
+            bloodGroup: userData.bloodGroup || null,
+            nidNumber: userData.nidNumber || '',
+            userType: userData.userType,
+            isDonor: isDonorType,
+            isSeeker: !isDonorType,
+            district: userData.district || '',
+            upazila: userData.upazila || '',
+            address: userData.address || '',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            isVerified: false,
+            approvalStatus: isDonorType ? 'pending' : 'approved',
+            role: 'user',
+            certificates: []
+          };
+          await db.collection('users').doc(result.user.uid).set(profile);
+          userProfile = profile;
+          currentUser = result.user;
+          
+          if (isDonorType) {
+            Toast.show('Registration submitted! Your application is pending admin approval.', 'success');
+          } else {
+            Toast.show('Registration successful! Welcome to Blood Donor BD.', 'success');
+          }
+          
+          router.navigate('dashboard');
+          return true;
+        } catch (error) {
+          console.error('Registration error:', error);
+          let message = 'Registration failed';
+          if (error.code === 'auth/email-already-in-use') message = 'Email already registered';
+          else if (error.code === 'auth/weak-password') message = 'Password should be at least 6 characters';
+          else message = error.message;
+          Toast.show(message, 'error');
+          return false;
+        }
+      },
+      
+      async logout() {
+        try {
+          await auth.signOut();
+          currentUser = null;
+          userProfile = null;
+          router.navigate('home');
+          Toast.show('Logged out successfully', 'success');
+        } catch (error) {
+          Toast.show('Logout failed', 'error');
+        }
+      },
+      
+      async loadUserProfile(uid) {
+        try {
+          const doc = await db.collection('users').doc(uid).get();
+          if (doc.exists) {
+            userProfile = { id: doc.id, ...doc.data() };
+            currentUser = auth.currentUser;
+          }
+        } catch (error) {
+          console.error('Error loading profile:', error);
+        }
+      }
+    };
+
+    // Live Location Update System
+    function updateLiveLocation() {
+        if (navigator.geolocation && currentUser && userProfile?.isDonor) {
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                try {
+                    await db.collection('users').doc(currentUser.uid).update({
+                        lat: pos.coords.latitude,
+                        lng: pos.coords.longitude,
+                        lastLocationUpdate: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                } catch (e) {
+                    console.error("Location update failed", e);
+                }
+            }, (err) => {
+                console.error("Geolocation error", err);
+            }, { enableHighAccuracy: true });
+        }
+    }
+
+    // Certificate System
+    const certificateSystem = {
+      async loadMyCertificates() {
+        if (!currentUser) return [];
+        try {
+          const snapshot = await db.collection('certificates')
+            .where('userId', '==', currentUser.uid)
+            .get();
+          const certs = [];
+          snapshot.forEach(doc => certs.push({ id: doc.id, ...doc.data() }));
+          return certs.sort((a, b) => new Date(b.issuedDate) - new Date(a.issuedDate));
+        } catch (error) {
+          console.error('Error loading certificates:', error);
+          return [];
+        }
+      },
+      
+      viewCertificate(certificateId) {
+        window.open(`certificate.html?id=${certificateId}`, '_blank');
+      },
+      
+      downloadCertificate(certificateId) {
+        window.open(`certificate.html?id=${certificateId}`, '_blank');
+      }
+    };
+
+    // Contact Tracking System
+    const contactTracking = {
+      async logContact(donorId, seekerId, donorName, seekerName, donorPhone) {
+        try {
+          await db.collection('contactRevealLogs').add({
+            donorId: donorId,
+            seekerId: seekerId,
+            donorName: donorName,
+            donorPhone: donorPhone,
+            seekerName: seekerName,
+            seekerEmail: userProfile?.email || 'Unknown',
+            seekerPhone: userProfile?.phoneNumber || 'Unknown',
+            contactType: 'phone_reveal',
+            revealedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          console.log('Administrative telemetry logged successfully.');
+        } catch (error) {
+          console.error('Error logging contact:', error);
+        }
+      }
+    };
+
+    // Switch User Type Function
+    async function switchUserType() {
+      if (!currentUser || !userProfile) return;
+      const newType = userProfile.isDonor ? 'seeker' : 'donor';
+      const confirmMsg = userProfile.isDonor ? 
+        'Switch to Donor Seeker?\nYou will lose donor status.' :
+        'Switch to Blood Donor?\nYour account will need admin approval.';
+      
+      if (!confirm(confirmMsg)) return;
+      
+      try {
+        const isDonor = newType === 'donor';
+        const updates = {
+          isDonor: isDonor,
+          isSeeker: !isDonor,
+          userType: newType,
+          approvalStatus: isDonor ? 'pending' : 'approved',
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        if (!isDonor) {
+          updates.bloodGroup = null;
+        }
+        
+        await db.collection('users').doc(currentUser.uid).update(updates);
+        await authSystem.loadUserProfile(currentUser.uid);
+        if (isDonor) {
+          Toast.show('Switched to Blood Donor! Your account is pending approval.', 'success');
+        } else {
+          Toast.show('Switched to Donor Seeker!', 'success');
+        }
+        
+        router.navigate('profile');
+      } catch (error) {
+        Toast.show('Failed to switch account type', 'error');
+      }
+    }
+
+    // Page Renderers
+    function renderHomePage() {
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `
+        <div class="hero-section">
+          <h1 style="font-size: 48px; margin-bottom: 20px;">Donate Blood, Save Lives</h1>
+          <p style="font-size: 20px; margin-bottom: 32px;">Join the community of life-savers. Every drop counts.</p>
+          ${!currentUser ?
+            `
+            <div style="display: flex; gap: 16px; justify-content: center;">
+              <button onclick="router.navigate('register')" class="btn btn-primary" style="background: white; color: #b71c1c;">Become a Donor</button>
+              <button onclick="router.navigate('find-donors')" class="btn btn-outline" style="border-color: white; color: white;">Find Donors</button>
+            </div>
+          ` : `
+            <div style="display: flex; gap: 16px; justify-content: center;">
+              <button onclick="router.navigate('request-blood')" class="btn btn-primary" style="background: white; color: #b71c1c;">Request Blood</button>
+              <button onclick="router.navigate('find-donors')" class="btn btn-outline" style="border-color: white; color: white;">Find Donors</button>
+              <button onclick="router.navigate('dm-donor')" class="btn btn-outline" style="border-color: white; color: white;"><i class="fas fa-comments"></i> DM Donors</button>
+              ${hasAdminAccess() ?
+                `
+                <a href="admin.html" class="btn btn-outline" style="border-color: #ffd700; color: #ffd700;">
+                  <i class="fas fa-shield-alt"></i> Admin Panel
+                </a>
+              ` : ''}
+            </div>
+          `}
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 32px; margin-top: 48px;">
+          <div style="text-align: center; padding: 32px; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <i class="fas fa-certificate" style="font-size: 48px; color: #b71c1c; margin-bottom: 20px;"></i>
+            <h3>Digital Certificates</h3>
+            <p>Get verified digital certificates after approval</p>
+          </div>
+          <div style="text-align: center; padding: 32px; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <i class="fas fa-map-marker-alt" style="font-size: 48px; color: #b71c1c; margin-bottom: 20px;"></i>
+            <h3>Find Nearby Donors</h3>
+            <p>Connect with approved donors in your area</p>
+          </div>
+          <div style="text-align: center; padding: 32px; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <i class="fas fa-comments" style="font-size: 48px; color: #b71c1c; margin-bottom: 20px;"></i>
+            <h3>DM Donors</h3>
+            <p>Chat directly with donors and seekers</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAboutPage() {
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `
+        <div style="max-width: 800px; margin: 0 auto;">
+          <h1 style="margin-bottom: 24px;">About Blood Donor BD</h1>
+          <div style="background: white; padding: 32px; border-radius: 12px;">
+            <p style="margin-bottom: 16px;">Blood Donor BD is a platform connecting blood donors with those in need across Bangladesh.</p>
+            <p style="margin-bottom: 16px;"><strong>Our Mission:</strong> To ensure no one dies due to lack of blood by creating a reliable network of voluntary blood donors.</p>
+            <p><strong>How It Works:</strong></p>
+            <ul style="margin-top: 12px; padding-left: 20px;">
+              <li>Donors register and get verified by our admin team</li>
+              <li>Patients can search for donors or post blood requests</li>
+              <li>Requests stay active for 24 hours</li>
+              <li>Verified donors receive official certificates</li>
+            </ul>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderContactPage() {
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `
+        <div style="max-width: 800px; margin: 0 auto;">
+          <h1 style="margin-bottom: 24px;">Contact Us</h1>
+          <div style="background: white; padding: 32px; border-radius: 12px;">
+            <div style="display: grid; gap: 20px;">
+              <div style="display: flex; align-items: center; gap: 16px;">
+                <i class="fas fa-phone" style="font-size: 24px; color: #b71c1c;"></i>
+                <div><h4>Emergency Blood Bank</h4><p>16263 (24/7 Hotline)</p></div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 16px;">
+                <i class="fas fa-phone-alt" style="font-size: 24px; color: #b71c1c;"></i>
+                <div><h4>Helpline</h4><p>+880 1234-567890</p></div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 16px;">
+                <i class="fas fa-envelope" style="font-size: 24px; color: #b71c1c;"></i>
+                <div><h4>Email</h4><p>help@blooddonorbd.com</p></div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 16px;">
+                <i class="fas fa-map-marker-alt" style="font-size: 24px; color: #b71c1c;"></i>
+                <div><h4>Address</h4><p>Dhaka, Bangladesh</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLoginPage() {
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `
+        <div class="auth-container">
+          <div class="auth-card">
+            <div class="auth-header">
+              <i class="fas fa-heartbeat"></i>
+              <h2>Welcome Back</h2>
+              <p>Login to your account</p>
+            </div>
+            
+            <form id="loginForm">
+              <div class="form-group">
+                <label><i class="fas fa-envelope"></i> Email</label>
+                <input type="email" id="loginEmail" required placeholder="Enter your email">
+              </div>
+              
+              <div class="form-group">
+                <label><i class="fas fa-lock"></i> Password</label>
+                <input type="password" id="loginPassword" required placeholder="Enter your password">
+              </div>
+              
+              <button type="submit" class="btn btn-primary btn-block">Login</button>
+            </form>
+            
+            <div class="auth-footer">
+              <p>Don't have an account? <a href="#" onclick="router.navigate('register'); return false;">Register here</a></p>
+              <p style="margin-top: 8px;"><a href="#" onclick="resetPassword(); return false;">Forgot Password?</a></p>
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        await authSystem.login(email, password);
+      });
+    }
+
+    async function resetPassword() {
+      const email = prompt('Enter your email address to reset password:');
+      if (email) {
+        try {
+          await auth.sendPasswordResetEmail(email);
+          Toast.show('Password reset email sent! Check your inbox.', 'success');
+        } catch (error) {
+          Toast.show('Failed to send reset email: ' + error.message, 'error');
+        }
+      }
+    }
+
+    function renderRegisterPage() {
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `
+        <div class="auth-container">
+          <div class="auth-card" style="max-width: 600px;">
+            <div class="auth-header">
+              <i class="fas fa-user-plus"></i>
+              <h2>Join Blood Donor BD</h2>
+              <p>Create your account</p>
+            </div>
+            
+            <form id="registerForm">
+              <div class="form-group">
+                <label>Register As *</label>
+                <select id="regUserType" required onchange="toggleBloodGroupField()">
+                  <option value="">Select Registration Type</option>
+                  <option value="donor">🩸 Blood Donor (Requires Approval)</option>
+                  <option value="seeker">🔍 Donor Seeker (Instant Access)</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label>Full Name *</label>
+                <input type="text" id="regFullName" required placeholder="Enter your full name">
+              </div>
+              
+              <div class="form-group">
+                <label>Email *</label>
+                <input type="email" id="regEmail" required placeholder="your@email.com">
+              </div>
+              
+              <div class="form-group">
+                <label>Phone Number *</label>
+                <input type="tel" id="regPhone" required placeholder="01XXXXXXXXX">
+              </div>
+              
+              <div class="form-group" id="nidGroup">
+                <label>NID / Birth Registration No. *</label>
+                <input type="text" id="regNidNumber" required placeholder="Enter your NID or Birth Registration number">
+              </div>
+              
+              <div class="form-group" id="bloodGroupGroup">
+                <label>Blood Group *</label>
+                <select id="regBloodGroup">
+                  <option value="">Select Blood Group (if known)</option>
+                  <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+                  <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label>District * (Type to search)</label>
+                <input list="districtsList" id="regDistrict" required placeholder="Start typing your district name...">
+              </div>
+              
+              <div class="form-group">
+                <label>Upazila *</label>
+                <input type="text" id="regUpazila" required placeholder="Enter your upazila/thana">
+              </div>
+              
+              <div class="form-group">
+                <label>Address (Optional)</label>
+                <textarea id="regAddress" rows="2" placeholder="Your full address"></textarea>
+              </div>
+              
+              <div class="form-group">
+                <label>Password *</label>
+                <input type="password" id="regPassword" required minlength="6" placeholder="At least 6 characters">
+              </div>
+              
+              <div class="form-group">
+                <label>Confirm Password *</label>
+                <input type="password" id="regConfirmPassword" required placeholder="Re-enter password">
+              </div>
+              
+              <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 8px;">
+                  <input type="checkbox" id="regAgreeTerms" required>
+                  <span>I agree to the <a href="#" style="color: #b71c1c;">Terms and Conditions</a></span>
+                </label>
+              </div>
+              
+              <button type="submit" class="btn btn-primary btn-block">Register</button>
+            </form>
+            
+            <div class="auth-footer">
+              <p>Already have an account? <a href="#" onclick="router.navigate('login'); return false;">Login</a></p>
+              <p style="font-size: 12px; color: #666; margin-top: 12px;">
+                <i class="fas fa-info-circle"></i> Donor registration requires admin approval.
+              </p>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      window.toggleBloodGroupField = function() {
+        const userType = document.getElementById('regUserType').value;
+        const bloodGroupInput = document.getElementById('regBloodGroup');
+        const bloodGroupGroup = document.getElementById('bloodGroupGroup');
+        
+        if (userType === 'donor') {
+          bloodGroupInput.required = true;
+          bloodGroupGroup.style.display = 'block';
+        } else {
+          bloodGroupInput.required = false;
+          bloodGroupGroup.style.display = 'block';
+        }
+      };
+      
+      document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const password = document.getElementById('regPassword').value;
+        const confirmPassword = document.getElementById('regConfirmPassword').value;
+        const userType = document.getElementById('regUserType').value;
+        const districtVal = document.getElementById('regDistrict').value.trim();
+        
+        if (!userType) {
+          Toast.show('Please select registration type', 'error');
+          return;
+        }
+        
+        if (!bangladeshDistricts.includes(districtVal)) {
+          Toast.show('Please select a valid district from the suggestions list', 'error');
+          return;
+        }
+        
+        if (password !== confirmPassword) {
+          Toast.show('Passwords do not match', 'error');
+          return;
+        }
+        
+        if (password.length < 6) {
+          Toast.show('Password must be at least 6 characters', 'error');
+          return;
+        }
+        
+        const bloodGroup = document.getElementById('regBloodGroup').value;
+        if (userType === 'donor' && !bloodGroup) {
+          Toast.show('Blood group is required for donors', 'error');
+          return;
+        }
+        
+        const userData = {
+          fullName: document.getElementById('regFullName').value.trim(),
+          email: document.getElementById('regEmail').value.trim(),
+          phoneNumber: document.getElementById('regPhone').value.trim(),
+          nidNumber: document.getElementById('regNidNumber').value.trim(),
+          bloodGroup: bloodGroup || null,
+          district: districtVal,
+          upazila: document.getElementById('regUpazila').value.trim(),
+          address: document.getElementById('regAddress').value.trim(),
+          userType: userType,
+          password: password
+        };
+        await authSystem.register(userData);
+      });
+    }
+
+    function renderDashboard() {
+      if (!currentUser) {
+        router.navigate('login');
+        return;
+      }
+      
+      const main = document.getElementById('mainContent');
+      const approvalStatus = userProfile?.approvalStatus || 'pending';
+      const statusColor = approvalStatus === 'approved' ? '#2e7d32' : approvalStatus === 'rejected' ? '#d32f2f' : '#f57c00';
+      const statusText = approvalStatus === 'approved' ? 'Approved' : approvalStatus === 'rejected' ? 'Rejected' : 'Pending Approval';
+      const userTypeLabel = userProfile?.isDonor ? 'Blood Donor' : 'Donor Seeker';
+      
+      const roleDisplayName = getRoleDisplayName(userProfile?.role);
+      const roleSymbol = getRoleSymbol(userProfile?.role);
+
+      main.innerHTML = `
+        <h1 style="margin-bottom: 24px;">Welcome, ${roleSymbol}${userProfile?.fullName?.split(' ')[0] || 'User'}!</h1>
+        
+        <div style="display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
+          <span class="badge" style="background: ${userProfile?.isDonor ? '#b71c1c' : '#1565c0'}; color: white; padding: 6px 16px; border-radius: 20px;">
+            <i class="fas fa-${userProfile?.isDonor ? 'heart' : 'search'}"></i> ${userTypeLabel}
+          </span>
+          ${userProfile?.role !== 'user' ? `
+            <span class="badge" style="background: #ffd700; color: #333; padding: 6px 16px; border-radius: 20px; font-weight: 700;">
+              ${roleDisplayName}
+            </span>
+          ` : ''}
+        </div>
+        
+        <div style="background: ${statusColor}10; border-left: 4px solid ${statusColor}; padding: 16px 20px; border-radius: 8px; margin-bottom: 32px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <i class="fas fa-${approvalStatus === 'approved' ? 'check-circle' : approvalStatus === 'rejected' ? 'times-circle' : 'clock'}" style="color: ${statusColor}; font-size: 24px;"></i>
+            <div>
+              <strong style="color: ${statusColor};">Account Status: ${statusText}</strong>
+              <p style="color: #666; font-size: 14px; margin-top: 4px;">
+                ${userProfile?.isDonor ?
+                  (approvalStatus === 'approved' ? 'Your donor account is verified and active.' : 
+                   approvalStatus === 'rejected' ? 'Your application was rejected. Please contact support.' : 
+                   'Your application is under review by our admin team.') : 
+                  'You can search and contact donors immediately.'}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="dashboard-grid">
+          ${userProfile?.isDonor ? `
+            <div class="stat-card">
+              <div class="stat-icon"><i class="fas fa-tint"></i></div>
+              <div class="stat-info"><h3>Blood Group</h3><p>${userProfile?.bloodGroup || 'N/A'}</p></div>
+            </div>
+          ` : ''}
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-certificate"></i></div>
+            <div class="stat-info"><h3>Certificates</h3><p>${userProfile?.certificates?.length || 0}</p></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-map-marker-alt"></i></div>
+            <div class="stat-info"><h3>Location</h3><p>${userProfile?.district || 'N/A'}</p></div>
+          </div>
+        </div>
+
+        <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 32px; border-top: 4px solid #d32f2f;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="color: #d32f2f; margin: 0;"><i class="fas fa-exclamation-triangle"></i> Live Emergency Blood Requests</h3>
+            <button onclick="router.navigate('all-requests')" class="btn btn-outline" style="padding: 4px 12px; font-size: 12px;">View All</button>
+          </div>
+          <div id="dashboardEmergencyRequests">
+            <div class="loading-spinner" style="padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Loading critical requests...</div>
+          </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
+          <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom: 20px;">Quick Actions</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <button onclick="router.navigate('find-donors')" class="btn btn-outline"><i class="fas fa-search"></i> Find Donors</button>
+              <button onclick="router.navigate('request-blood')" class="btn btn-outline"><i class="fas fa-bell"></i> Request Blood</button>
+              <button onclick="router.navigate('all-requests')" class="btn btn-outline"><i class="fas fa-list"></i> All Blood Requests</button>
+              <button onclick="router.navigate('dm-donor')" class="btn btn-outline"><i class="fas fa-comments"></i> DM Donors</button>
+              ${userProfile?.isDonor ? `
+                <button onclick="router.navigate('certificates')" class="btn btn-outline"><i class="fas fa-certificate"></i> My Certificates</button>
+              ` : ''}
+              <button onclick="router.navigate('profile')" class="btn btn-outline"><i class="fas fa-user-edit"></i> Edit Profile</button>
+              ${hasAdminAccess() ? `<a href="admin.html" class="btn btn-primary"><i class="fas fa-shield-alt"></i> Admin Panel</a>` : ''}
+            </div>
+          </div>
+          
+          <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom: 20px;"><i class="fas fa-map-marked-alt"></i> Live Donors Map</h3>
+            <div id="dashboardMap" style="height: 180px; border-radius: 8px; z-index: 1; cursor: pointer; border: 1px solid #ddd;"></div>
+            <button onclick="router.navigate('live-map')" class="btn btn-primary btn-block mt-3"><i class="fas fa-expand-arrows-alt"></i> View Full Map</button>
+          </div>
+
+          <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h3 style="margin-bottom: 20px;">Profile Information</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <p><strong>Name:</strong> ${roleSymbol}${userProfile?.fullName || '-'}</p>
+              <p><strong>Email:</strong> ${userProfile?.email || '-'}</p>
+              <p><strong>Phone:</strong> ${userProfile?.phoneNumber || '-'}</p>
+              <p><strong>NID/Birth Reg:</strong> ${userProfile?.nidNumber || '-'}</p>
+              ${userProfile?.isDonor ? `<p><strong>Blood Group:</strong> ${userProfile?.bloodGroup || '-'}</p>` : ''}
+              <p><strong>District:</strong> ${userProfile?.district || '-'}, ${userProfile?.upazila || ''}</p>
+              <p><strong>Registered:</strong> ${userProfile?.createdAt ? new Date(userProfile.createdAt.toDate()).toLocaleDateString() : '-'}</p>
+              ${userProfile?.donorId ? `<p><strong>Donor ID:</strong> ${userProfile?.donorId}</p>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Trigger Load of Requests and Leaflet Map
+      setTimeout(() => {
+        loadDashboardEmergencyRequests();
+        const map = L.map('dashboardMap', { zoomControl: false, dragging: false }).setView([23.6850, 90.3563], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        map.on('click', () => router.navigate('live-map'));
+      }, 100);
+    }
+
+    // Helper to fetch and display compact emergency requests
+    async function loadDashboardEmergencyRequests() {
+      const container = document.getElementById('dashboardEmergencyRequests');
+      if (!container) return;
+
+      try {
+        const snapshot = await db.collection('bloodRequests').where('status', '==', 'active').limit(20).get();
+        const now = new Date();
+        const activeRequests = [];
+
+        snapshot.forEach(doc => {
+          const req = { id: doc.id, ...doc.data() };
+          const reqDateStr = req.requiredBy;
+          const reqTimeStr = req.requiredTime || '23:59';
+          const requiredDateTime = new Date(`${reqDateStr}T${reqTimeStr}`);
+
+          // Automatic deletion/filtering when requested time passes
+          if (requiredDateTime < now) {
+            db.collection('bloodRequests').doc(doc.id).delete();
+            return;
+          }
+          activeRequests.push(req);
+        });
+
+        if (activeRequests.length === 0) {
+          container.innerHTML = '<p style="color: #757575; font-size: 14px; margin: 0;">No urgent blood requests active right now.</p>';
+          return;
+        }
+
+        // Sort by emergency priority: 'emergency' -> 'urgent' -> 'normal'
+        const urgencyWeight = { 'emergency': 3, 'urgent': 2, 'normal': 1 };
+        activeRequests.sort((a, b) => (urgencyWeight[b.urgency] || 1) - (urgencyWeight[a.urgency] || 1));
+
+        container.innerHTML = `<div style="display: flex; flex-direction: column; gap: 10px; max-height: 260px; overflow-y: auto;">
+          ${activeRequests.map(req => {
+            const isEmg = req.urgency === 'emergency';
+            const badgeBg = isEmg ? '#d32f2f' : req.urgency === 'urgent' ? '#f57c00' : '#2e7d32';
+            return `
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #fafafa; border-left: 4px solid ${badgeBg}; border-radius: 6px; border: 1px solid #eeeeee;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <span style="background: #b71c1c; color: white; font-weight: 800; font-size: 14px; padding: 4px 10px; border-radius: 20px;">${req.bloodGroup}</span>
+                  <div>
+                    <strong style="font-size: 14px; display: block;">${req.patientName} (${req.unitsNeeded} Unit)</strong>
+                    <small style="color: #666;"><i class="fas fa-hospital"></i> ${req.hospitalName} | <i class="far fa-clock"></i> ${req.requiredBy} ${req.requiredTime || ''}</small>
+                  </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="background: ${badgeBg}; color: white; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 12px; text-transform: uppercase;">${req.urgency}</span>
+                  <a href="tel:${req.contactNumber}" class="btn btn-primary" style="padding: 6px 10px; font-size: 12px; border-radius: 4px;"><i class="fas fa-phone"></i></a>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>`;
+      } catch (err) {
+        container.innerHTML = '<p style="color: #d32f2f; font-size: 13px;">Failed to fetch urgent requests.</p>';
+      }
+    }
+
+    // View All Requests Page (Feature 1)
+    async function renderAllRequestsPage() {
+      if (!currentUser) { router.navigate('login'); return; }
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `<h1 style="margin-bottom: 24px;">All Active Blood Requests</h1><div id="allRequestsList"></div>`;
+      await loadAllRequests();
+    }
+
+    async function loadAllRequests() {
+      const container = document.getElementById('allRequestsList');
+      if (!container) return;
+      container.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading requests...</div>';
+
+      try {
+        const snapshot = await db.collection('bloodRequests').where('status', '==', 'active').get();
+        const now = new Date();
+        const requests = [];
+
+        snapshot.forEach(doc => {
+            const req = { id: doc.id, ...doc.data() };
+            const reqDateStr = req.requiredBy;
+            const reqTimeStr = req.requiredTime || '23:59';
+            const requiredDateTime = new Date(`${reqDateStr}T${reqTimeStr}`);
+
+            // Automatically delete requests that have surpassed their required timeline
+            if (requiredDateTime < now) {
+                db.collection('bloodRequests').doc(doc.id).delete();
+                return;
+            }
+            requests.push(req);
+        });
+
+        if (requests.length === 0) {
+          container.innerHTML = `<div class="empty-state"><i class="fas fa-clipboard-list"></i><p>No active requests found.</p></div>`;
+          return;
+        }
+
+        requests.sort((a, b) => (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0));
+        container.innerHTML = '';
+        
+        requests.forEach(req => {
+          const createdAt = req.createdAt?.toDate?.() || new Date();
+          const card = document.createElement('div');
+          card.className = 'request-card';
+          card.innerHTML = `
+            <div class="request-header"><div><h3>${req.patientName}</h3><span class="request-blood-group">${req.bloodGroup}</span></div><span class="badge" style="background:#2e7d32;color:white;padding:4px 12px;border-radius:20px;">Active Request</span></div>
+            <div class="request-details">
+                <div class="request-detail"><i class="fas fa-hospital"></i><span>${req.hospitalName}</span></div>
+                <div class="request-detail"><i class="fas fa-flask"></i><span>${req.unitsNeeded} Unit(s)</span></div>
+                <div class="request-detail"><i class="fas fa-calendar"></i><span>Required: ${req.requiredBy} ${req.requiredTime || ''}</span></div>
+                <div class="request-detail"><i class="fas fa-clock"></i><span>Posted: ${createdAt.toLocaleString()}</span></div>
+            </div>
+            <div class="request-actions">
+               <a href="tel:${req.contactNumber}" class="btn btn-primary"><i class="fas fa-phone"></i> Call Now</a>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (error) {
+        container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ${error.message}</p></div>`;
+      }
+    }
+
+    // Live Map Component Page (Feature 5 & 6)
+    function renderLiveMapPage() {
+        const main = document.getElementById('mainContent');
+        main.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h1 style="margin: 0;"><i class="fas fa-map-marker-alt"></i> Live Blood Donors Map</h1>
+                <button onclick="router.navigate('dashboard')" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
+            </div>
+            <div id="fullLiveMap" style="height: 75vh; border-radius: 12px; z-index: 1; box-shadow: var(--shadow-lg); border: 2px solid #ddd;"></div>
+        `;
+        setTimeout(async () => {
+            const map = L.map('fullLiveMap').setView([23.6850, 90.3563], 7);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+            
+            try {
+                const snapshot = await db.collection('users').where('isDonor', '==', true).where('approvalStatus', '==', 'approved').get();
+                let donorCount = 0;
+                snapshot.forEach(doc => {
+                    const donor = doc.data();
+                    if(donor.lat && donor.lng) {
+                        donorCount++;
+                        const marker = L.marker([donor.lat, donor.lng]).addTo(map);
+                        marker.bindPopup(`
+                            <div style="text-align: center; padding: 5px;">
+                                <strong>${donor.fullName}</strong><br/>
+                                <span style="background: var(--primary); color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; display: inline-block; margin: 4px 0;">${donor.bloodGroup}</span><br/>
+                                <i class="fas fa-map-marker-alt"></i> ${donor.district}<br/>
+                                <a href="tel:${donor.phoneNumber}" class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; margin-top: 8px;"><i class="fas fa-phone"></i> Call Donor</a>
+                            </div>
+                        `);
+                    }
+                });
+                if(donorCount > 0) Toast.show(`Loaded ${donorCount} live donors on the map!`, 'success');
+            } catch (err) {
+                console.error("Failed to load map data", err);
+            }
+        }, 200);
+    }
+
+    function renderProfilePage() {
+      if (!currentUser) { router.navigate('login'); return; }
+      
+      const main = document.getElementById('mainContent');
+      const roleDisplayName = getRoleDisplayName(userProfile?.role);
+      const roleSymbol = getRoleSymbol(userProfile?.role);
+
+      main.innerHTML = `
+        <div class="profile-container">
+          <div class="profile-header">
+            <div class="profile-avatar">${roleSymbol}${userProfile?.fullName?.charAt(0) || 'U'}</div>
+            <div class="profile-info">
+              <h2>${roleSymbol}${userProfile?.fullName}</h2>
+              <span class="profile-badge">${userProfile?.isDonor ? 'Blood Donor' : 'Donor Seeker'}</span>
+              <span class="profile-badge" style="margin-left: 8px; background: ${userProfile?.approvalStatus === 'approved' ? '#2e7d32' : '#f57c00'};">${userProfile?.approvalStatus || 'pending'}</span>
+              ${userProfile?.role !== 'user' ? `
+                <span class="profile-badge" style="margin-left: 8px; background: #ffd700; color: #333; font-weight: 700;">
+                  ${roleDisplayName}
+                </span>
+              ` : ''}
+              ${hasAdminAccess() ? `
+                <a href="admin.html" class="btn btn-primary" style="margin-top: 12px; display: inline-flex;">
+                  <i class="fas fa-shield-alt"></i> Go to Admin Panel
+                </a>
+              ` : ''}
+            </div>
+          </div>
+          
+          <div class="switch-type-section">
+            <h3><i class="fas fa-exchange-alt"></i> Switch Account Type</h3>
+            <p style="margin-bottom: 16px; color: #666;">
+              ${userProfile?.isDonor ?
+                'You are currently registered as a <strong>Blood Donor</strong>. You can switch to become a Donor Seeker.' :
+                'You are currently registered as a <strong>Donor Seeker</strong>. You can switch to become a Blood Donor (requires approval).'}
+            </p>
+            ${!userProfile?.isDonor ? `
+              <div style="background: #fff3e0; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                <i class="fas fa-info-circle"></i> Switching to Donor will require admin approval.
+              </div>
+            ` : ''}
+            <button onclick="switchUserType()" class="btn btn-outline">
+              <i class="fas fa-exchange-alt"></i> Switch to ${userProfile?.isDonor ? 'Donor Seeker' : 'Blood Donor'}
+            </button>
+          </div>
+          
+          <form id="profileForm" class="profile-form">
+            <div class="form-group"><label>Full Name</label><input type="text" id="profileFullName" value="${userProfile?.fullName || ''}" required></div>
+            <div class="form-group"><label>Phone Number</label><input type="tel" id="profilePhone" value="${userProfile?.phoneNumber || ''}" required></div>
+            <div class="form-group"><label>NID / Birth Registration No.</label><input type="text" id="profileNid" value="${userProfile?.nidNumber || ''}" required></div>
+            ${userProfile?.isDonor ? `
+              <div class="form-group">
+                <label>Blood Group</label>
+                <select id="profileBloodGroup">
+                  <option value="">Select</option>
+                  <option ${userProfile?.bloodGroup === 'A+' ? 'selected' : ''}>A+</option>
+                  <option ${userProfile?.bloodGroup === 'A-' ? 'selected' : ''}>A-</option>
+                  <option ${userProfile?.bloodGroup === 'B+' ? 'selected' : ''}>B+</option>
+                  <option ${userProfile?.bloodGroup === 'B-' ? 'selected' : ''}>B-</option>
+                  <option ${userProfile?.bloodGroup === 'O+' ? 'selected' : ''}>O+</option>
+                  <option ${userProfile?.bloodGroup === 'O-' ? 'selected' : ''}>O-</option>
+                  <option ${userProfile?.bloodGroup === 'AB+' ? 'selected' : ''}>AB+</option>
+                  <option ${userProfile?.bloodGroup === 'AB-' ? 'selected' : ''}>AB-</option>
+                </select>
+              </div>
+            ` : ''}
+            <div class="form-group">
+              <label>District (Type or select)</label>
+              <input list="districtsList" id="profileDistrict" value="${userProfile?.district || ''}" required placeholder="Type your district...">
+            </div>
+            <div class="form-group"><label>Upazila</label><input type="text" id="profileUpazila" value="${userProfile?.upazila || ''}"></div>
+            <div class="form-group"><label>Address</label><textarea id="profileAddress" rows="3">${userProfile?.address || ''}</textarea></div>
+            <button type="submit" class="btn btn-primary">Update Profile</button>
+          </form>
+        </div>
+      `;
+      document.getElementById('profileForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          const updates = {
+            fullName: document.getElementById('profileFullName').value.trim(),
+            phoneNumber: document.getElementById('profilePhone').value.trim(),
+            nidNumber: document.getElementById('profileNid').value.trim(),
+            district: document.getElementById('profileDistrict').value,
+            upazila: document.getElementById('profileUpazila').value.trim(),
+            address: document.getElementById('profileAddress').value.trim(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+          
+          if (userProfile?.isDonor) {
+            updates.bloodGroup = document.getElementById('profileBloodGroup').value;
+          }
+          
+          await db.collection('users').doc(currentUser.uid).update(updates);
+          await authSystem.loadUserProfile(currentUser.uid);
+          Toast.show('Profile updated!', 'success');
+          router.navigate('dashboard');
+        } catch (error) {
+          Toast.show('Failed to update profile', 'error');
+        }
+      });
+    }
+
+    async function renderFindDonorsPage() {
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `
+        <h1 style="margin-bottom: 24px;">Find Blood Donors</h1>
+        <div style="background: white; padding: 24px; border-radius: 12px; margin-bottom: 32px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div class="form-group">
+              <label>Blood Group</label>
+              <select id="searchBloodGroup"><option value="">All</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
+            </div>
+            <div class="form-group">
+              <label>District</label>
+              <input list="districtsList" id="searchDistrict" placeholder="Type or pick a district...">
+            </div>
+            <div class="form-group"><label>&nbsp;</label><button onclick="searchDonors()" class="btn btn-primary btn-block"><i class="fas fa-search"></i> Search</button></div>
+          </div>
+        </div>
+        <div id="donorResults"></div>
+      `;
+      setTimeout(() => searchDonors(), 100);
+    }
+
+    async function searchDonors() {
+      const bloodGroup = document.getElementById('searchBloodGroup')?.value || '';
+      const district = document.getElementById('searchDistrict')?.value || '';
+      const results = document.getElementById('donorResults');
+      if (!results) return;
+      results.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
+      
+      try {
+        let query = db.collection('users').where('approvalStatus', '==', 'approved').where('isDonor', '==', true);
+        if (bloodGroup) query = query.where('bloodGroup', '==', bloodGroup);
+        
+        const snapshot = await query.limit(50).get();
+        let donors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (district) donors = donors.filter(d => d.district === district);
+        if (donors.length === 0) {
+          results.innerHTML = '<div class="empty-state"><i class="fas fa-users-slash"></i><p>No approved donors found.</p></div>';
+          return;
+        }
+        
+        // Render 2 IN A ROW GRID Container
+        results.innerHTML = `
+          <h2 style="margin-bottom: 20px;">${donors.length} Donor(s) Found</h2>
+          <div id="donorList" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;"></div>
+        `;
+        const donorList = document.getElementById('donorList');
+        
+        donors.forEach(donor => {
+          const roleSymbol = getRoleSymbol(donor.role);
+          const card = document.createElement('div');
+          card.className = 'request-card';
+          card.style.marginBottom = '0'; // Handled by CSS grid gap
+          card.innerHTML = `
+            <div class="request-header"><div><h3>${roleSymbol}${donor.fullName}</h3><span class="request-blood-group">${donor.bloodGroup}</span></div><span class="badge" style="background:#2e7d32;color:white;padding:4px 12px;border-radius:20px;"><i class="fas fa-check-circle"></i> Verified Donor</span></div>
+            <div class="request-details"><div class="request-detail"><i class="fas fa-map-marker-alt"></i><span>${donor.district}, ${donor.upazila || ''}</span></div><div class="request-detail"><i class="fas fa-phone"></i><span>${donor.phoneNumber ? donor.phoneNumber.slice(0,8)+'***' : 'N/A'}</span></div></div>
+            <div class="request-actions">
+              ${currentUser ? `
+                <button onclick="revealContact('${donor.id}', '${donor.phoneNumber}', '${donor.fullName}')" class="btn btn-primary" style="flex: 1;"><i class="fas fa-phone"></i> Reveal Contact</button>
+                <button onclick="router.navigate('dm-donor')" class="btn btn-outline" style="flex: 1;"><i class="fas fa-comment"></i> Message</button>
+              ` : `<button onclick="router.navigate('login')" class="btn btn-outline btn-block">Login to Contact</button>`}
+            </div>
+          `;
+          donorList.appendChild(card);
+        });
+
+        // Add media query rule dynamically for small mobile devices fallback to single column
+        if (window.innerWidth < 768) {
+          donorList.style.gridTemplateColumns = '1fr';
+        }
+
+      } catch (error) {
+        results.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error searching donors.</p></div>';
+      }
+    }
+
+    async function revealContact(donorId, phone, donorName) {
+      if (!phone) {
+        Toast.show('Phone number not available', 'error');
+        return;
+      }
+      
+      if (confirm(`Reveal contact number for ${donorName}?`)) {
+        await contactTracking.logContact(donorId, currentUser.uid, donorName, userProfile.fullName, phone);
+        window.open(`tel:${phone}`);
+        Toast.show('Contact revealed & logged securely.', 'info');
+      }
+    }
+
+    function renderRequestBloodPage() {
+      if (!currentUser) { router.navigate('login'); return; }
+      
+      const main = document.getElementById('mainContent');
+      const today = new Date().toISOString().split('T')[0];
+      
+      main.innerHTML = `
+        <div style="max-width: 800px; margin: 0 auto;">
+          <h1 style="margin-bottom: 24px;">Request Blood</h1>
+          <div style="background: #fff3e0; border-left: 4px solid #f57c00; padding: 16px; border-radius: 8px; margin-bottom: 24px;"><i class="fas fa-info-circle"></i> <strong>Note:</strong> Requests automatically expire after required date & time pass.</div>
+          <div style="background: white; padding: 32px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <form id="bloodRequestForm">
+              <div class="form-group"><label>Patient Name *</label><input type="text" id="patientName" required></div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;"><div class="form-group"><label>Age *</label><input type="number" id="patientAge" required></div><div class="form-group"><label>Gender *</label><select id="patientGender" required><option value="">Select</option><option>Male</option><option>Female</option></select></div></div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;"><div class="form-group"><label>Blood Group *</label><select id="requestBloodGroup" required><option value="">Select</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div><div class="form-group"><label>Units *</label><input type="number" id="unitsNeeded" required value="1"></div></div>
+              <div class="form-group"><label>Hospital *</label><input type="text" id="hospitalName" required></div>
+              <div class="form-group"><label>Hospital Address *</label><textarea id="hospitalAddress" required rows="2"></textarea></div>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group"><label>Required Date *</label><input type="date" id="requiredBy" required value="${today}"></div>
+                <div class="form-group"><label>Required Time *</label><input type="time" id="requiredTime" required></div>
+              </div>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;"><div class="form-group"><label>Urgency *</label><select id="urgency" required><option value="normal">Normal</option><option value="urgent">Urgent</option><option value="emergency">Emergency</option></select></div><div class="form-group"><label>Contact Number *</label><input type="tel" id="contactNumber" required value="${userProfile?.phoneNumber || ''}"></div></div>
+              
+              <div class="form-group"><label>Additional Notes</label><textarea id="additionalNotes" rows="2"></textarea></div>
+              <button type="submit" class="btn btn-primary btn-block">Submit Request</button>
+            </form>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('bloodRequestForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          const requestData = {
+            patientName: document.getElementById('patientName').value.trim(),
+            patientAge: parseInt(document.getElementById('patientAge').value),
+            patientGender: document.getElementById('patientGender').value,
+            bloodGroup: document.getElementById('requestBloodGroup').value,
+            unitsNeeded: parseInt(document.getElementById('unitsNeeded').value),
+            hospitalName: document.getElementById('hospitalName').value.trim(),
+            hospitalAddress: document.getElementById('hospitalAddress').value.trim(),
+            requiredBy: document.getElementById('requiredBy').value,
+            requiredTime: document.getElementById('requiredTime').value,
+            urgency: document.getElementById('urgency').value,
+            contactNumber: document.getElementById('contactNumber').value.trim(),
+            additionalNotes: document.getElementById('additionalNotes').value.trim(),
+            requesterUid: currentUser.uid,
+            requesterName: userProfile.fullName,
+            requesterEmail: userProfile.email,
+            status: 'active',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+          await db.collection('bloodRequests').add(requestData);
+          Toast.show('Request submitted successfully!', 'success');
+          router.navigate('my-requests');
+        } catch (error) {
+          Toast.show('Failed to submit request', 'error');
+        }
+      });
+    }
+
+    async function renderMyRequestsPage() {
+      if (!currentUser) { router.navigate('login'); return; }
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `<h1 style="margin-bottom: 24px;">My Blood Requests</h1><div id="myRequestsList"></div>`;
+      await loadMyRequests();
+    }
+
+    async function loadMyRequests() {
+      const container = document.getElementById('myRequestsList');
+      if (!container) return;
+      
+      try {
+        const snapshot = await db.collection('bloodRequests').where('requesterUid', '==', currentUser.uid).get();
+        if (snapshot.empty) {
+          container.innerHTML = `<div class="empty-state"><i class="fas fa-clipboard-list"></i><p>No requests found.</p><button onclick="router.navigate('request-blood')" class="btn btn-primary" style="margin-top:16px;">Create Request</button></div>`;
+          return;
+        }
+        
+        const requests = [];
+        const now = new Date();
+        snapshot.forEach(doc => {
+            const req = { id: doc.id, ...doc.data() };
+            const reqDateStr = req.requiredBy;
+            const reqTimeStr = req.requiredTime || '23:59';
+            const requiredDateTime = new Date(`${reqDateStr}T${reqTimeStr}`);
+
+            // Expire logic
+            if (requiredDateTime < now) {
+                db.collection('bloodRequests').doc(doc.id).delete();
+                return;
+            }
+            requests.push(req);
+        });
+
+        if (requests.length === 0) {
+            container.innerHTML = `<div class="empty-state"><i class="fas fa-clipboard-list"></i><p>No active requests found.</p><button onclick="router.navigate('request-blood')" class="btn btn-primary" style="margin-top:16px;">Create Request</button></div>`;
+            return;
+        }
+
+        requests.sort((a, b) => (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0));
+        container.innerHTML = '';
+        
+        requests.forEach(req => {
+          const createdAt = req.createdAt?.toDate?.() || new Date();
+          const card = document.createElement('div');
+          card.className = 'request-card';
+          card.innerHTML = `
+            <div class="request-header"><div><h3>${req.patientName}</h3><span class="request-blood-group">${req.bloodGroup}</span></div><span class="badge" style="background:#2e7d32;color:white;padding:4px 12px;border-radius:20px;">Active</span></div>
+            <div class="request-details"><div class="request-detail"><i class="fas fa-hospital"></i><span>${req.hospitalName}</span></div><div class="request-detail"><i class="fas fa-flask"></i><span>${req.unitsNeeded} Unit(s)</span></div><div class="request-detail"><i class="fas fa-calendar"></i><span>Required: ${req.requiredBy} ${req.requiredTime || ''}</span></div><div class="request-detail"><i class="fas fa-clock"></i><span>Posted: ${createdAt.toLocaleString()}</span></div></div>
+          `;
+          container.appendChild(card);
+        });
+      } catch (error) {
+        container.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error: ${error.message}</p><button onclick="router.navigate('request-blood')" class="btn btn-primary" style="margin-top:16px;">Create Request</button></div>`;
+      }
+    }
+
+    async function renderCertificatesPage() {
+      if (!currentUser) { router.navigate('login'); return; }
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `<h1 style="margin-bottom: 24px;">My Certificates</h1><div id="certificateList"></div>`;
+      await loadCertificates();
+    }
+
+    async function loadCertificates() {
+      const container = document.getElementById('certificateList');
+      if (!userProfile?.isDonor) {
+        container.innerHTML = `<div class="empty-state"><i class="fas fa-info-circle"></i><p>Certificates are only available for blood donors.</p></div>`;
+        return;
+      }
+      
+      if (userProfile?.approvalStatus !== 'approved') {
+        container.innerHTML = `<div class="empty-state"><i class="fas fa-clock"></i><p>Account pending approval. Certificates available after approval.</p></div>`;
+        return;
+      }
+      
+      try {
+        const certificates = await certificateSystem.loadMyCertificates();
+        if (certificates.length === 0) {
+          container.innerHTML = `<div class="empty-state"><i class="fas fa-certificate"></i><p>No certificates found.</p></div>`;
+          return;
+        }
+        
+        container.innerHTML = '';
+        certificates.forEach(cert => {
+          const item = document.createElement('div');
+          item.className = 'certificate-item';
+          item.innerHTML = `
+            <div class="certificate-info">
+              <div class="certificate-icon"><i class="fas fa-certificate"></i></div>
+              <div class="certificate-details">
+                <h4>Donor Registration Certificate</h4>
+                <p>Certificate ID: ${cert.certificateId}</p>
+                <p>Donor ID: ${cert.donorId || 'N/A'}</p>
+                <p>Blood Group: ${cert.bloodGroup}</p>
+                <p>Issued: ${new Date(cert.issuedDate).toLocaleDateString()}</p>
+              </div>
+            </div>
+            <div class="certificate-actions">
+              <button onclick="certificateSystem.viewCertificate('${cert.certificateId}')" class="btn btn-primary"><i class="fas fa-eye"></i> View</button>
+              <button onclick="certificateSystem.downloadCertificate('${cert.certificateId}')" class="btn btn-outline"><i class="fas fa-download"></i> Download</button>
+            </div>
+          `;
+          container.appendChild(item);
+        });
+      } catch (error) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error loading certificates.</p></div>';
+      }
+    }
+
+    function renderVerifyCertificatePage() {
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `
+        <div style="max-width:600px;margin:0 auto;">
+          <h1 style="margin-bottom:24px;">Verify Certificate</h1>
+          <div style="background:white;padding:32px;border-radius:12px;">
+            <p>Enter a certificate ID to verify:</p>
+            <input type="text" id="certIdInput" class="search-input" style="width:100%;margin:16px 0;padding:14px;border:1px solid #ddd;border-radius:8px;" placeholder="Enter Certificate ID">
+            <button onclick="verifyCertificateInput()" class="btn btn-primary btn-block">Verify Certificate</button>
+            <div id="verificationResult" style="margin-top:20px;"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function verifyCertificateInput() {
+      const certId = document.getElementById('certIdInput')?.value.trim();
+      const resultDiv = document.getElementById('verificationResult');
+      
+      if (!certId) {
+        Toast.show('Please enter a certificate ID', 'warning');
+        return;
+      }
+      
+      resultDiv.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Verifying...</div>';
+      try {
+        const doc = await db.collection('certificates').doc(certId).get();
+        if (!doc.exists) {
+          resultDiv.innerHTML = `<div style="background:#ffebee;padding:16px;border-radius:8px;border-left:4px solid #d32f2f;"><i class="fas fa-times-circle"></i> Certificate not found.</div>`;
+          return;
+        }
+        const cert = doc.data();
+        resultDiv.innerHTML = `
+          <div style="background:#e8f5e9;padding:16px;border-radius:8px;border-left:4px solid #2e7d32;">
+            <i class="fas fa-check-circle" style="color:#2e7d32;"></i> <strong>Certificate Verified!</strong>
+            <p style="margin-top:12px;"><strong>Name:</strong> ${cert.userName}</p>
+            <p><strong>Blood Group:</strong> ${cert.bloodGroup}</p>
+            <p><strong>Donor ID:</strong> ${cert.donorId || 'N/A'}</p>
+            <p><strong>Issued:</strong> ${new Date(cert.issuedDate).toLocaleDateString()}</p>
+            <button onclick="certificateSystem.viewCertificate('${certId}')" class="btn btn-primary" style="margin-top:12px;"><i class="fas fa-eye"></i> View Certificate</button>
+          </div>
+        `;
+      } catch (error) {
+        resultDiv.innerHTML = `<div style="background:#ffebee;padding:16px;border-radius:8px;">Error verifying certificate.</div>`;
+      }
+    }
+
+    // DM Donor Page - Group Chat
+    async function renderDmDonorPage() {
+      if (!currentUser) { router.navigate('login'); return; }
+      
+      const main = document.getElementById('mainContent');
+      main.innerHTML = `
+        <div style="max-width: 1000px; margin: 0 auto;">
+          <h1 style="margin-bottom: 24px;"><i class="fas fa-comments"></i> DM for Donor</h1>
+          <div style="display: grid; grid-template-columns: 300px 1fr; gap: 20px; height: 70vh; min-height: 500px;">
+            <div style="background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: flex; flex-direction: column;">
+              <div style="padding: 16px; border-bottom: 1px solid #eee;">
+                <h3 style="margin: 0;"><i class="fas fa-users"></i> Online Users</h3>
+              </div>
+              <div id="onlineUsersList" style="flex: 1; overflow-y: auto; padding: 12px;">
+                <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading users...</div>
+              </div>
+            </div>
+            
+            <div style="background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); display: flex; flex-direction: column;">
+              <div style="padding: 16px; border-bottom: 1px solid #eee;">
+                <h3 style="margin: 0;"><i class="fas fa-comment-dots"></i> Group Chat</h3>
+                <p style="font-size: 12px; color: #666; margin-top: 4px;">Everyone can chat here</p>
+              </div>
+              <div id="chatMessages" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+                <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading messages...</div>
+              </div>
+              <div style="padding: 16px; border-top: 1px solid #eee; display: flex; gap: 10px;">
+                <input type="text" id="messageInput" placeholder="Type your message..." style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 25px; font-size: 14px;">
+                <button onclick="sendChatMessage()" class="btn btn-primary" style="border-radius: 25px; padding: 12px 24px;"><i class="fas fa-paper-plane"></i> Send</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      loadOnlineUsers();
+      loadChatMessages();
+      setupRealtimeChat();
+    }
+
+    async function loadOnlineUsers() {
+      const container = document.getElementById('onlineUsersList');
+      if (!container) return;
+      
+      try {
+        const snapshot = await db.collection('users')
+          .where('approvalStatus', 'in', ['approved', 'pending'])
+          .limit(50)
+          .get();
+        
+        const users = [];
+        snapshot.forEach(doc => {
+          const user = doc.data();
+          if (user.uid !== currentUser?.uid) {
+            users.push(user);
+          }
+        });
+        
+        if (users.length === 0) {
+          container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No other users online</p>';
+          return;
+        }
+        
+        container.innerHTML = users.map(user => {
+          const roleSymbol = getRoleSymbol(user.role);
+          return `
+            <div style="display: flex; align-items: center; gap: 12px; padding: 10px; border-bottom: 1px solid #f0f0f0;">
+              <div style="width: 40px; height: 40px; border-radius: 50%; background: ${user.isDonor ? '#b71c1c' : '#1565c0'}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                ${user.fullName?.charAt(0) || 'U'}
+              </div>
+              <div style="flex: 1;">
+                <strong>${roleSymbol}${user.fullName}</strong>
+                <div style="display: flex; gap: 8px; margin-top: 4px;">
+                  <span class="badge" style="background: ${user.isDonor ? '#b71c1c' : '#1565c0'}; color: white; font-size: 10px; padding: 2px 8px;">
+                    ${user.isDonor ? '🩸 Donor' : '🔍 Seeker'}
+                  </span>
+                  ${user.isDonor ? `<span class="badge" style="background: #2e7d32; color: white; font-size: 10px; padding: 2px 8px;">${user.bloodGroup || ''}</span>` : ''}
+                  ${user.role === 'main_admin' ? `<span class="badge" style="background: #ffd700; color: #333; font-size: 10px; padding: 2px 8px;">👑 Admin</span>` : ''}
+                </div>
+              </div>
+              <div style="width: 10px; height: 10px; border-radius: 50%; background: #4caf50;"></div>
+            </div>
+          `;
+        }).join('');
+      } catch (error) {
+        container.innerHTML = '<p style="color: red;">Error loading users</p>';
+      }
+    }
+
+    async function loadChatMessages() {
+      const container = document.getElementById('chatMessages');
+      if (!container) return;
+      
+      try {
+        const snapshot = await db.collection('chatMessages')
+          .orderBy('timestamp', 'desc')
+          .limit(50)
+          .get();
+        const messages = [];
+        snapshot.forEach(doc => messages.push({ id: doc.id, ...doc.data() }));
+        messages.reverse();
+        if (messages.length === 0) {
+          container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">No messages yet. Start the conversation!</p>';
+          return;
+        }
+        
+        container.innerHTML = messages.map(msg => {
+          const isOwnMessage = msg.userId === currentUser?.uid;
+          const roleSymbol = getRoleSymbol(msg.userRole);
+          return `
+            <div style="display: flex; ${isOwnMessage ? 'justify-content: flex-end;' : ''}">
+              <div style="max-width: 70%;">
+                ${!isOwnMessage ? `
+                  <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <span style="font-weight: 600; font-size: 13px;">${roleSymbol}${msg.userName}</span>
+                    <span class="badge" style="background: ${msg.isDonor ? '#b71c1c' : '#1565c0'}; color: white; font-size: 10px; padding: 2px 6px;">
+                      ${msg.isDonor ? 'Donor' : 'Seeker'}
+                    </span>
+                  </div>
+                ` : ''}
+                
+                <div style="background: ${isOwnMessage ? '#b71c1c' : '#f0f0f0'}; color: ${isOwnMessage ? 'white' : '#333'}; padding: 10px 15px; border-radius: 18px; word-wrap: break-word;">
+                  ${msg.message}
+                </div>
+                <div style="font-size: 10px; color: #999; margin-top: 4px; ${isOwnMessage ? 'text-align: right;' : ''}">
+                  ${msg.timestamp?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || 'Just now'}
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        
+        container.scrollTop = container.scrollHeight;
+      } catch (error) {
+        container.innerHTML = '<p style="color: red;">Error loading messages</p>';
+      }
+    }
+
+    function setupRealtimeChat() {
+      db.collection('chatMessages')
+        .orderBy('timestamp', 'desc')
+        .limit(50)
+        .onSnapshot(() => {
+          loadChatMessages();
+        });
+    }
+
+    async function sendChatMessage() {
+      const input = document.getElementById('messageInput');
+      const message = input.value.trim();
+      
+      if (!message) return;
+      
+      try {
+        await db.collection('chatMessages').add({
+          userId: currentUser.uid,
+          userName: userProfile.fullName,
+          userRole: userProfile.role || 'user',
+          isDonor: userProfile.isDonor || false,
+          message: message,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        input.value = '';
+      } catch (error) {
+        Toast.show('Failed to send message', 'error');
+      }
+    }
+
+    // Initialize App
+    auth.onAuthStateChanged(async (user) => {
+      document.getElementById('loadingOverlay').style.display = 'none';
+      document.getElementById('appContainer').style.display = 'block';
+      
+      if (user) {
+        currentUser = user;
+        await authSystem.loadUserProfile(user.uid);
+        
+        // Setup live location background tracking
+        updateLiveLocation();
+        
+        updateNavigation();
+        const hash = window.location.hash.substring(1);
+        if (hash && router.routes[hash]) router.navigate(hash);
+        else router.navigate('dashboard');
+      } else {
+        currentUser = null; 
+        userProfile = null;
+        updateNavigation();
+        const hash = window.location.hash.substring(1);
+        if (hash && router.routes[hash]) router.navigate(hash);
+        else router.navigate('home');
+      }
+    });
+
+    function updateNavigation() {
+      const navMenu = document.getElementById('navMenu');
+      const userInfo = document.getElementById('userInfo');
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (!navMenu || !userInfo || !logoutBtn) return;
+      
+      if (currentUser) {
+        navMenu.innerHTML = `
+          <li><a href="#" data-page="dashboard" onclick="router.navigate('dashboard');return false;">Dashboard</a></li>
+          <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors');return false;">Find Donors</a></li>
+          <li><a href="#" data-page="request-blood" onclick="router.navigate('request-blood');return false;">Request Blood</a></li>
+          <li><a href="#" data-page="dm-donor" onclick="router.navigate('dm-donor');return false;"><i class="fas fa-comments"></i> DM Donors</a></li>
+          ${userProfile?.isDonor ? `<li><a href="#" data-page="certificates" onclick="router.navigate('certificates');return false;">Certificates</a></li>` : ''}
+          <li><a href="#" data-page="profile" onclick="router.navigate('profile');return false;">Profile</a></li>
+        `;
+        // Add role symbol
+        let roleSymbol = getRoleSymbol(userProfile?.role);
+        // Add admin panel button for admins/moderators
+        let adminButton = '';
+        if (hasAdminAccess()) {
+          adminButton = `<a href="admin.html" class="admin-btn">
+            <i class="fas fa-shield-alt"></i> Admin Panel
+          </a>`;
+        }
+        
+        userInfo.innerHTML = `
+          <div class="user-avatar">${roleSymbol}${userProfile?.fullName?.charAt(0) || 'U'}</div>
+          <span>${roleSymbol}${userProfile?.fullName?.split(' ')[0] || 'User'}${adminButton}</span>
+        `;
+        logoutBtn.style.display = 'block';
+      } else {
+        navMenu.innerHTML = `
+          <li><a href="#" data-page="home" onclick="router.navigate('home');return false;">Home</a></li>
+          <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors');return false;">Find Donors</a></li>
+          <li><a href="#" data-page="about" onclick="router.navigate('about');return false;">About</a></li>
+          <li><a href="#" data-page="contact" onclick="router.navigate('contact');return false;">Contact</a></li>
+        `;
+        userInfo.innerHTML = `<button onclick="router.navigate('login')" class="btn btn-outline">Login</button><button onclick="router.navigate('register')" class="btn btn-primary">Register</button>`;
+        logoutBtn.style.display = 'none';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('logoutBtn')?.addEventListener('click', () => authSystem.logout());
+      const mobileBtn = document.querySelector('.mobile-menu-btn');
+      const navMenu = document.getElementById('navMenu');
+      if (mobileBtn && navMenu) mobileBtn.addEventListener('click', () => navMenu.classList.toggle('active'));
+      window.addEventListener('popstate', () => {
+        const hash = window.location.hash.substring(1);
+        router.navigate(hash && router.routes[hash] ? hash : 'home');
+      });
+    });
+
+    // Export to global scope
+    window.router = router;
+    window.authSystem = authSystem;
+    window.certificateSystem = certificateSystem;
+    window.contactTracking = contactTracking;
+    window.revealContact = revealContact;
+    window.searchDonors = searchDonors;
+    window.verifyCertificateInput = verifyCertificateInput;
+    window.resetPassword = resetPassword;
+    window.sendChatMessage = sendChatMessage;
+    window.toggleBloodGroupField = toggleBloodGroupField;
+    window.switchUserType = switchUserType;
+  </script>
 </body>
 </html>
