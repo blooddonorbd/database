@@ -2454,15 +2454,28 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('logoutBtn')?.addEventListener('click', () => authSystem.logout());
-      const mobileBtn = document.querySelector('.mobile-menu-btn');
-      const navMenu = document.getElementById('navMenu');
-      if (mobileBtn && navMenu) mobileBtn.addEventListener('click', () => navMenu.classList.toggle('active'));
-      window.addEventListener('popstate', () => {
-        const hash = window.location.hash.substring(1);
-        router.navigate(hash && router.routes[hash] ? hash : 'home');
-      });
+  document.getElementById('logoutBtn')?.addEventListener('click', () => authSystem.logout());
+  
+  const mobileBtn = document.querySelector('.mobile-menu-btn');
+  const navMenu = document.getElementById('navMenu');
+  
+  if (mobileBtn && navMenu) {
+    // Toggle menu on hamburger click
+    mobileBtn.addEventListener('click', () => navMenu.classList.toggle('active'));
+    
+    // Close menu when any nav link is clicked
+    navMenu.addEventListener('click', (e) => {
+      if (e.target.tagName === 'A' || e.target.closest('a')) {
+        navMenu.classList.remove('active');
+      }
     });
+  }
+  
+  window.addEventListener('popstate', () => {
+    const hash = window.location.hash.substring(1);
+    router.navigate(hash && router.routes[hash] ? hash : 'home');
+  });
+});
 
     // Export to global scope
     window.router = router;
