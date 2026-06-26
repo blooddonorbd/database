@@ -2983,18 +2983,7 @@ function findNearbyHospitals() {
         `;
         // Add role symbol
         let roleSymbol = getRoleSymbol(userProfile?.role);
-        // Add admin panel button for admins/moderators
-        let adminButton = '';
-        if (hasAdminAccess()) {
-          adminButton = `<a href="admin.html" class="admin-btn">
-            <i class="fas fa-shield-alt"></i> Admin Panel
-          </a>`;
-        }
         
-        userInfo.innerHTML = `
-          <div class="user-avatar">${roleSymbol}${userProfile?.fullName?.charAt(0) || 'U'}</div>
-          <span>${roleSymbol}${userProfile?.fullName?.split(' ')[0] || 'User'}${adminButton}</span>
-        `;
         logoutBtn.style.display = 'block';
       } else {
         navMenu.innerHTML = `
