@@ -3002,16 +3002,18 @@ function findNearbyHospitals() {
       
       if (currentUser) {
         navMenu.innerHTML = `
-        <li><a href="#" data-page="home" onclick="router.navigate('home');return false;"><i class="fas fa-home"></i> Home</a></li>
+        <li><a href="#" data-page="home" onclick="router.navigate('home');return false;"><i class="fas fa-home"></i></a></li>
           <li><a href="#" data-page="dashboard" onclick="router.navigate('dashboard');return false;">Dashboard</a></li>
           <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors');return false;">Find Donors</a></li>
           <li><a href="#" data-page="request-blood" onclick="router.navigate('request-blood');return false;">Request Blood</a></li>
-          <li><a href="#" data-page="dm-donor" onclick="router.navigate('dm-donor');return false;"><i class="fas fa-comments"></i> DM Donors</a></li>
-          ${userProfile?.isDonor ? `<li><a href="#" data-page="certificates" onclick="router.navigate('certificates');return false;">Certificates</a></li>` : ''}
+          
           <li><a href="#" data-page="success-stories" onclick="router.navigate('success-stories');return false;">
-    <i class="fas fa-heart"></i> Success Stories
+    <i class="fas fa-heart"></i> Stories
   </a></li>
-          <li><a href="#" data-page="profile" onclick="router.navigate('profile');return false;">Profile</a></li>
+  
+          ${userProfile?.isDonor ? `<li><a href="#" data-page="certificates" onclick="router.navigate('certificates');return false;">Certificates</a></li>` : ''}
+          <li><a href="#" data-page="dm-donor" onclick="router.navigate('dm-donor');return false;"><i class="fas fa-comments"></i></a></li>
+          <li><a href="#" data-page="profile" onclick="router.navigate('profile');return false;"><i class="fas fa-user"></i></a></li>
         `;
         // Add role symbol
         let roleSymbol = getRoleSymbol(userProfile?.role);
