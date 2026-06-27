@@ -94,6 +94,32 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+    @keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
 
     /* Toast Notifications */
     .toast-container {
@@ -1441,6 +1467,9 @@ function findNearbyHospitals() {
           <div id="homeMap" style="height: 350px; border-radius: 8px; z-index: 1; border: 1px solid #ddd;"></div>
           <button onclick="router.navigate('live-map')" class="btn btn-primary btn-block mt-3"><i class="fas fa-expand-arrows-alt"></i> View Full Map</button>
         </div>
+        
+        
+        
         <div id="donorSpotlight" style="
   background: linear-gradient(135deg, #1a1a1a, #333);
   color: white; padding: 24px; border-radius: 16px;
@@ -2979,6 +3008,9 @@ function findNearbyHospitals() {
           <li><a href="#" data-page="request-blood" onclick="router.navigate('request-blood');return false;">Request Blood</a></li>
           <li><a href="#" data-page="dm-donor" onclick="router.navigate('dm-donor');return false;"><i class="fas fa-comments"></i> DM Donors</a></li>
           ${userProfile?.isDonor ? `<li><a href="#" data-page="certificates" onclick="router.navigate('certificates');return false;">Certificates</a></li>` : ''}
+          <li><a href="#" data-page="success-stories" onclick="router.navigate('success-stories');return false;">
+    <i class="fas fa-heart"></i> Success Stories
+  </a></li>
           <li><a href="#" data-page="profile" onclick="router.navigate('profile');return false;">Profile</a></li>
         `;
         // Add role symbol
@@ -3949,7 +3981,806 @@ setTimeout(() => {
       districts.map(d => `<option value="${d}">${d}</option>`).join('');
   }
 }, 300);
+// ============================================
+// SUCCESS STORIES - FREE COMMUNITY SECTION
+// ============================================
 
+// Add route
+router.routes['success-stories'] = renderSuccessStoriesPage;
+router.routes['story-details'] = renderStoryDetailsPage;
+
+// Main Success Stories Page
+function renderSuccessStoriesPage() {
+  const main = document.getElementById('mainContent');
+  main.innerHTML = `
+    <div style="max-width: 1200px; margin: 0 auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+        <div>
+          <h1 style="margin: 0; color: #b71c1c;">
+            <i class="fas fa-heart" style="color: #b71c1c;"></i> Success Stories
+          </h1>
+          <p style="color: #666; margin-top: 4px;">Share and read inspiring stories from our community</p>
+        </div>
+        <button onclick="openStoryModal()" class="btn btn-primary">
+          <i class="fas fa-plus-circle"></i> Share Your Story
+        </button>
+      </div>
+
+      <!-- Stats -->
+      <div id="storyStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 24px;">
+        <div style="background: white; padding: 16px; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="font-size: 28px; font-weight: 700; color: #b71c1c;" id="totalStories">0</div>
+          <div style="font-size: 13px; color: #666;">Total Stories</div>
+        </div>
+        <div style="background: white; padding: 16px; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="font-size: 28px; font-weight: 700; color: #2e7d32;" id="totalLikes">0</div>
+          <div style="font-size: 13px; color: #666;">Total Likes</div>
+        </div>
+        <div style="background: white; padding: 16px; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="font-size: 28px; font-weight: 700; color: #1565c0;" id="totalComments">0</div>
+          <div style="font-size: 13px; color: #666;">Comments</div>
+        </div>
+      </div>
+
+      <!-- Filter -->
+      <div style="background: white; padding: 16px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+          <select id="storyFilterBlood" onchange="filterStories()" style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;">
+            <option value="">All Blood Groups</option>
+            <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+            <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+          </select>
+          <input list="districtsList" id="storyFilterDistrict" onchange="filterStories()" placeholder="Filter by District..." style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;">
+          <select id="storyFilterSort" onchange="filterStories()" style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="popular">Most Liked</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Stories Grid -->
+      <div id="storiesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px;"></div>
+
+      <!-- Load More -->
+      <div style="text-align: center; margin-top: 32px; display: none;" id="loadMoreContainer">
+        <button onclick="loadMoreStories()" class="btn btn-outline">
+          <i class="fas fa-chevron-down"></i> Load More Stories
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Load stories
+  loadAllStories();
+}
+
+// Global variables
+let allStoriesData = [];
+let displayedCount = 0;
+const STORIES_PER_PAGE = 6;
+
+// Load Stories from Firestore
+async function loadAllStories() {
+  const grid = document.getElementById('storiesGrid');
+  if (!grid) return;
+
+  try {
+    const snapshot = await db.collection('successStories')
+      .orderBy('createdAt', 'desc')
+      .limit(50)
+      .get();
+
+    allStoriesData = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      allStoriesData.push({ id: doc.id, ...data });
+    });
+
+    // Update stats
+    updateStoryStats(allStoriesData);
+
+    // Render
+    displayedCount = 0;
+    renderStories(allStoriesData);
+
+  } catch (error) {
+    console.error('Error loading stories:', error);
+    grid.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 60px; color: #d32f2f;">
+        <i class="fas fa-exclamation-triangle" style="font-size: 48px;"></i>
+        <p>Failed to load stories. Please refresh.</p>
+      </div>
+    `;
+  }
+}
+
+// Render Stories
+function renderStories(stories) {
+  const grid = document.getElementById('storiesGrid');
+  const loadMoreContainer = document.getElementById('loadMoreContainer');
+  if (!grid) return;
+
+  const start = displayedCount;
+  const end = Math.min(start + STORIES_PER_PAGE, stories.length);
+  const pageStories = stories.slice(start, end);
+
+  if (displayedCount === 0) {
+    grid.innerHTML = '';
+  }
+
+  if (pageStories.length === 0 && displayedCount === 0) {
+    grid.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 60px; color: #666;">
+        <i class="fas fa-heart" style="font-size: 48px; opacity: 0.3;"></i>
+        <h3 style="margin: 16px 0;">No Stories Yet</h3>
+        <p>Be the first to share your experience!</p>
+        <button onclick="openStoryModal()" class="btn btn-primary" style="margin-top: 16px;">
+          <i class="fas fa-plus-circle"></i> Share Your Story
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  pageStories.forEach(story => {
+    const card = createStoryCard(story);
+    grid.appendChild(card);
+  });
+
+  displayedCount = end;
+
+  if (loadMoreContainer) {
+    loadMoreContainer.style.display = displayedCount < stories.length ? 'block' : 'none';
+  }
+}
+
+// Create Story Card
+function createStoryCard(story) {
+  const card = document.createElement('div');
+  card.style.cssText = `
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    animation: fadeInUp 0.4s ease;
+  `;
+
+  card.addEventListener('click', () => {
+    router.navigate(`story-details/${story.id}`);
+  });
+
+  const date = story.createdAt?.toDate?.() || new Date();
+  const formattedDate = date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+
+  const displayName = story.isAnonymous ? 'Anonymous Hero' : (story.userName || story.donorName || 'Anonymous');
+  const likesCount = story.likes || 0;
+  const commentsCount = (story.comments || []).length;
+
+  // Check if user liked this story
+  const hasLiked = story.likedBy && story.likedBy.includes(currentUser?.uid);
+
+  card.innerHTML = `
+    <div style="padding: 20px;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #b71c1c, #ff5252); 
+                    display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 18px; flex-shrink: 0;">
+          ${story.isAnonymous ? '🫂' : displayName.charAt(0).toUpperCase()}
+        </div>
+        <div style="flex: 1;">
+          <div style="font-weight: 600; font-size: 15px;">${displayName}</div>
+          <div style="font-size: 12px; color: #999;">${formattedDate}</div>
+        </div>
+        ${story.isFeatured ? `
+          <span style="background: #ffd700; color: #333; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 700;">
+            <i class="fas fa-star"></i> Featured
+          </span>
+        ` : ''}
+      </div>
+
+      <span style="background: #b71c1c; color: white; padding: 2px 14px; border-radius: 20px; font-weight: 700; font-size: 14px; display: inline-block; margin-bottom: 8px;">
+        ${story.bloodGroup}
+      </span>
+      
+      <h3 style="font-size: 17px; margin: 8px 0; color: #333; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+        ${story.title || 'A Life Saved'}
+      </h3>
+      
+      <p style="color: #555; font-size: 14px; line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+        ${story.story || 'No story details provided.'}
+      </p>
+      
+      ${story.district ? `
+        <div style="margin-top: 8px; font-size: 13px; color: #666;">
+          <i class="fas fa-map-marker-alt"></i> ${story.district}
+        </div>
+      ` : ''}
+      
+      <div style="margin-top: 12px; display: flex; gap: 16px; font-size: 13px; color: #666;">
+        <span onclick="event.stopPropagation(); likeStory('${story.id}')" style="cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; transition: background 0.2s;"
+              onmouseenter="this.style.backgroundColor='#ffebee'" onmouseleave="this.style.backgroundColor='transparent'">
+          <i class="fas fa-heart" style="color: ${hasLiked ? '#d32f2f' : '#ccc'};"></i>
+          <span>${likesCount}</span>
+        </span>
+        <span style="display: flex; align-items: center; gap: 4px;">
+          <i class="fas fa-comment" style="color: #ccc;"></i>
+          <span>${commentsCount}</span>
+        </span>
+        ${hasAdminAccess() ? `
+          <span onclick="event.stopPropagation(); deleteStory('${story.id}')" style="cursor: pointer; color: #d32f2f; margin-left: auto;">
+            <i class="fas fa-trash"></i>
+          </span>
+        ` : ''}
+      </div>
+    </div>
+  `;
+
+  return card;
+}
+
+// Like Story
+async function likeStory(storyId) {
+  if (!currentUser) {
+    promptRegistration();
+    return;
+  }
+
+  try {
+    const storyRef = db.collection('successStories').doc(storyId);
+    const doc = await storyRef.get();
+    const story = doc.data();
+    
+    let likedBy = story.likedBy || [];
+    let likes = story.likes || 0;
+    
+    if (likedBy.includes(currentUser.uid)) {
+      // Unlike
+      likedBy = likedBy.filter(uid => uid !== currentUser.uid);
+      likes = Math.max(0, likes - 1);
+    } else {
+      // Like
+      likedBy.push(currentUser.uid);
+      likes += 1;
+    }
+    
+    await storyRef.update({
+      likes: likes,
+      likedBy: likedBy,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    // Refresh the stories
+    loadAllStories();
+  } catch (error) {
+    console.error('Error liking story:', error);
+    Toast.show('Failed to like story', 'error');
+  }
+}
+
+// Delete Story (Admin Only)
+async function deleteStory(storyId) {
+  if (!hasAdminAccess()) {
+    Toast.show('Admin access required', 'error');
+    return;
+  }
+
+  if (!confirm('Are you sure you want to delete this story?')) return;
+
+  try {
+    await db.collection('successStories').doc(storyId).delete();
+    Toast.show('Story deleted successfully', 'success');
+    loadAllStories();
+  } catch (error) {
+    console.error('Error deleting story:', error);
+    Toast.show('Failed to delete story', 'error');
+  }
+}
+
+// Filter Stories
+function filterStories() {
+  const bloodGroup = document.getElementById('storyFilterBlood')?.value || '';
+  const district = document.getElementById('storyFilterDistrict')?.value || '';
+  const sortBy = document.getElementById('storyFilterSort')?.value || 'newest';
+
+  let filtered = [...allStoriesData];
+
+  if (bloodGroup) {
+    filtered = filtered.filter(s => s.bloodGroup === bloodGroup);
+  }
+  if (district) {
+    filtered = filtered.filter(s => s.district === district);
+  }
+
+  switch (sortBy) {
+    case 'newest':
+      filtered.sort((a, b) => (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0));
+      break;
+    case 'oldest':
+      filtered.sort((a, b) => (a.createdAt?.toDate?.() || 0) - (b.createdAt?.toDate?.() || 0));
+      break;
+    case 'popular':
+      filtered.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+      break;
+  }
+
+  displayedCount = 0;
+  renderStories(filtered);
+}
+
+// Load More
+function loadMoreStories() {
+  renderStories(allStoriesData);
+}
+
+// Update Stats
+function updateStoryStats(stories) {
+  const totalStoriesEl = document.getElementById('totalStories');
+  const totalLikesEl = document.getElementById('totalLikes');
+  const totalCommentsEl = document.getElementById('totalComments');
+
+  if (totalStoriesEl) {
+    totalStoriesEl.textContent = stories.length;
+  }
+  if (totalLikesEl) {
+    const totalLikes = stories.reduce((sum, s) => sum + (s.likes || 0), 0);
+    totalLikesEl.textContent = totalLikes;
+  }
+  if (totalCommentsEl) {
+    const totalComments = stories.reduce((sum, s) => sum + (s.comments || []).length, 0);
+    totalCommentsEl.textContent = totalComments;
+  }
+}
+
+// ============================================
+// SHARE STORY MODAL
+// ============================================
+function openStoryModal() {
+  if (!currentUser) {
+    promptRegistration();
+    return;
+  }
+
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+  `;
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.remove();
+  });
+
+  modal.innerHTML = `
+    <div style="background: white; border-radius: 16px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 32px; animation: scaleIn 0.3s ease;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0; color: #b71c1c;">
+          <i class="fas fa-heart"></i> Share Your Story
+        </h2>
+        <button onclick="this.closest('div[style]').remove()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <form id="storySubmitForm">
+        <div class="form-group">
+          <label>Title *</label>
+          <input type="text" id="storyTitle" required placeholder="e.g., How I found a donor in 30 minutes">
+        </div>
+        
+        <div class="form-group">
+          <label>Your Story *</label>
+          <textarea id="storyText" required rows="5" placeholder="Share your experience. How did the platform help you?"></textarea>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group">
+            <label>Blood Group *</label>
+            <select id="storyBloodGroup" required>
+              <option value="">Select</option>
+              <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+              <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Units Donated</label>
+            <input type="number" id="storyUnits" value="1" min="1" max="10">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>District *</label>
+          <input list="districtsList" id="storyDistrict" required placeholder="Type or select your district">
+        </div>
+        
+        <div class="form-group">
+          <label>Hospital Name (Optional)</label>
+          <input type="text" id="storyHospital" placeholder="e.g., Dhaka Medical College">
+        </div>
+        
+        <div class="form-group">
+          <label>Donor Name (Optional)</label>
+          <input type="text" id="storyDonorName" placeholder="Name of the donor (optional)">
+        </div>
+        
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+            <input type="checkbox" id="storyAnonymous">
+            <span>Share anonymously</span>
+          </label>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-block">
+          <i class="fas fa-paper-plane"></i> Post Story
+        </button>
+      </form>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  document.getElementById('storySubmitForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const title = document.getElementById('storyTitle').value.trim();
+    const story = document.getElementById('storyText').value.trim();
+    const bloodGroup = document.getElementById('storyBloodGroup').value;
+    const unitsDonated = parseInt(document.getElementById('storyUnits').value) || 1;
+    const district = document.getElementById('storyDistrict').value.trim();
+    const hospitalName = document.getElementById('storyHospital').value.trim();
+    const donorName = document.getElementById('storyDonorName').value.trim();
+    const isAnonymous = document.getElementById('storyAnonymous').checked;
+
+    if (!title || title.length < 5) {
+      Toast.show('Please enter a meaningful title', 'warning');
+      return;
+    }
+
+    if (!story || story.length < 20) {
+      Toast.show('Please write a detailed story (at least 20 characters)', 'warning');
+      return;
+    }
+
+    if (!bangladeshDistricts.includes(district)) {
+      Toast.show('Please select a valid district', 'warning');
+      return;
+    }
+
+    try {
+      await db.collection('successStories').add({
+        title: title,
+        story: story,
+        bloodGroup: bloodGroup,
+        unitsDonated: unitsDonated,
+        district: district,
+        hospitalName: hospitalName,
+        donorName: isAnonymous ? 'Anonymous' : (donorName || 'Anonymous Donor'),
+        isAnonymous: isAnonymous,
+        userId: currentUser.uid,
+        userName: userProfile.fullName,
+        userEmail: userProfile.email,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        likes: 0,
+        likedBy: [],
+        comments: [],
+        isFeatured: false,
+        views: 0
+      });
+
+      Toast.show('Story posted successfully! 🎉', 'success');
+      modal.remove();
+      loadAllStories();
+    } catch (error) {
+      console.error('Error posting story:', error);
+      Toast.show('Failed to post story', 'error');
+    }
+  });
+}
+
+// ============================================
+// STORY DETAILS PAGE (With Comments)
+// ============================================
+async function renderStoryDetailsPage(storyId) {
+  const main = document.getElementById('mainContent');
+  
+  main.innerHTML = `
+    <div style="max-width: 800px; margin: 0 auto;">
+      <button onclick="router.navigate('success-stories')" class="btn btn-outline" style="margin-bottom: 20px;">
+        <i class="fas fa-arrow-left"></i> Back to Stories
+      </button>
+      <div id="storyDetailContainer">
+        <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading story...</div>
+      </div>
+    </div>
+  `;
+
+  try {
+    const doc = await db.collection('successStories').doc(storyId).get();
+    if (!doc.exists) {
+      document.getElementById('storyDetailContainer').innerHTML = `
+        <div style="text-align: center; padding: 60px; color: #666;">
+          <i class="fas fa-exclamation-triangle" style="font-size: 48px;"></i>
+          <p>Story not found</p>
+        </div>
+      `;
+      return;
+    }
+
+    const story = { id: doc.id, ...doc.data() };
+    renderStoryDetail(story);
+  } catch (error) {
+    console.error('Error loading story:', error);
+    document.getElementById('storyDetailContainer').innerHTML = `
+      <div style="text-align: center; padding: 60px; color: #d32f2f;">
+        <i class="fas fa-exclamation-triangle" style="font-size: 48px;"></i>
+        <p>Failed to load story</p>
+      </div>
+    `;
+  }
+}
+
+function renderStoryDetail(story) {
+  const container = document.getElementById('storyDetailContainer');
+  if (!container) return;
+
+  const date = story.createdAt?.toDate?.() || new Date();
+  const formattedDate = date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  const displayName = story.isAnonymous ? 'Anonymous Hero' : (story.userName || story.donorName || 'Anonymous');
+  const likesCount = story.likes || 0;
+  const comments = story.comments || [];
+  const hasLiked = story.likedBy && story.likedBy.includes(currentUser?.uid);
+
+  container.innerHTML = `
+    <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+      ${story.isFeatured ? `
+        <span style="background: #ffd700; color: #333; padding: 4px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; display: inline-block; margin-bottom: 16px;">
+          <i class="fas fa-star"></i> Featured Story
+        </span>
+      ` : ''}
+      
+      <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #b71c1c, #ff5252); 
+                    display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 24px; flex-shrink: 0;">
+          ${story.isAnonymous ? '🫂' : displayName.charAt(0).toUpperCase()}
+        </div>
+        <div>
+          <div style="font-weight: 700; font-size: 18px;">${displayName}</div>
+          <div style="font-size: 14px; color: #666;">
+            <i class="fas fa-calendar-alt"></i> ${formattedDate}
+            ${story.district ? ` | <i class="fas fa-map-marker-alt"></i> ${story.district}` : ''}
+          </div>
+        </div>
+        ${hasAdminAccess() ? `
+          <div style="margin-left: auto; display: flex; gap: 8px;">
+            <button onclick="editStory('${story.id}')" class="btn btn-outline" style="padding: 4px 12px; font-size: 13px;">
+              <i class="fas fa-edit"></i> Edit
+            </button>
+            <button onclick="deleteStory('${story.id}')" class="btn btn-outline" style="padding: 4px 12px; font-size: 13px; color: #d32f2f; border-color: #d32f2f;">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        ` : ''}
+      </div>
+
+      <span style="background: #b71c1c; color: white; padding: 4px 20px; border-radius: 20px; font-weight: 700; font-size: 20px; display: inline-block; margin-bottom: 16px;">
+        ${story.bloodGroup}
+      </span>
+
+      <h2 style="font-size: 24px; margin: 16px 0 12px; color: #333;">${story.title}</h2>
+      
+      <div style="color: #444; font-size: 16px; line-height: 1.8; margin-bottom: 24px; white-space: pre-wrap;">
+        ${story.story}
+      </div>
+
+      ${story.hospitalName ? `
+        <div style="background: #f5f5f5; padding: 12px 16px; border-radius: 8px; margin-bottom: 24px; display: flex; gap: 16px; flex-wrap: wrap;">
+          <span><strong><i class="fas fa-hospital"></i> Hospital:</strong> ${story.hospitalName}</span>
+          <span><strong><i class="fas fa-flask"></i> Units:</strong> ${story.unitsDonated || 1}</span>
+          ${story.donorName ? `<span><strong><i class="fas fa-user"></i> Donor:</strong> ${story.donorName}</span>` : ''}
+        </div>
+      ` : ''}
+
+      <div style="display: flex; gap: 20px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 2px solid #f0f0f0;">
+        <button onclick="likeStory('${story.id}')" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 16px; padding: 8px 16px; border-radius: 8px; transition: background 0.2s;"
+                onmouseenter="this.style.backgroundColor='#ffebee'" onmouseleave="this.style.backgroundColor='transparent'">
+          <i class="fas fa-heart" style="color: ${hasLiked ? '#d32f2f' : '#999'}; font-size: 20px;"></i>
+          <span>${likesCount}</span>
+        </button>
+        <button onclick="shareStoryDirect('${story.id}')" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 16px; padding: 8px 16px; border-radius: 8px; transition: background 0.2s;"
+                onmouseenter="this.style.backgroundColor='#e3f2fd'" onmouseleave="this.style.backgroundColor='transparent'">
+          <i class="fas fa-share-alt" style="color: #999; font-size: 20px;"></i>
+          <span>Share</span>
+        </button>
+      </div>
+
+      <!-- Comments Section -->
+      <div>
+        <h3 style="margin-bottom: 16px;">
+          <i class="fas fa-comments"></i> Comments (${comments.length})
+        </h3>
+        
+        <div id="commentsContainer" style="margin-bottom: 20px;">
+          ${comments.length === 0 ? `
+            <p style="color: #999; text-align: center; padding: 20px;">No comments yet. Be the first to comment!</p>
+          ` : `
+            ${comments.map(comment => `
+              <div style="display: flex; gap: 12px; padding: 12px; background: #fafafa; border-radius: 8px; margin-bottom: 12px;">
+                <div style="width: 36px; height: 36px; border-radius: 50%; background: #b71c1c; 
+                            display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; flex-shrink: 0;">
+                  ${comment.userName?.charAt(0).toUpperCase() || 'U'}
+                </div>
+                <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="font-size: 14px;">${comment.userName || 'Anonymous'}</strong>
+                    <span style="font-size: 11px; color: #999;">
+                      ${comment.createdAt?.toDate?.()?.toLocaleDateString() || ''}
+                    </span>
+                  </div>
+                  <p style="margin: 4px 0 0; font-size: 14px; color: #444;">${comment.comment}</p>
+                  ${hasAdminAccess() ? `
+                    <button onclick="deleteComment('${story.id}', '${comment.id}')" style="background: none; border: none; color: #d32f2f; font-size: 12px; cursor: pointer; margin-top: 4px;">
+                      <i class="fas fa-trash"></i> Delete
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+            `).join('')}
+          `}
+        </div>
+
+        ${currentUser ? `
+          <div style="display: flex; gap: 12px;">
+            <input type="text" id="commentInput" placeholder="Write a comment..." style="flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 25px; font-size: 14px;">
+            <button onclick="addComment('${story.id}')" class="btn btn-primary" style="border-radius: 25px; padding: 12px 24px;">
+              <i class="fas fa-paper-plane"></i> Post
+            </button>
+          </div>
+        ` : `
+          <button onclick="promptRegistration()" class="btn btn-outline btn-block">
+            <i class="fas fa-lock"></i> Login to Comment
+          </button>
+        `}
+      </div>
+    </div>
+  `;
+}
+
+// Add Comment
+async function addComment(storyId) {
+  const input = document.getElementById('commentInput');
+  const commentText = input?.value.trim();
+
+  if (!commentText) {
+    Toast.show('Please write a comment', 'warning');
+    return;
+  }
+
+  try {
+    const storyRef = db.collection('successStories').doc(storyId);
+    const doc = await storyRef.get();
+    const story = doc.data();
+    
+    const comments = story.comments || [];
+    comments.push({
+      id: `c_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      userId: currentUser.uid,
+      userName: userProfile.fullName,
+      comment: commentText,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    await storyRef.update({
+      comments: comments,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    input.value = '';
+    renderStoryDetail(story);
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    Toast.show('Failed to add comment', 'error');
+  }
+}
+
+// Delete Comment (Admin Only)
+async function deleteComment(storyId, commentId) {
+  if (!hasAdminAccess()) {
+    Toast.show('Admin access required', 'error');
+    return;
+  }
+
+  if (!confirm('Delete this comment?')) return;
+
+  try {
+    const storyRef = db.collection('successStories').doc(storyId);
+    const doc = await storyRef.get();
+    const story = doc.data();
+    
+    const comments = (story.comments || []).filter(c => c.id !== commentId);
+    
+    await storyRef.update({
+      comments: comments,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    renderStoryDetail(story);
+    Toast.show('Comment deleted', 'success');
+  } catch (error) {
+    console.error('Error deleting comment:', error);
+    Toast.show('Failed to delete comment', 'error');
+  }
+}
+
+// Edit Story (Admin Only)
+async function editStory(storyId) {
+  if (!hasAdminAccess()) {
+    Toast.show('Admin access required', 'error');
+    return;
+  }
+
+  try {
+    const doc = await db.collection('successStories').doc(storyId).get();
+    const story = doc.data();
+    
+    const newTitle = prompt('Edit Title:', story.title);
+    if (newTitle === null) return;
+    
+    const newStory = prompt('Edit Story:', story.story);
+    if (newStory === null) return;
+    
+    await db.collection('successStories').doc(storyId).update({
+      title: newTitle.trim(),
+      story: newStory.trim(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    Toast.show('Story updated successfully', 'success');
+    renderStoryDetail({ ...story, title: newTitle.trim(), story: newStory.trim() });
+  } catch (error) {
+    console.error('Error editing story:', error);
+    Toast.show('Failed to edit story', 'error');
+  }
+}
+
+// Share Story Directly
+function shareStoryDirect(storyId) {
+  const story = allStoriesData.find(s => s.id === storyId);
+  if (!story) return;
+
+  const shareText = `🩸 Inspiring story from Blood Donor BD!\n\n${story.title}\nBlood Group: ${story.bloodGroup}\n\nRead more: ${window.location.origin}/#story-details/${storyId}`;
+  
+  if (navigator.share) {
+    navigator.share({
+      title: story.title || 'Blood Donor BD Story',
+      text: shareText,
+      url: window.location.href
+    }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(shareText).then(() => {
+      Toast.show('Story link copied to clipboard!', 'success');
+    }).catch(() => {
+      prompt('Share this story:', shareText);
+    });
+  }
+}
 
     // Export to global scope
     window.router = router;
