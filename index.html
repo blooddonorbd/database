@@ -640,6 +640,24 @@
       display: flex;
       gap: 10px;
     }
+    
+    @media (max-width: 768px) {
+  /* ... existing code ... */
+  
+  /* Add these new styles */
+  #donorList {
+    grid-template-columns: 1fr !important;
+  }
+  
+  #paginationControls {
+    gap: 4px !important;
+  }
+  
+  #paginationControls .btn {
+    padding: 6px 10px !important;
+    font-size: 13px !important;
+  }
+}
 
     /* Hero Section */
     .hero-section {
@@ -2471,80 +2489,165 @@ function findNearbyHospitals() {
     }
 
     async function renderFindDonorsPage() {
-      const main = document.getElementById('mainContent');
-      main.innerHTML = `
-        <h1 style="margin-bottom: 24px;">Find Blood Donors</h1>
-        <div style="background: white; padding: 24px; border-radius: 12px; margin-bottom: 32px;">
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-            <div class="form-group">
-              <label>Blood Group</label>
-              <select id="searchBloodGroup"><option value="">All</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
-            </div>
-            <div class="form-group">
-              <label>District</label>
-              <input list="districtsList" id="searchDistrict" placeholder="Type or pick a district...">
-            </div>
-            <div class="form-group"><label>&nbsp;</label><button onclick="searchDonors()" class="btn btn-primary btn-block"><i class="fas fa-search"></i> Search</button></div>
-          </div>
+  const main = document.getElementById('mainContent');
+  main.innerHTML = `
+    <h1 style="margin-bottom: 24px;">Find Blood Donors</h1>
+    <div style="background: white; padding: 24px; border-radius: 12px; margin-bottom: 32px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+        <div class="form-group">
+          <label>Blood Group</label>
+          <select id="searchBloodGroup">
+            <option value="">All</option>
+            <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+            <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+          </select>
         </div>
-        <div id="donorResults"></div>
-      `;
-      setTimeout(() => searchDonors(), 100);
+        <div class="form-group">
+          <label>District</label>
+          <input list="districtsList" id="searchDistrict" placeholder="Type or pick a district...">
+        </div>
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <button onclick="searchDonors(1)" class="btn btn-primary btn-block">
+            <i class="fas fa-search"></i> Search
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="donorResults"></div>
+  `;
+  
+  // Initial load with page 1
+  setTimeout(() => searchDonors(1), 100);
+}
+
+    // Search Donors with Pagination
+let currentDonorPage = 1;
+let donorsPerPage = 24;
+let filteredDonors = [];
+
+async function searchDonors(page = 1) {
+  const bloodGroup = document.getElementById('searchBloodGroup')?.value || '';
+  const district = document.getElementById('searchDistrict')?.value || '';
+  const results = document.getElementById('donorResults');
+  if (!results) return;
+  
+  results.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
+  
+  try {
+    let query = db.collection('users').where('approvalStatus', '==', 'approved').where('isDonor', '==', true);
+    if (bloodGroup) query = query.where('bloodGroup', '==', bloodGroup);
+    
+    const snapshot = await query.get();
+    let donors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    if (district) donors = donors.filter(d => d.district === district);
+    
+    filteredDonors = donors;
+    
+    if (filteredDonors.length === 0) {
+      results.innerHTML = '<div class="empty-state"><i class="fas fa-users-slash"></i><p>No approved donors found.</p></div>';
+      return;
     }
+    
+    currentDonorPage = page;
+    renderDonorPage(page);
+    
+  } catch (error) {
+    console.error('Search error:', error);
+    results.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error searching donors.</p></div>';
+  }
+}
 
-    async function searchDonors() {
-      const bloodGroup = document.getElementById('searchBloodGroup')?.value || '';
-      const district = document.getElementById('searchDistrict')?.value || '';
-      const results = document.getElementById('donorResults');
-      if (!results) return;
-      
-      results.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
-      
-      try {
-        let query = db.collection('users').where('approvalStatus', '==', 'approved').where('isDonor', '==', true);
-        if (bloodGroup) query = query.where('bloodGroup', '==', bloodGroup);
-        
-        const snapshot = await query.limit(50).get();
-        let donors = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        if (district) donors = donors.filter(d => d.district === district);
-        
-        if (donors.length === 0) {
-          results.innerHTML = '<div class="empty-state"><i class="fas fa-users-slash"></i><p>No approved donors found.</p></div>';
-          return;
-        }
-        
-        results.innerHTML = `
-          <h2 style="margin-bottom: 20px;">${donors.length} Donor(s) Found</h2>
-          <div id="donorList" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;"></div>
-        `;
-        const donorList = document.getElementById('donorList');
-        
-        donors.forEach(donor => {
-          const roleSymbol = getRoleSymbol(donor.role);
-          const card = document.createElement('div');
-          card.className = 'request-card';
-          card.style.marginBottom = '0';
-          card.innerHTML = `
-            <div class="request-header"><div><h3>${roleSymbol}${donor.fullName}</h3><span class="request-blood-group">${donor.bloodGroup}</span></div><span class="badge" style="background:#2e7d32;color:white;padding:4px 12px;border-radius:20px;"><i class="fas fa-check-circle"></i> Verified Donor</span></div>
-            <div class="request-details"><div class="request-detail"><i class="fas fa-map-marker-alt"></i><span>${donor.district}, ${donor.upazila || ''}</span></div><div class="request-detail"><i class="fas fa-phone"></i><span>${donor.phoneNumber ? donor.phoneNumber.slice(0,8)+'***' : 'N/A'}</span></div></div>
-            <div class="request-actions">
-              ${currentUser ? `
-                <button onclick="revealContact('${donor.id}', '${donor.phoneNumber}', '${donor.fullName}')" class="btn btn-primary" style="flex: 1;"><i class="fas fa-phone"></i> Reveal Contact</button>
-                <button onclick="router.navigate('dm-donor')" class="btn btn-outline" style="flex: 1;"><i class="fas fa-comment"></i> Message</button>
-              ` : `<button onclick="promptRegistration()" class="btn btn-outline btn-block">Login to Contact</button>`}
-            </div>
-          `;
-          donorList.appendChild(card);
-        });
+function renderDonorPage(page) {
+  const results = document.getElementById('donorResults');
+  if (!results) return;
+  
+  const totalPages = Math.ceil(filteredDonors.length / donorsPerPage);
+  const startIndex = (page - 1) * donorsPerPage;
+  const endIndex = Math.min(startIndex + donorsPerPage, filteredDonors.length);
+  const pageDonors = filteredDonors.slice(startIndex, endIndex);
+  
+  results.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h2 style="margin: 0;">${filteredDonors.length} Donor(s) Found</h2>
+      <span style="font-size: 14px; color: #666;">Page ${page} of ${totalPages}</span>
+    </div>
+    <div id="donorList" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;"></div>
+    <div id="paginationControls" style="display: flex; justify-content: center; gap: 8px; margin-top: 24px; flex-wrap: wrap;"></div>
+  `;
+  
+  const donorList = document.getElementById('donorList');
+  
+  pageDonors.forEach(donor => {
+    const roleSymbol = getRoleSymbol(donor.role);
+    const card = document.createElement('div');
+    card.className = 'request-card';
+    card.style.marginBottom = '0';
+    card.innerHTML = `
+      <div class="request-header">
+        <div>
+          <h3>${roleSymbol}${donor.fullName}</h3>
+          <span class="request-blood-group">${donor.bloodGroup}</span>
+        </div>
+        <span class="badge" style="background:#2e7d32;color:white;padding:4px 12px;border-radius:20px;">
+          <i class="fas fa-check-circle"></i> Verified Donor
+        </span>
+      </div>
+      <div class="request-details">
+        <div class="request-detail"><i class="fas fa-map-marker-alt"></i><span>${donor.district}, ${donor.upazila || ''}</span></div>
+        <div class="request-detail"><i class="fas fa-phone"></i><span>${donor.phoneNumber ? donor.phoneNumber.slice(0,8)+'***' : 'N/A'}</span></div>
+      </div>
+      <div class="request-actions">
+        ${currentUser ? `
+          <button onclick="revealContact('${donor.id}', '${donor.phoneNumber}', '${donor.fullName}')" class="btn btn-primary" style="flex: 1;"><i class="fas fa-phone"></i> Reveal Contact</button>
+          <button onclick="router.navigate('dm-donor')" class="btn btn-outline" style="flex: 1;"><i class="fas fa-comment"></i> Message</button>
+        ` : `<button onclick="promptRegistration()" class="btn btn-outline btn-block">Login to Contact</button>`}
+      </div>
+    `;
+    donorList.appendChild(card);
+  });
 
-        if (window.innerWidth < 768) {
-          donorList.style.gridTemplateColumns = '1fr';
-        }
-
-      } catch (error) {
-        results.innerHTML = '<div class="empty-state"><i class="fas fa-exclamation-triangle"></i><p>Error searching donors.</p></div>';
-      }
+  if (window.innerWidth < 768) {
+    donorList.style.gridTemplateColumns = '1fr';
+  }
+  
+  // Pagination controls
+  const paginationControls = document.getElementById('paginationControls');
+  if (totalPages > 1) {
+    let paginationHTML = '';
+    
+    // Previous button
+    if (page > 1) {
+      paginationHTML += `<button onclick="searchDonors(${page - 1})" class="btn btn-outline" style="padding: 8px 16px;">‹</button>`;
     }
+    
+    // Page numbers
+    let startPage = Math.max(1, page - 2);
+    let endPage = Math.min(totalPages, page + 2);
+    
+    if (startPage > 1) {
+      paginationHTML += `<button onclick="searchDonors(1)" class="btn btn-outline" style="padding: 8px 16px;">1</button>`;
+      if (startPage > 2) paginationHTML += `<span style="padding: 8px;">…</span>`;
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      const isActive = i === page;
+      paginationHTML += `<button onclick="searchDonors(${i})" class="btn ${isActive ? 'btn-primary' : 'btn-outline'}" style="padding: 8px 16px; ${isActive ? 'background: #b71c1c; color: white;' : ''}">${i}</button>`;
+    }
+    
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) paginationHTML += `<span style="padding: 8px;">…</span>`;
+      paginationHTML += `<button onclick="searchDonors(${totalPages})" class="btn btn-outline" style="padding: 8px 16px;">${totalPages}</button>`;
+    }
+    
+    // Next button
+    if (page < totalPages) {
+      paginationHTML += `<button onclick="searchDonors(${page + 1})" class="btn btn-outline" style="padding: 8px 16px;">›</button>`;
+    }
+    
+    paginationControls.innerHTML = paginationHTML;
+  }
+}
 
     async function revealContact(donorId, phone, donorName) {
       if (!phone) {
