@@ -172,7 +172,6 @@
         <li class="nav-item" data-tab="certificates"><i class="fas fa-certificate"></i>Certificates</li>
         <li class="nav-item" data-tab="bulk-email"><i class="fas fa-envelope"></i>Bulk Email</li>
         <li class="nav-item" data-tab="bulk-register"><i class="fas fa-upload"></i>Bulk Register</li>
-        <li class="nav-item" data-tab="email-verify"><i class="fas fa-shield-check"></i>Email Verify</li>
         <li class="nav-item" data-tab="roles"><i class="fas fa-shield-haltered"></i>Roles</li>
       </ul>
       <div class="sidebar-footer">
@@ -215,10 +214,6 @@
       
       let currentUser = null;
       let currentRole = 'user';
-      
-      // Didit API Configuration
-      const DIDIT_API_KEY = 'xqGGNnr9HGEC70EXNWmTt5eVaZ1Tuc20gaum7F2GRSM';
-      const DIDIT_API_URL = 'https://verification.didit.me/api/v1/verify/email';
       
       // Geo dictionary for bulk registration
       const geoDict = {
@@ -313,7 +308,7 @@
             .where('userId', '==', userId)
             .get();
           
-          if (!existingSnap.empty) return;
+          if (!existingSnap.empty) return; // Already has certificate
           
           const certificateId = generateCertificateId();
           const donorId = userData.donorId || generateDonorId();
@@ -401,7 +396,6 @@
           case 'certificates': loadCertificates(); break;
           case 'bulk-email': loadBulkEmail(); break;
           case 'bulk-register': loadBulkRegister(); break;
-          case 'email-verify': loadEmailVerifier(); break;
           case 'roles': loadRolesManagement(); break;
         }
       }
@@ -512,6 +506,7 @@
             isDonor: true,
             donorId: userData.donorId || generateDonorId()
           });
+          // Auto-issue certificate
           await autoIssueCertificate(id, userData);
           showToast('Approved & Certificate Issued', 'success');
           loadPending(); 
@@ -813,9 +808,11 @@
         
         const area = document.getElementById('contentArea');
         
+        // Fetch all users for filters
         const usersSnap = await db.collection('users').get();
         const allUsers = usersSnap.docs.map(d => ({id: d.id, ...d.data()}));
         
+        // Extract unique districts, upazilas, blood groups
         const districts = [...new Set(allUsers.map(u => u.district).filter(Boolean))].sort();
         const upazilas = [...new Set(allUsers.map(u => u.upazila).filter(Boolean))].sort();
         const bloodGroups = [...new Set(allUsers.map(u => u.bloodGroup).filter(Boolean))].sort();
@@ -894,6 +891,7 @@
           </div>
         `;
         
+        // Store users data globally for email functionality
         window._allUsersForEmail = allUsers;
         
         window._selectAllEmailDistricts = () => {
@@ -957,9 +955,11 @@
           return;
         }
         
+        // Create mailto link with BCC
         const emails = recipients.map(r => r.email).join(',');
         const mailtoLink = `mailto:?bcc=${encodeURIComponent(emails)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
         
+        // Open email client
         window.open(mailtoLink, '_blank');
         showToast(`Opening email app with ${recipients.length} recipients in BCC`, 'success');
       };
@@ -1054,6 +1054,7 @@
           </div>
         `;
         
+        // Initialize bulk register functionality
         initBulkRegister();
       }
 
@@ -1254,6 +1255,7 @@
               
               await db.collection('users').doc(uid).set(donorData);
               
+              // Auto-issue certificate
               await db.collection('certificates').doc(`BDC-${unique}`).set({
                 certificateId: `BDC-${unique}`,
                 userId: uid,
@@ -1309,487 +1311,11 @@
           updateBulkStats();
         });
         
+        // Listen for changes in textareas
         ['bulkEmailData','bulkNameData','bulkPhoneData','bulkDistrictData','bulkUpazilaData','bulkBloodData'].forEach(id => {
           document.getElementById(id).addEventListener('input', updateBulkStats);
         });
       }
-
-      // ==================== EMAIL VERIFIER TAB ====================
-      async function loadEmailVerifier() {
-        const area = document.getElementById('contentArea');
-        
-        area.innerHTML = `
-          <div class="table-card" style="padding:24px;">
-            <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
-              <i class="fas fa-shield-check" style="font-size:24px; color:var(--primary);"></i>
-              <h3>Real Email Existence Checker</h3>
-              <span class="status-badge" style="background:#3b82f6;">Didit API</span>
-            </div>
-            <p style="color:var(--text-secondary); margin-bottom:16px;">
-              This checks if emails actually exist by verifying with mail servers via Didit Business API.
-              <br><small style="color:var(--warning);">⚠️ API has rate limits. Avoid scanning too many emails at once.</small>
-            </p>
-            
-            <div style="background:#f8fafc; padding:16px; border-radius:12px; margin-bottom:16px; border:1px solid var(--border);">
-              <h4 style="margin-bottom:8px;">🔍 Check Single Email</h4>
-              <div style="display:flex; gap:8px;">
-                <input type="email" id="singleEmailCheck" class="form-input" placeholder="bdbangla97hi@gmail.com" style="flex:1;">
-                <button class="btn-primary" onclick="window._verifySingleEmail()">
-                  <i class="fas fa-search"></i> Verify
-                </button>
-              </div>
-              <div id="singleEmailResult" style="margin-top:12px;"></div>
-            </div>
-            
-            <div style="background:#f8fafc; padding:16px; border-radius:12px; border:1px solid var(--border);">
-              <h4 style="margin-bottom:8px;">📊 Bulk Email Scan</h4>
-              <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                <button class="btn-primary" onclick="window._scanAllEmailsExist()">
-                  <i class="fas fa-users"></i> All Users
-                </button>
-                <button class="btn-secondary" onclick="window._scanDonorEmailsExist()">
-                  <i class="fas fa-heart"></i> Donors Only
-                </button>
-                <button class="btn-secondary" onclick="window._scanPendingEmails()">
-                  <i class="fas fa-clock"></i> Pending Users
-                </button>
-                <button class="btn-secondary" onclick="window._scanTop50Emails()">
-                  <i class="fas fa-bolt"></i> Quick Scan (50)
-                </button>
-              </div>
-              <p style="font-size:12px; color:var(--text-secondary); margin-top:8px;">
-                <i class="fas fa-info-circle"></i> Each scan adds 1-second delay between emails to respect API limits
-              </p>
-            </div>
-            
-            <div id="emailScanResults" style="margin-top:20px;">
-              <p style="color:var(--text-secondary); text-align:center; padding:20px;">
-                <i class="fas fa-arrow-up"></i> Click a button above to start real email verification...
-              </p>
-            </div>
-          </div>
-          
-          <div class="table-card" style="padding:24px; margin-top:16px; display:none;" id="emailProgressCard">
-            <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
-              <i class="fas fa-spinner fa-spin" style="color:var(--primary);"></i>
-              <h3>Verifying Emails</h3>
-            </div>
-            <div class="progress-bar-container">
-              <div class="progress-bar-fill" id="emailProgressFill">0%</div>
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-top:8px;">
-              <span id="emailProgressText" style="font-size:13px;">Initializing...</span>
-              <span id="emailProgressCount" style="font-weight:600;">0/0</span>
-            </div>
-          </div>
-        `;
-      }
-
-      // Verify single email using Didit API
-      window._verifySingleEmail = async () => {
-        const email = document.getElementById('singleEmailCheck').value.trim();
-        const resultDiv = document.getElementById('singleEmailResult');
-        
-        if (!email) {
-          showToast('Please enter an email address', 'warning');
-          return;
-        }
-        
-        if (!email.includes('@') || !email.includes('.')) {
-          resultDiv.innerHTML = `
-            <div style="background:#fee2e2; padding:16px; border-radius:12px; border-left:4px solid var(--danger);">
-              <h4 style="color:var(--danger);">❌ Invalid Format</h4>
-              <p>Please enter a valid email address</p>
-            </div>`;
-          return;
-        }
-        
-        resultDiv.innerHTML = `
-          <div style="background:#f8fafc; padding:16px; border-radius:12px; text-align:center;">
-            <i class="fas fa-spinner fa-spin" style="font-size:24px; color:var(--primary);"></i>
-            <p style="margin-top:8px;">Verifying <strong>${email}</strong>...</p>
-            <small style="color:var(--text-secondary);">Checking mail server...</small>
-          </div>`;
-        
-        try {
-          const result = await verifyEmailWithDidit(email);
-          displaySingleEmailResult(email, result, resultDiv);
-        } catch (error) {
-          resultDiv.innerHTML = `
-            <div style="background:#fee2e2; padding:16px; border-radius:12px; border-left:4px solid var(--danger);">
-              <h4 style="color:var(--danger);">❌ Error</h4>
-              <p>${error.message}</p>
-              <small>Check API key or try again later</small>
-            </div>`;
-        }
-      };
-
-      // Verify email using Didit API
-      async function verifyEmailWithDidit(email) {
-        try {
-          const response = await fetch(DIDIT_API_URL, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${DIDIT_API_KEY}`,
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            body: JSON.stringify({ email: email })
-          });
-          
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || `API Error: ${response.status}`);
-          }
-          
-          return await response.json();
-        } catch (error) {
-          if (error.message.includes('API Error')) {
-            try {
-              const altResponse = await fetch(`${DIDIT_API_URL}?email=${encodeURIComponent(email)}`, {
-                method: 'GET',
-                headers: {
-                  'Authorization': `Bearer ${DIDIT_API_KEY}`,
-                  'Accept': 'application/json'
-                }
-              });
-              
-              if (altResponse.ok) return await altResponse.json();
-            } catch (altError) {}
-          }
-          throw error;
-        }
-      }
-
-      function displaySingleEmailResult(email, result, resultDiv) {
-        const status = result.status || result.result || result.verification_status || 'unknown';
-        const isValid = result.is_valid || result.valid || (status === 'valid' || status === 'deliverable');
-        const isRisky = result.is_risky || result.risky || (status === 'risky' || status === 'catch_all');
-        const isInvalid = result.is_invalid || (status === 'invalid' || status === 'undeliverable' || status === 'rejected');
-        
-        let statusColor, statusIcon, statusText, bgColor, borderColor;
-        
-        if (isValid || status === 'deliverable' || status === 'valid') {
-          statusColor = 'var(--success)'; statusIcon = '✅'; statusText = 'Email EXISTS';
-          bgColor = '#d1fae5'; borderColor = 'var(--success)';
-        } else if (isInvalid || status === 'undeliverable' || status === 'invalid') {
-          statusColor = 'var(--danger)'; statusIcon = '❌'; statusText = 'DOES NOT EXIST';
-          bgColor = '#fee2e2'; borderColor = 'var(--danger)';
-        } else if (isRisky || status === 'risky' || status === 'catch_all') {
-          statusColor = 'var(--warning)'; statusIcon = '⚠️'; statusText = 'RISKY / CATCH-ALL';
-          bgColor = '#fef3c7'; borderColor = 'var(--warning)';
-        } else {
-          statusColor = 'var(--text-secondary)'; statusIcon = '❓'; statusText = 'UNKNOWN';
-          bgColor = '#f8fafc'; borderColor = 'var(--border)';
-        }
-        
-        let html = `
-          <div style="background:${bgColor}; padding:20px; border-radius:12px; border:2px solid ${borderColor};">
-            <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
-              <span style="font-size:32px;">${statusIcon}</span>
-              <div>
-                <h3 style="color:${statusColor}; margin:0;">${statusText}</h3>
-                <p style="margin:0; color:var(--text-secondary);">${email}</p>
-              </div>
-            </div>
-            <div style="background:white; padding:12px; border-radius:8px; margin-bottom:12px;">
-              <p><strong>Status:</strong> ${status}</p>
-              ${result.domain ? `<p><strong>Domain:</strong> ${result.domain}</p>` : ''}
-            </div>`;
-        
-        if (isInvalid || status === 'undeliverable') {
-          html += `<button class="btn-primary" style="background:var(--danger); width:100%;" onclick="window._findAndDeleteEmail('${email}')">
-            <i class="fas fa-trash"></i> Find & Delete This User</button>`;
-        }
-        
-        html += `<details style="margin-top:12px;">
-            <summary style="cursor:pointer; font-size:12px; color:var(--text-secondary);">Raw API Response</summary>
-            <pre style="background:#0f172a; color:#cbd5e1; padding:12px; border-radius:8px; font-size:11px; overflow-x:auto; margin-top:8px;">${JSON.stringify(result, null, 2)}</pre>
-          </details></div>`;
-        
-        resultDiv.innerHTML = html;
-      }
-
-      window._scanAllEmailsExist = async () => {
-        const snap = await db.collection('users').get();
-        const users = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        showToast(`Starting verification of ${users.length} emails...`, 'info');
-        await window._performEmailExistScan(users);
-      };
-
-      window._scanDonorEmailsExist = async () => {
-        const snap = await db.collection('users').where('isDonor', '==', true).get();
-        const users = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        showToast(`Verifying ${users.length} donor emails...`, 'info');
-        await window._performEmailExistScan(users);
-      };
-
-      window._scanPendingEmails = async () => {
-        const snap = await db.collection('users').where('approvalStatus', '==', 'pending').get();
-        const users = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        showToast(`Verifying ${users.length} pending user emails...`, 'info');
-        await window._performEmailExistScan(users);
-      };
-
-      window._scanTop50Emails = async () => {
-        const snap = await db.collection('users').limit(50).get();
-        const users = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        showToast(`Quick scanning ${users.length} users...`, 'info');
-        await window._performEmailExistScan(users);
-      };
-
-      window._performEmailExistScan = async (users) => {
-        const progressCard = document.getElementById('emailProgressCard');
-        const progressFill = document.getElementById('emailProgressFill');
-        const progressText = document.getElementById('emailProgressText');
-        const progressCount = document.getElementById('emailProgressCount');
-        
-        progressCard.style.display = 'block';
-        
-        const results = {
-          deliverable: [],
-          undeliverable: [],
-          risky: [],
-          unknown: [],
-          error: []
-        };
-        
-        for (let i = 0; i < users.length; i++) {
-          const user = users[i];
-          
-          const pct = Math.round(((i + 1) / users.length) * 100);
-          progressFill.style.width = pct + '%';
-          progressFill.textContent = pct + '%';
-          progressText.textContent = `Checking: ${user.email}`;
-          progressCount.textContent = `${i + 1}/${users.length}`;
-          
-          if (i > 0) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-          
-          try {
-            const result = await verifyEmailWithDidit(user.email);
-            const userWithResult = { ...user, verificationResult: result };
-            const status = result.status || result.result || 'unknown';
-            
-            if (status === 'deliverable' || status === 'valid' || result.is_valid) {
-              results.deliverable.push(userWithResult);
-            } else if (status === 'undeliverable' || status === 'invalid' || status === 'rejected') {
-              results.undeliverable.push(userWithResult);
-            } else if (status === 'risky' || status === 'catch_all') {
-              results.risky.push(userWithResult);
-            } else if (result.error) {
-              results.error.push(userWithResult);
-            } else {
-              results.unknown.push(userWithResult);
-            }
-          } catch (error) {
-            results.error.push({ ...user, verificationResult: { error: error.message } });
-          }
-        }
-        
-        setTimeout(() => { progressCard.style.display = 'none'; }, 1000);
-        displayBulkEmailResults(results, users.length);
-      };
-
-      function displayBulkEmailResults(results, total) {
-        const container = document.getElementById('emailScanResults');
-        
-        const undeliverableCount = results.undeliverable.length;
-        const riskyCount = results.risky.length;
-        const deliverableCount = results.deliverable.length;
-        const errorCount = results.error.length;
-        const unknownCount = results.unknown.length;
-        
-        let html = `
-          <div style="background:${undeliverableCount > 0 ? '#fee2e2' : '#d1fae5'}; padding:16px; border-radius:12px; margin-bottom:20px;">
-            <h4 style="color:${undeliverableCount > 0 ? 'var(--danger)' : 'var(--success)'};">
-              <i class="fas fa-${undeliverableCount > 0 ? 'exclamation-triangle' : 'check-circle'}"></i>
-              ${undeliverableCount > 0 
-                ? `⚠️ Found ${undeliverableCount} NON-EXISTENT emails out of ${total}` 
-                : '✅ All emails appear valid!'}
-            </h4>
-          </div>
-          
-          <div class="stats-grid" style="margin-bottom:20px;">
-            <div class="stat-card" style="background:#d1fae5;">
-              <div class="stat-icon" style="background:#a7f3d0; color:var(--success);"><i class="fas fa-check-circle"></i></div>
-              <div><small>Real Emails</small><h3 style="color:var(--success);">${deliverableCount}</h3></div>
-            </div>
-            <div class="stat-card" style="background:#fee2e2;">
-              <div class="stat-icon" style="background:#fecaca; color:var(--danger);"><i class="fas fa-times-circle"></i></div>
-              <div><small>Fake/Not Exist</small><h3 style="color:var(--danger);">${undeliverableCount}</h3></div>
-            </div>
-            <div class="stat-card" style="background:#fef3c7;">
-              <div class="stat-icon" style="background:#fde68a; color:var(--warning);"><i class="fas fa-exclamation-triangle"></i></div>
-              <div><small>Risky</small><h3 style="color:var(--warning);">${riskyCount}</h3></div>
-            </div>
-            <div class="stat-card" style="background:#dbeafe;">
-              <div class="stat-icon" style="background:#bfdbfe; color:#3b82f6;"><i class="fas fa-question-circle"></i></div>
-              <div><small>Unknown/Error</small><h3>${unknownCount + errorCount}</h3></div>
-            </div>
-          </div>`;
-        
-        if (results.undeliverable.length > 0) {
-          html += `
-            <div class="table-card" style="margin-bottom:20px;">
-              <div style="padding:16px; display:flex; justify-content:space-between; align-items:center; background:#fee2e2; border-radius:20px 20px 0 0;">
-                <h3 style="color:var(--danger);">❌ Non-Existent Email Accounts (${undeliverableCount})</h3>
-                <button class="btn-primary" onclick="window._deleteAllUndeliverable()" style="background:var(--danger);">
-                  <i class="fas fa-trash"></i> Delete All ${undeliverableCount}
-                </button>
-              </div>
-              <table class="table">
-                <tr><th>User</th><th>Email</th><th>Phone</th><th>Type</th><th>Status</th><th>Actions</th></tr>`;
-          
-          results.undeliverable.forEach(user => {
-            html += `
-              <tr>
-                <td><strong>${user.fullName || 'N/A'}</strong></td>
-                <td style="color:var(--danger);"><strong>${user.email}</strong></td>
-                <td>${user.phoneNumber || 'N/A'}</td>
-                <td>${user.isDonor ? '<span class="blood-badge">Donor</span>' : '<span class="status-badge" style="background:#3b82f6;">Seeker</span>'}</td>
-                <td><span class="status-badge" style="background:${user.approvalStatus === 'approved' ? 'var(--success)' : 'var(--warning)'};">${user.approvalStatus || 'N/A'}</span></td>
-                <td>
-                  <button class="btn-icon" onclick="window._deleteFakeEmailUser('${user.id}', '${user.email}')" title="Delete User">
-                    <i class="fas fa-trash" style="color:var(--danger);"></i>
-                  </button>
-                </td>
-              </tr>`;
-          });
-          
-          html += `</table></div>`;
-        }
-        
-        if (results.risky.length > 0) {
-          html += `
-            <details style="margin-bottom:20px;">
-              <summary style="cursor:pointer; padding:12px; background:#fef3c7; border-radius:8px; font-weight:600;">
-                <i class="fas fa-exclamation-triangle" style="color:var(--warning);"></i> ${riskyCount} Risky Emails
-              </summary>
-              <div style="margin-top:8px;"><table class="table"><tr><th>User</th><th>Email</th><th>Actions</th></tr>`;
-          
-          results.risky.forEach(user => {
-            html += `<tr><td>${user.fullName || 'N/A'}</td><td>${user.email}</td>
-              <td><button class="btn-icon" onclick="window._deleteFakeEmailUser('${user.id}', '${user.email}')"><i class="fas fa-trash" style="color:var(--danger);"></i></button></td></tr>`;
-          });
-          
-          html += `</table></div></details>`;
-        }
-        
-        container.innerHTML = html;
-        container.scrollIntoView({ behavior: 'smooth' });
-      }
-
-      window._deleteFakeEmailUser = async (userId, email) => {
-        if (!canDelete()) {
-          showToast('Only administrators can delete users', 'error');
-          return;
-        }
-        
-        if (!confirm(`⚠️ Delete user with non-existent email?\n\n${email}\n\nThis will remove all their data permanently.`)) return;
-        
-        try {
-          const batch = db.batch();
-          
-          const certsSnap = await db.collection('certificates').where('userId', '==', userId).get();
-          certsSnap.docs.forEach(doc => batch.delete(doc.ref));
-          
-          const requestsSnap = await db.collection('bloodRequests').where('requesterId', '==', userId).get();
-          requestsSnap.docs.forEach(doc => batch.delete(doc.ref));
-          
-          const logsAsSeeker = await db.collection('contactLogs').where('seekerId', '==', userId).get();
-          const logsAsDonor = await db.collection('contactLogs').where('donorId', '==', userId).get();
-          logsAsSeeker.docs.forEach(doc => batch.delete(doc.ref));
-          logsAsDonor.docs.forEach(doc => batch.delete(doc.ref));
-          
-          batch.delete(db.collection('users').doc(userId));
-          
-          await batch.commit();
-          showToast(`✅ Deleted: ${email}`, 'success');
-        } catch (error) {
-          showToast(`Error: ${error.message}`, 'error');
-        }
-      };
-
-      window._deleteAllUndeliverable = async () => {
-        showToast('Re-scanning to confirm fake emails...', 'info');
-        
-        const snap = await db.collection('users').get();
-        const users = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        
-        const undeliverable = [];
-        
-        for (const user of users) {
-          try {
-            const result = await verifyEmailWithDidit(user.email);
-            const status = result.status || result.result || '';
-            if (status === 'undeliverable' || status === 'invalid' || status === 'rejected') {
-              undeliverable.push({...user, verificationResult: result});
-            }
-          } catch (error) {}
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-        
-        if (undeliverable.length === 0) {
-          showToast('No undeliverable emails found', 'info');
-          return;
-        }
-        
-        if (!confirm(`⚠️ Delete ${undeliverable.length} users with non-existent emails?\n\nThis cannot be undone!`)) return;
-        
-        let deleted = 0;
-        const progressCard = document.getElementById('emailProgressCard');
-        progressCard.style.display = 'block';
-        
-        for (let i = 0; i < undeliverable.length; i++) {
-          const user = undeliverable[i];
-          
-          try {
-            const batch = db.batch();
-            
-            const certsSnap = await db.collection('certificates').where('userId', '==', user.id).get();
-            certsSnap.docs.forEach(doc => batch.delete(doc.ref));
-            
-            const requestsSnap = await db.collection('bloodRequests').where('requesterId', '==', user.id).get();
-            requestsSnap.docs.forEach(doc => batch.delete(doc.ref));
-            
-            const logsAsSeeker = await db.collection('contactLogs').where('seekerId', '==', user.id).get();
-            const logsAsDonor = await db.collection('contactLogs').where('donorId', '==', user.id).get();
-            logsAsSeeker.docs.forEach(doc => batch.delete(doc.ref));
-            logsAsDonor.docs.forEach(doc => batch.delete(doc.ref));
-            
-            batch.delete(db.collection('users').doc(user.id));
-            
-            await batch.commit();
-            deleted++;
-            
-            const pct = Math.round(((i + 1) / undeliverable.length) * 100);
-            document.getElementById('emailProgressFill').style.width = pct + '%';
-            document.getElementById('emailProgressFill').textContent = pct + '%';
-            document.getElementById('emailProgressText').textContent = `Deleted ${deleted}/${undeliverable.length}`;
-          } catch (error) {
-            console.error(`Failed to delete ${user.email}:`, error);
-          }
-          
-          await new Promise(resolve => setTimeout(resolve, 300));
-        }
-        
-        progressCard.style.display = 'none';
-        showToast(`✅ Deleted ${deleted} users with non-existent emails`, 'success');
-      };
-
-      window._findAndDeleteEmail = async (email) => {
-        const snap = await db.collection('users').where('email', '==', email).get();
-        
-        if (snap.empty) {
-          showToast('User not found in database', 'error');
-          return;
-        }
-        
-        const userId = snap.docs[0].id;
-        await window._deleteFakeEmailUser(userId, email);
-      };
 
       // ==================== ROLES TAB ====================
       async function loadRolesManagement() {
