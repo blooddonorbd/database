@@ -82,7 +82,6 @@
     .blood-badge { background: var(--primary); color: white; padding: 4px 12px; border-radius: 30px; font-weight: 600; font-size: 13px; display: inline-block; }
     .status-badge { padding: 4px 12px; border-radius: 30px; font-size: 12px; font-weight: 600; color: white; display: inline-block; }
     .role-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 30px; font-size: 12px; font-weight: 600; background: #f1f5f9; }
-    .cert-badge { color: #7c3aed; margin-left: 5px; font-size: 14px; cursor: help; }
     .btn-icon { background: #f1f5f9; border: none; width: 34px; height: 34px; border-radius: 10px; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; margin-right: 4px; }
     .btn-icon:hover { background: var(--primary); color: white; }
     .btn-icon.success:hover { background: var(--success); color: white; }
@@ -91,7 +90,6 @@
       border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.2s;
     }
     .btn-primary:hover { background: var(--primary-dark); }
-    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-secondary {
       padding: 10px 20px; background: #f1f5f9; color: var(--text); border: 1px solid var(--border);
       border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.2s;
@@ -110,8 +108,7 @@
     }
     
     .toast-container { position: fixed; top: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
-    .toast { background: white; padding: 14px 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease; }
-    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .toast { background: white; padding: 14px 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 10px; }
     
     .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
     .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
@@ -125,7 +122,7 @@
     
     .upload-area {
       background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px;
-      padding: 30px; text-align: center; cursor: pointer; margin-bottom: 16px; transition: 0.2s;
+      padding: 30px; text-align: center; cursor: pointer; margin-bottom: 16px;
     }
     .upload-area:hover { border-color: var(--primary); background: #fff5f5; }
     
@@ -217,7 +214,6 @@
       
       let currentUser = null;
       let currentRole = 'user';
-      let adminCredentials = null; // Store admin credentials for re-authentication
       
       // Geo dictionary for bulk registration
       const geoDict = {
@@ -254,7 +250,7 @@
         const el = document.createElement('div');
         el.className = `toast ${type}`;
         let icon = type==='success'?'check-circle':type==='error'?'exclamation-circle':'info-circle';
-        el.innerHTML = `<i class="fas fa-${icon}" style="color:var(--${type === 'info' ? 'primary' : type})"></i> ${msg}`;
+        el.innerHTML = `<i class="fas fa-${icon}" style="color:var(--${type})"></i> ${msg}`;
         container.appendChild(el);
         setTimeout(() => el.remove(), 4000);
       }
@@ -312,7 +308,7 @@
             .where('userId', '==', userId)
             .get();
           
-          if (!existingSnap.empty) return false; // Already has certificate
+          if (!existingSnap.empty) return; // Already has certificate
           
           const certificateId = generateCertificateId();
           const donorId = userData.donorId || generateDonorId();
@@ -385,10 +381,7 @@
             if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
           });
         });
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-          adminCredentials = null; // Clear stored credentials
-          auth.signOut().then(() => window.location.href='index.html');
-        });
+        document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut().then(() => window.location.href='index.html'));
       }
 
       function loadTab(tab) {
@@ -514,8 +507,8 @@
             donorId: userData.donorId || generateDonorId()
           });
           // Auto-issue certificate
-          const certIssued = await autoIssueCertificate(id, userData);
-          showToast(certIssued ? 'Approved & Certificate Issued' : 'Approved (Certificate already exists)', 'success');
+          await autoIssueCertificate(id, userData);
+          showToast('Approved & Certificate Issued', 'success');
           loadPending(); 
           refreshPendingCount();
         };
@@ -538,109 +531,40 @@
         
         snap.docs.forEach(d => {
           const u = d.data();
-          const hasCert = u.certificates && u.certificates.length > 0;
           let bgStatus = u.approvalStatus === 'approved' ? 'var(--success)' : (u.approvalStatus === 'pending' ? 'var(--warning)' : 'var(--danger)');
-          const userDataJson = JSON.stringify(u).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+          const userDataJson = JSON.stringify(u).replace(/"/g, '&quot;');
 
           html += `<tr style="cursor:pointer;" onclick="window._showUserDetails('${userDataJson}')">
-            <td>
-              <strong>
-                ${getRoleSymbol(u.role || 'user')} ${u.fullName || 'Unknown'}
-                ${hasCert ? '<i class="fas fa-certificate cert-badge" title="Has Certificate"></i>' : ''}
-              </strong><br><small>${u.email}</small>
-            </td>
+            <td><strong>${getRoleSymbol(u.role || 'user')} ${u.fullName || 'Unknown'}</strong><br><small>${u.email}</small></td>
             <td>${u.isDonor ? '🩸 Donor' : '🔍 Seeker'}</td>
             <td><span class="status-badge" style="background:${bgStatus}">${u.approvalStatus || 'N/A'}</span></td>
             <td><span class="role-badge">${getRoleSymbol(u.role || 'user')} ${u.role || 'user'}</span></td>
             <td>`;
-          
-          if(canDelete()) {
-            if (u.email === currentUser.email) {
-              html += `<span style="color:var(--text-secondary); font-size:12px;">You</span>`;
-            } else if (SUPER_ADMINS.includes(u.email)) {
-              html += `<span style="color:var(--text-secondary); font-size:12px;">Protected</span>`;
-            } else {
-              html += `<button class="btn-icon" onclick="event.stopPropagation(); window._deleteUser('${d.id}', '${u.fullName || 'Unknown'}')" title="Delete User"><i class="fas fa-trash" style="color:var(--danger)"></i></button>`;
-            }
-          } else {
-            html += `<span style="color:var(--text-secondary); font-size:12px;">No permission</span>`;
+          if(canDelete() && u.email !== currentUser.email && !SUPER_ADMINS.includes(u.email)) {
+            html += `<button class="btn-icon" onclick="event.stopPropagation(); window._deleteDoc('users', '${d.id}')" title="Delete User"><i class="fas fa-trash" style="color:var(--danger)"></i></button>`;
           }
-          
           html += `</td></tr>`;
         });
         area.innerHTML = html + `</table></div>`;
       }
 
       window._showUserDetails = (dataStr) => {
-        try {
-          const u = JSON.parse(dataStr);
-          const content = document.getElementById('userModalContent');
-          const hasCert = u.certificates && u.certificates.length > 0;
-          content.innerHTML = `
-            <p><strong>Name:</strong> ${u.fullName || 'N/A'}</p>
-            <p><strong>Email:</strong> ${u.email || 'N/A'}</p>
-            <p><strong>Phone:</strong> ${u.phoneNumber || 'N/A'}</p>
-            <p><strong>Blood Group:</strong> ${u.bloodGroup || 'N/A'}</p>
-            <p><strong>District:</strong> ${u.district || 'N/A'}</p>
-            <p><strong>Upazila:</strong> ${u.upazila || 'N/A'}</p>
-            <p><strong>Role:</strong> ${getRoleSymbol(u.role || 'user')} ${u.role || 'user'}</p>
-            <p><strong>Status:</strong> ${u.approvalStatus || 'N/A'}</p>
-            <p><strong>Is Donor:</strong> ${u.isDonor ? 'Yes' : 'No'}</p>
-            ${u.donorId ? `<p><strong>Donor ID:</strong> ${u.donorId}</p>` : ''}
-            ${hasCert ? `<p><strong>Certificates:</strong> <i class="fas fa-certificate" style="color:#7c3aed;"></i> ${u.certificates.length} issued</p>` : '<p><strong>Certificates:</strong> None</p>'}
-          `;
-          document.getElementById('userModal').style.display = 'flex';
-        } catch(e) {
-          showToast('Error displaying user details', 'error');
-        }
-      };
-
-      // Enhanced delete user function with additional checks
-      window._deleteUser = async (userId, userName) => {
-        if (!canDelete()) {
-          showToast('You do not have permission to delete users', 'error');
-          return;
-        }
-        
-        if (userId === currentUser.uid) {
-          showToast('You cannot delete your own account', 'error');
-          return;
-        }
-        
-        // Check if user is super admin
-        const userDoc = await db.collection('users').doc(userId).get();
-        if (!userDoc.exists) {
-          showToast('User not found', 'error');
-          return;
-        }
-        
-        const userData = userDoc.data();
-        if (SUPER_ADMINS.includes(userData.email)) {
-          showToast('Cannot delete super admin accounts', 'error');
-          return;
-        }
-        
-        if (confirm(`Are you sure you want to permanently delete user "${userName}"? This action cannot be undone.`)) {
-          try {
-            // Delete associated certificates
-            if (userData.certificates && userData.certificates.length > 0) {
-              const batch = db.batch();
-              for (const certId of userData.certificates) {
-                batch.delete(db.collection('certificates').doc(certId));
-              }
-              await batch.commit();
-            }
-            
-            // Delete the user document
-            await db.collection('users').doc(userId).delete();
-            
-            showToast('User deleted successfully', 'success');
-            refreshPendingCount();
-            loadUsers();
-          } catch(e) {
-            showToast('Error deleting user: ' + e.message, 'error');
-          }
-        }
+        const u = JSON.parse(dataStr);
+        const content = document.getElementById('userModalContent');
+        content.innerHTML = `
+          <p><strong>Name:</strong> ${u.fullName || 'N/A'}</p>
+          <p><strong>Email:</strong> ${u.email || 'N/A'}</p>
+          <p><strong>Phone:</strong> ${u.phoneNumber || 'N/A'}</p>
+          <p><strong>Blood Group:</strong> ${u.bloodGroup || 'N/A'}</p>
+          <p><strong>District:</strong> ${u.district || 'N/A'}</p>
+          <p><strong>Upazila:</strong> ${u.upazila || 'N/A'}</p>
+          <p><strong>Role:</strong> ${u.role || 'user'}</p>
+          <p><strong>Status:</strong> ${u.approvalStatus || 'N/A'}</p>
+          <p><strong>Is Donor:</strong> ${u.isDonor ? 'Yes' : 'No'}</p>
+          ${u.donorId ? `<p><strong>Donor ID:</strong> ${u.donorId}</p>` : ''}
+          ${u.certificates ? `<p><strong>Certificates:</strong> ${u.certificates.length}</p>` : ''}
+        `;
+        document.getElementById('userModal').style.display = 'flex';
       };
 
       // ==================== DONORS TAB ====================
@@ -652,12 +576,8 @@
         let html = `<div class="table-card"><table class="table"><tr><th>Name</th><th>Blood Group</th><th>Phone</th><th>District</th><th>Donor ID</th><th>Certificate</th></tr>`;
         snap.docs.forEach(d => {
           const u = d.data();
-          const hasCert = u.certificates && u.certificates.length > 0;
           html += `<tr>
-            <td>
-              ${getRoleSymbol(u.role || 'user')} ${u.fullName}
-              ${hasCert ? '<i class="fas fa-certificate cert-badge" title="Certified Donor"></i>' : ''}
-            </td>
+            <td>${getRoleSymbol(u.role || 'user')} ${u.fullName}</td>
             <td><span class="blood-badge">${u.bloodGroup}</span></td>
             <td>📱 ${u.phoneNumber || 'N/A'}</td>
             <td>${u.district || 'N/A'}, ${u.upazila || ''}</td>
@@ -689,7 +609,7 @@
             <td><span class="status-badge" style="background:${urgencyColor}">${req.urgency || 'normal'}</span></td>
             <td><span class="status-badge" style="background:${bgStatus}">${req.status || 'unknown'}</span></td>
             <td>
-              ${canDelete() ? `<button class="btn-icon" onclick="window._deleteDoc('bloodRequests', '${d.id}')" title="Delete Request"><i class="fas fa-trash" style="color:var(--danger)"></i></button>` : '<span style="color:var(--text-secondary); font-size:12px;">No permission</span>'}
+              ${canDelete() ? `<button class="btn-icon" onclick="window._deleteDoc('bloodRequests', '${d.id}')" title="Delete Request"><i class="fas fa-trash" style="color:var(--danger)"></i></button>` : ''}
             </td>
           </tr>`;
         });
@@ -751,7 +671,7 @@
                 </span>
               </td>
               <td>
-                ${canDelete() ? `<button class="btn-icon" onclick="window._deleteContactLog('${d.id}')" title="Delete Log"><i class="fas fa-trash" style="color:var(--danger)"></i></button>` : '<span style="color:var(--text-secondary); font-size:12px;">No permission</span>'}
+                ${canDelete() ? `<button class="btn-icon" onclick="window._deleteContactLog('${d.id}')" title="Delete Log"><i class="fas fa-trash" style="color:var(--danger)"></i></button>` : ''}
               </td>
             </tr>`;
           });
@@ -841,21 +761,10 @@
         area.innerHTML = html;
         
         window._revokeCertificate = async (certId) => {
-          if (confirm('Are you sure you want to revoke this certificate? This will remove it from the donor as well.')) {
-            const certDoc = await db.collection('certificates').doc(certId).get();
-            if (certDoc.exists) {
-              const certData = certDoc.data();
-              // Remove certificate from user's array
-              if (certData.userId) {
-                await db.collection('users').doc(certData.userId).update({
-                  certificates: firebase.firestore.FieldValue.arrayRemove(certId)
-                });
-              }
-              // Delete the certificate
-              await db.collection('certificates').doc(certId).delete();
-              showToast('Certificate revoked', 'success');
-              loadCertificates();
-            }
+          if (confirm('Are you sure you want to revoke this certificate?')) {
+            await db.collection('certificates').doc(certId).delete();
+            showToast('Certificate revoked', 'success');
+            loadCertificates();
           }
         };
       }
@@ -870,12 +779,8 @@
         if (!userDoc.exists) { showToast('User not found', 'error'); return; }
         
         const userData = userDoc.data();
-        const certIssued = await autoIssueCertificate(userId, userData);
-        if (certIssued) {
-          showToast('Certificate issued successfully!', 'success');
-        } else {
-          showToast('Certificate already exists for this donor', 'info');
-        }
+        await autoIssueCertificate(userId, userData);
+        showToast('Certificate issued successfully!', 'success');
         loadTab('certificates');
       };
 
@@ -1059,7 +964,7 @@
         showToast(`Opening email app with ${recipients.length} recipients in BCC`, 'success');
       };
 
-      // ==================== BULK REGISTER TAB (FIXED) ====================
+      // ==================== BULK REGISTER TAB ====================
       async function loadBulkRegister() {
         if (!canBulkRegister()) {
           document.getElementById('contentArea').innerHTML = '<p>Access denied. Only Administrators can bulk register donors.</p>';
@@ -1089,9 +994,6 @@
           
           <div class="table-card" style="padding:24px; margin-top:16px;">
             <h3><i class="fas fa-edit"></i> Or Manual Entry</h3>
-            <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">
-              ⚠️ <strong>Important:</strong> Bulk registration will require you to re-enter your admin password to maintain your session.
-            </p>
             <div class="grid-3">
               <div><label style="font-weight:600;">📧 Email *</label><textarea id="bulkEmailData" class="form-textarea" placeholder="donor@example.com" rows="4"></textarea></div>
               <div><label style="font-weight:600;">👤 Full Name</label><textarea id="bulkNameData" class="form-textarea" placeholder="Rahim Uddin" rows="4"></textarea></div>
@@ -1302,21 +1204,7 @@
         document.getElementById('bulkRegisterBtn').addEventListener('click', async () => {
           const rows = getBulkRows();
           if (rows.length === 0) { showToast('No donors to register', 'warning'); return; }
-          
-          // Ask for admin password to re-authenticate after bulk registration
-          const adminPassword = prompt("⚠️ Bulk registration will create new accounts and may affect your session.\n\nPlease enter YOUR admin password to continue.\nYou will be automatically logged back in after completion:", "");
-          if (!adminPassword) {
-            showToast('Operation cancelled - admin password required', 'warning');
-            return;
-          }
-          
-          if (!confirm(`Register ${rows.length} donors?\n\nYour session will be preserved automatically.`)) return;
-          
-          // Store admin credentials for re-authentication
-          adminCredentials = {
-            email: currentUser.email,
-            password: adminPassword
-          };
+          if (!confirm(`Register ${rows.length} donors?`)) return;
           
           const progressCard = document.getElementById('bulkProgressCard');
           const progressFill = document.getElementById('bulkProgressFill');
@@ -1327,7 +1215,6 @@
           document.getElementById('bulkRegisterBtn').disabled = true;
           
           let success = 0, failed = 0;
-          let lastCreatedUser = null;
           
           for (let i = 0; i < rows.length; i++) {
             const r = rows[i];
@@ -1341,7 +1228,6 @@
               const coords = await getLatLng(r.district, r.upazila);
               const userCred = await auth.createUserWithEmailAndPassword(r.email, r.password);
               const uid = userCred.user.uid;
-              lastCreatedUser = userCred.user;
               const unique = Math.random().toString(36).substring(2,8).toUpperCase();
               
               const donorData = {
@@ -1399,26 +1285,7 @@
           
           progressFill.style.width = '100%';
           progressFill.textContent = '100%';
-          progressText.textContent = 'Re-authenticating admin...';
-          progressCount.textContent = `${rows.length}/${rows.length}`;
-          
-          // Re-authenticate as admin
-          try {
-            addBulkLog('🔄 Re-authenticating as admin...', 'info');
-            if (lastCreatedUser) {
-              await auth.signOut();
-            }
-            await auth.signInWithEmailAndPassword(adminCredentials.email, adminCredentials.password);
-            adminCredentials = null; // Clear stored credentials
-            addBulkLog('✅ Successfully re-authenticated as admin', 'success');
-          } catch(err) {
-            addBulkLog('⚠️ Failed to re-authenticate. Please log in manually.', 'error');
-            showToast('Registration complete but re-authentication failed. Please log in again.', 'error');
-            setTimeout(() => {
-              auth.signOut().then(() => window.location.href = 'index.html');
-            }, 3000);
-          }
-          
+          progressText.textContent = 'Completed';
           document.getElementById('bulkRegisterBtn').disabled = false;
           addBulkLog(`🎉 Done! ${success} success, ${failed} failed`, 'highlight');
           showToast(`Registered ${success} donors successfully!`, 'success');
@@ -1467,20 +1334,18 @@
             <td>`;
           if (currentRole === 'main_admin' && !SUPER_ADMINS.includes(a.email)) {
             html += `<select onchange="window._changeRole('${a.id}', this.value)" class="form-select">
-              <option value="">Change Role</option>
+              <option value="">Change</option>
               <option value="user">👤 User (Demote)</option>
               <option value="main_admin">👑 Main Admin</option>
               <option value="admin">🛡️ Admin</option>
               <option value="moderator">🔰 Moderator</option>
             </select>`;
-          } else if (currentRole === 'admin' && a.role !== 'main_admin' && !SUPER_ADMINS.includes(a.email)) {
+          } else if (currentRole === 'admin' && a.role !== 'main_admin') {
             html += `<select onchange="window._changeRole('${a.id}', this.value)" class="form-select">
-              <option value="">Change Role</option>
+              <option value="">Change</option>
               <option value="user">👤 User (Demote)</option>
               <option value="moderator">🔰 Moderator</option>
             </select>`;
-          } else {
-            html += `<span style="color:var(--text-secondary); font-size:12px;">Protected</span>`;
           }
           html += `</td></tr>`;
         });
@@ -1500,64 +1365,28 @@
       window._changeRole = async (userId, newRole) => {
         if (!newRole) return;
         if (currentRole === 'admin' && newRole === 'main_admin') { showToast('Only main admin can assign main admin', 'error'); return; }
-        
-        // Check if target user is super admin
-        const userDoc = await db.collection('users').doc(userId).get();
-        if (userDoc.exists && SUPER_ADMINS.includes(userDoc.data().email)) {
-          showToast('Cannot change role of super admin', 'error');
-          return;
-        }
-        
         await db.collection('users').doc(userId).update({ role: newRole });
-        showToast('Role updated successfully', 'success'); 
-        loadRolesManagement();
+        showToast('Role updated', 'success'); loadRolesManagement();
       };
 
       window._appointRole = async () => {
         const email = document.getElementById('newAdminEmail').value.trim();
         const role = document.getElementById('newRoleSelect').value;
-        if (!email) {
-          showToast('Please enter an email', 'warning');
-          return;
-        }
-        
+        if (!email) return;
         const snap = await db.collection('users').where('email','==',email).get();
         if (snap.empty) { showToast('User not found', 'error'); return; }
         const doc = snap.docs[0];
-        const userData = doc.data();
-        
-        if (SUPER_ADMINS.includes(userData.email)) {
-          showToast('Cannot modify super admin', 'error');
-          return;
-        }
-        
-        if (currentRole === 'admin' && role === 'main_admin') { 
-          showToast('Cannot appoint main admin', 'error'); 
-          return; 
-        }
-        
+        if (currentRole === 'admin' && role === 'main_admin') { showToast('Cannot appoint main admin', 'error'); return; }
         await db.collection('users').doc(doc.id).update({ role: role });
-        showToast(`Appointed as ${getRoleDisplayName(role)}!`, 'success'); 
-        document.getElementById('newAdminEmail').value = '';
-        loadRolesManagement();
+        showToast('Appointed!', 'success'); loadRolesManagement();
       };
 
-      // Generic delete function for other collections
       window._deleteDoc = async (collection, id) => {
-        if (!canDelete()) {
-          showToast('You do not have permission to delete', 'error');
-          return;
-        }
-        
         if(confirm(`Are you sure you want to permanently delete this record from ${collection}?`)) {
-          try {
-            await db.collection(collection).doc(id).delete();
-            showToast('Deleted successfully', 'success');
-            const activeTab = document.querySelector('.nav-item.active')?.dataset?.tab;
-            if (activeTab) loadTab(activeTab);
-          } catch(e) {
-            showToast('Error deleting: ' + e.message, 'error');
-          }
+          await db.collection(collection).doc(id).delete();
+          showToast('Deleted successfully', 'success');
+          const activeTab = document.querySelector('.nav-item.active').dataset.tab;
+          loadTab(activeTab);
         }
       };
 
