@@ -299,10 +299,15 @@
       }
 
       async function refreshPendingCount() {
-        const snap = await db.collection('users').where('approvalStatus','==','pending').get();
-        const badge = document.getElementById('pendingBadge');
-        if(badge) badge.textContent = snap.size;
-        return snap.size;
+        try {
+          const snap = await db.collection('users').where('approvalStatus','==','pending').get();
+          const badge = document.getElementById('pendingBadge');
+          if(badge) badge.textContent = snap.size;
+          return snap.size;
+        } catch(e) {
+          console.error('Error refreshing pending count:', e);
+          return 0;
+        }
       }
 
       // Auto-issue certificate when donor is approved
@@ -364,9 +369,12 @@
           setupNavigation();
           loadTab('dashboard');
           
-          setInterval(() => {
+          // Update date immediately and then every second
+          const updateDate = () => {
             document.getElementById('currentDate').textContent = new Date().toLocaleString('en-GB', {dateStyle:'medium', timeStyle:'short'});
-          }, 1000);
+          };
+          updateDate();
+          setInterval(updateDate, 1000);
         } catch (e) {
           showToast('Error: '+e.message, 'error');
         }
@@ -410,41 +418,45 @@
       async function loadDashboard() {
         const area = document.getElementById('contentArea');
         area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading stats...</p>';
-        const usersSnap = await db.collection('users').get();
-        const donorsSnap = await db.collection('users').where('isDonor','==',true).where('approvalStatus','==','approved').get();
-        const requestsSnap = await db.collection('bloodRequests').where('status','==','active').get();
-        const certsSnap = await db.collection('certificates').get();
-        const contactLogsSnap = await db.collection('contactLogs').get();
         
-        area.innerHTML = `
-          <div class="stats-grid">
-            <div class="stat-card"><div class="stat-icon"><i class="fas fa-users"></i></div><div><small>Total Users</small><h3>${usersSnap.size}</h3></div></div>
-            <div class="stat-card"><div class="stat-icon" style="background:#fecaca;"><i class="fas fa-heart"></i></div><div><small>Active Donors</small><h3>${donorsSnap.size}</h3></div></div>
-            <div class="stat-card"><div class="stat-icon" style="background:#fef3c7; color:var(--warning)"><i class="fas fa-bell"></i></div><div><small>Active Requests</small><h3>${requestsSnap.size}</h3></div></div>
-            <div class="stat-card"><div class="stat-icon" style="background:#ddd6fe; color:#7c3aed"><i class="fas fa-certificate"></i></div><div><small>Certificates</small><h3>${certsSnap.size}</h3></div></div>
-            <div class="stat-card"><div class="stat-icon" style="background:#dbeafe; color:#2563eb"><i class="fas fa-phone-alt"></i></div><div><small>Contact Reveals</small><h3>${contactLogsSnap.size}</h3></div></div>
-          </div>
+        try {
+          const usersSnap = await db.collection('users').get();
+          const donorsSnap = await db.collection('users').where('isDonor','==',true).where('approvalStatus','==','approved').get();
+          const requestsSnap = await db.collection('bloodRequests').where('status','==','active').get();
+          const certsSnap = await db.collection('certificates').get();
+          const contactLogsSnap = await db.collection('contactLogs').get();
           
-          <div class="grid-2">
-            <div class="table-card" style="padding:20px;">
-              <h3 style="margin-bottom:16px;"><i class="fas fa-bell"></i> Recent Contact Reveals</h3>
-              <div id="dashboardRecentLogs">Loading...</div>
+          area.innerHTML = `
+            <div class="stats-grid">
+              <div class="stat-card"><div class="stat-icon"><i class="fas fa-users"></i></div><div><small>Total Users</small><h3>${usersSnap.size}</h3></div></div>
+              <div class="stat-card"><div class="stat-icon" style="background:#fecaca;"><i class="fas fa-heart"></i></div><div><small>Active Donors</small><h3>${donorsSnap.size}</h3></div></div>
+              <div class="stat-card"><div class="stat-icon" style="background:#fef3c7; color:var(--warning)"><i class="fas fa-bell"></i></div><div><small>Active Requests</small><h3>${requestsSnap.size}</h3></div></div>
+              <div class="stat-card"><div class="stat-icon" style="background:#ddd6fe; color:#7c3aed"><i class="fas fa-certificate"></i></div><div><small>Certificates</small><h3>${certsSnap.size}</h3></div></div>
+              <div class="stat-card"><div class="stat-icon" style="background:#dbeafe; color:#2563eb"><i class="fas fa-phone-alt"></i></div><div><small>Contact Reveals</small><h3>${contactLogsSnap.size}</h3></div></div>
             </div>
-            <div class="table-card" style="padding:20px;">
-              <h3 style="margin-bottom:16px;"><i class="fas fa-chart-bar"></i> Quick Overview</h3>
-              <p>Total Users: <strong>${usersSnap.size}</strong></p>
-              <p>Pending Approvals: <strong id="dashPendingCount">-</strong></p>
-              <p>Contact Reveals Today: <strong id="dashTodayReveals">-</strong></p>
+            
+            <div class="grid-2">
+              <div class="table-card" style="padding:20px;">
+                <h3 style="margin-bottom:16px;"><i class="fas fa-bell"></i> Recent Contact Reveals</h3>
+                <div id="dashboardRecentLogs">Loading...</div>
+              </div>
+              <div class="table-card" style="padding:20px;">
+                <h3 style="margin-bottom:16px;"><i class="fas fa-chart-bar"></i> Quick Overview</h3>
+                <p>Total Users: <strong>${usersSnap.size}</strong></p>
+                <p>Pending Approvals: <strong id="dashPendingCount">-</strong></p>
+                <p>Contact Reveals Today: <strong id="dashTodayReveals">-</strong></p>
+              </div>
             </div>
-          </div>
-        `;
-        
-        loadRecentContactLogsForDashboard();
-        refreshPendingCount().then(count => {
+          `;
+          
+          loadRecentContactLogsForDashboard();
+          const pendingCount = await refreshPendingCount();
           const el = document.getElementById('dashPendingCount');
-          if(el) el.textContent = count;
-        });
-        loadTodayRevealsCount();
+          if(el) el.textContent = pendingCount;
+          loadTodayRevealsCount();
+        } catch(e) {
+          area.innerHTML = `<p style="color:var(--danger);">Error loading dashboard: ${e.message}</p>`;
+        }
       }
 
       async function loadRecentContactLogsForDashboard() {
@@ -475,100 +487,132 @@
       async function loadTodayRevealsCount() {
         const el = document.getElementById('dashTodayReveals');
         if (!el) return;
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        const snap = await db.collection('contactLogs')
-          .where('timestamp','>=', today)
-          .get();
-        el.textContent = snap.size;
+        try {
+          const today = new Date();
+          today.setHours(0,0,0,0);
+          const snap = await db.collection('contactLogs')
+            .where('timestamp','>=', today)
+            .get();
+          el.textContent = snap.size;
+        } catch(e) {
+          el.textContent = 'Error';
+        }
       }
 
       // ==================== PENDING TAB ====================
       async function loadPending() {
         const area = document.getElementById('contentArea');
         area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Fetching pending requests...</p>';
-        const snap = await db.collection('users').where('approvalStatus','==','pending').get();
-        if(snap.empty) { area.innerHTML = '<p>No pending approvals.</p>'; return; }
         
-        const users = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        let html = `<div class="table-card"><table class="table"><tr><th>Name</th><th>Blood</th><th>Location</th><th>Action</th></tr>`;
-        users.forEach(u => {
-          html += `<tr>
-            <td><strong>${u.fullName}</strong><br><small>${u.phoneNumber || 'No phone'}</small></td>
-            <td><span class="blood-badge">${u.bloodGroup || 'N/A'}</span></td>
-            <td>${u.district || 'N/A'}, ${u.upazila || ''}</td>
-            <td>
-              <button class="btn-icon success" onclick="window._approveDonor('${u.id}')" title="Approve"><i class="fas fa-check"></i></button>
-              <button class="btn-icon" onclick="window._rejectDonor('${u.id}')" title="Reject"><i class="fas fa-times" style="color:var(--danger)"></i></button>
-            </td>
-          </tr>`;
-        });
-        area.innerHTML = html + `</table></div>`;
-        
-        window._approveDonor = async (id) => {
-          const userDoc = await db.collection('users').doc(id).get();
-          const userData = userDoc.data();
-          await db.collection('users').doc(id).update({
-            approvalStatus: 'approved', 
-            isDonor: true,
-            donorId: userData.donorId || generateDonorId()
+        try {
+          const snap = await db.collection('users').where('approvalStatus','==','pending').get();
+          if(snap.empty) { area.innerHTML = '<p>No pending approvals.</p>'; return; }
+          
+          const users = snap.docs.map(d => ({id: d.id, ...d.data()}));
+          let html = `<div class="table-card"><table class="table"><tr><th>Name</th><th>Blood</th><th>Location</th><th>Action</th></tr>`;
+          users.forEach(u => {
+            html += `<tr>
+              <td><strong>${u.fullName}</strong><br><small>${u.phoneNumber || 'No phone'}</small></td>
+              <td><span class="blood-badge">${u.bloodGroup || 'N/A'}</span></td>
+              <td>${u.district || 'N/A'}, ${u.upazila || ''}</td>
+              <td>
+                <button class="btn-icon success" onclick="window._approveDonor('${u.id}')" title="Approve"><i class="fas fa-check"></i></button>
+                <button class="btn-icon" onclick="window._rejectDonor('${u.id}')" title="Reject"><i class="fas fa-times" style="color:var(--danger)"></i></button>
+              </td>
+            </tr>`;
           });
-          // Auto-issue certificate
-          const certIssued = await autoIssueCertificate(id, userData);
-          showToast(certIssued ? 'Approved & Certificate Issued' : 'Approved (Certificate already exists)', 'success');
-          loadPending(); 
-          refreshPendingCount();
-        };
-        
-        window._rejectDonor = async (id) => {
-          if(confirm("Reject this donor?")) {
-            await db.collection('users').doc(id).update({approvalStatus:'rejected'});
-            showToast('Rejected','success'); loadPending(); refreshPendingCount();
-          }
-        };
+          area.innerHTML = html + `</table></div>`;
+          
+          window._approveDonor = async (id) => {
+            try {
+              const userDoc = await db.collection('users').doc(id).get();
+              const userData = userDoc.data();
+              await db.collection('users').doc(id).update({
+                approvalStatus: 'approved', 
+                isDonor: true,
+                donorId: userData.donorId || generateDonorId()
+              });
+              // Auto-issue certificate
+              const certIssued = await autoIssueCertificate(id, userData);
+              showToast(certIssued ? 'Approved & Certificate Issued' : 'Approved (Certificate already exists)', 'success');
+              loadPending(); 
+              refreshPendingCount();
+            } catch(e) {
+              showToast('Error approving donor: ' + e.message, 'error');
+            }
+          };
+          
+          window._rejectDonor = async (id) => {
+            if(confirm("Reject this donor?")) {
+              try {
+                await db.collection('users').doc(id).update({approvalStatus:'rejected'});
+                showToast('Rejected','success'); 
+                loadPending(); 
+                refreshPendingCount();
+              } catch(e) {
+                showToast('Error rejecting donor: ' + e.message, 'error');
+              }
+            }
+          };
+        } catch(e) {
+          area.innerHTML = `<p style="color:var(--danger);">Error loading pending: ${e.message}</p>`;
+        }
       }
 
-      // ==================== USERS TAB ====================
+      // ==================== USERS TAB (FIXED) ====================
       async function loadUsers() { 
         const area = document.getElementById('contentArea');
         area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading all users...</p>';
-        const snap = await db.collection('users').get();
         
-        let html = `<div class="table-card"><table class="table"><tr><th>User Details</th><th>Type</th><th>Status</th><th>Role</th><th>Actions</th></tr>`;
-        
-        snap.docs.forEach(d => {
-          const u = d.data();
-          const hasCert = u.certificates && u.certificates.length > 0;
-          let bgStatus = u.approvalStatus === 'approved' ? 'var(--success)' : (u.approvalStatus === 'pending' ? 'var(--warning)' : 'var(--danger)');
-          const userDataJson = JSON.stringify(u).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-
-          html += `<tr style="cursor:pointer;" onclick="window._showUserDetails('${userDataJson}')">
-            <td>
-              <strong>
-                ${getRoleSymbol(u.role || 'user')} ${u.fullName || 'Unknown'}
-                ${hasCert ? '<i class="fas fa-certificate cert-badge" title="Has Certificate"></i>' : ''}
-              </strong><br><small>${u.email}</small>
-            </td>
-            <td>${u.isDonor ? '🩸 Donor' : '🔍 Seeker'}</td>
-            <td><span class="status-badge" style="background:${bgStatus}">${u.approvalStatus || 'N/A'}</span></td>
-            <td><span class="role-badge">${getRoleSymbol(u.role || 'user')} ${u.role || 'user'}</span></td>
-            <td>`;
+        try {
+          const snap = await db.collection('users').get();
           
-          if(canDelete()) {
-            if (u.email === currentUser.email) {
-              html += `<span style="color:var(--text-secondary); font-size:12px;">You</span>`;
-            } else if (SUPER_ADMINS.includes(u.email)) {
-              html += `<span style="color:var(--text-secondary); font-size:12px;">Protected</span>`;
-            } else {
-              html += `<button class="btn-icon" onclick="event.stopPropagation(); window._deleteUser('${d.id}', '${u.fullName || 'Unknown'}')" title="Delete User"><i class="fas fa-trash" style="color:var(--danger)"></i></button>`;
+          let html = `<div class="table-card"><table class="table"><tr><th>User Details</th><th>Type</th><th>Status</th><th>Role</th><th>Actions</th></tr>`;
+          
+          snap.docs.forEach(d => {
+            const u = d.data();
+            const userId = d.id;
+            
+            // Validate userId
+            if (!userId || userId.trim() === '') {
+              console.warn('Found user with empty ID, skipping:', u);
+              return; // Skip users with empty IDs
             }
-          } else {
-            html += `<span style="color:var(--text-secondary); font-size:12px;">No permission</span>`;
-          }
-          
-          html += `</td></tr>`;
-        });
-        area.innerHTML = html + `</table></div>`;
+            
+            const hasCert = u.certificates && u.certificates.length > 0;
+            let bgStatus = u.approvalStatus === 'approved' ? 'var(--success)' : (u.approvalStatus === 'pending' ? 'var(--warning)' : 'var(--danger)');
+            const userDataJson = JSON.stringify(u).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+            html += `<tr style="cursor:pointer;" onclick="window._showUserDetails('${userDataJson}')">
+              <td>
+                <strong>
+                  ${getRoleSymbol(u.role || 'user')} ${u.fullName || 'Unknown'}
+                  ${hasCert ? '<i class="fas fa-certificate cert-badge" title="Has Certificate"></i>' : ''}
+                </strong><br><small>${u.email}</small>
+              </td>
+              <td>${u.isDonor ? '🩸 Donor' : '🔍 Seeker'}</td>
+              <td><span class="status-badge" style="background:${bgStatus}">${u.approvalStatus || 'N/A'}</span></td>
+              <td><span class="role-badge">${getRoleSymbol(u.role || 'user')} ${u.role || 'user'}</span></td>
+              <td>`;
+            
+            if(canDelete()) {
+              if (u.email === currentUser.email) {
+                html += `<span style="color:var(--text-secondary); font-size:12px;">You</span>`;
+              } else if (SUPER_ADMINS.includes(u.email)) {
+                html += `<span style="color:var(--text-secondary); font-size:12px;">Protected</span>`;
+              } else {
+                html += `<button class="btn-icon" onclick="event.stopPropagation(); window._deleteUser('${userId}', '${(u.fullName || 'Unknown').replace(/'/g, "\\'")}')" title="Delete User"><i class="fas fa-trash" style="color:var(--danger)"></i></button>`;
+              }
+            } else {
+              html += `<span style="color:var(--text-secondary); font-size:12px;">No permission</span>`;
+            }
+            
+            html += `</td></tr>`;
+          });
+          area.innerHTML = html + `</table></div>`;
+        } catch(e) {
+          area.innerHTML = `<p style="color:var(--danger);">Error loading users: ${e.message}</p>`;
+        }
       }
 
       window._showUserDetails = (dataStr) => {
@@ -595,8 +639,15 @@
         }
       };
 
-      // Enhanced delete user function with additional checks
+      // Enhanced delete user function with validation
       window._deleteUser = async (userId, userName) => {
+        // Validate userId first
+        if (!userId || typeof userId !== 'string' || userId.trim() === '') {
+          showToast('Error: Invalid user ID. Cannot delete user.', 'error');
+          console.error('Delete attempted with invalid userId:', userId);
+          return;
+        }
+        
         if (!canDelete()) {
           showToast('You do not have permission to delete users', 'error');
           return;
@@ -607,39 +658,49 @@
           return;
         }
         
-        // Check if user is super admin
-        const userDoc = await db.collection('users').doc(userId).get();
-        if (!userDoc.exists) {
-          showToast('User not found', 'error');
-          return;
-        }
-        
-        const userData = userDoc.data();
-        if (SUPER_ADMINS.includes(userData.email)) {
-          showToast('Cannot delete super admin accounts', 'error');
-          return;
-        }
-        
-        if (confirm(`Are you sure you want to permanently delete user "${userName}"? This action cannot be undone.`)) {
-          try {
-            // Delete associated certificates
-            if (userData.certificates && userData.certificates.length > 0) {
-              const batch = db.batch();
-              for (const certId of userData.certificates) {
-                batch.delete(db.collection('certificates').doc(certId));
-              }
-              await batch.commit();
-            }
-            
-            // Delete the user document
-            await db.collection('users').doc(userId).delete();
-            
-            showToast('User deleted successfully', 'success');
-            refreshPendingCount();
-            loadUsers();
-          } catch(e) {
-            showToast('Error deleting user: ' + e.message, 'error');
+        try {
+          // Check if user exists
+          const userDoc = await db.collection('users').doc(userId).get();
+          if (!userDoc.exists) {
+            showToast('User not found in database', 'error');
+            return;
           }
+          
+          const userData = userDoc.data();
+          
+          // Check if user is super admin
+          if (SUPER_ADMINS.includes(userData.email)) {
+            showToast('Cannot delete super admin accounts', 'error');
+            return;
+          }
+          
+          if (confirm(`Are you sure you want to permanently delete user "${userName}"? This action cannot be undone.`)) {
+            try {
+              // Delete associated certificates
+              if (userData.certificates && userData.certificates.length > 0) {
+                const batch = db.batch();
+                for (const certId of userData.certificates) {
+                  if (certId) { // Ensure certId is not empty
+                    batch.delete(db.collection('certificates').doc(certId));
+                  }
+                }
+                await batch.commit();
+              }
+              
+              // Delete the user document
+              await db.collection('users').doc(userId).delete();
+              
+              showToast('User deleted successfully', 'success');
+              refreshPendingCount();
+              loadUsers();
+            } catch(e) {
+              showToast('Error deleting user: ' + e.message, 'error');
+              console.error('Delete error:', e);
+            }
+          }
+        } catch(e) {
+          showToast('Error accessing user data: ' + e.message, 'error');
+          console.error('Error in delete function:', e);
         }
       };
 
@@ -647,53 +708,63 @@
       async function loadDonors() { 
         const area = document.getElementById('contentArea');
         area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading donors...</p>';
-        const snap = await db.collection('users').where('isDonor','==',true).where('approvalStatus','==','approved').get();
         
-        let html = `<div class="table-card"><table class="table"><tr><th>Name</th><th>Blood Group</th><th>Phone</th><th>District</th><th>Donor ID</th><th>Certificate</th></tr>`;
-        snap.docs.forEach(d => {
-          const u = d.data();
-          const hasCert = u.certificates && u.certificates.length > 0;
-          html += `<tr>
-            <td>
-              ${getRoleSymbol(u.role || 'user')} ${u.fullName}
-              ${hasCert ? '<i class="fas fa-certificate cert-badge" title="Certified Donor"></i>' : ''}
-            </td>
-            <td><span class="blood-badge">${u.bloodGroup}</span></td>
-            <td>📱 ${u.phoneNumber || 'N/A'}</td>
-            <td>${u.district || 'N/A'}, ${u.upazila || ''}</td>
-            <td><code>${u.donorId || 'N/A'}</code></td>
-            <td>
-              ${canManageCertificates() ? `<button class="btn-icon" onclick="window._issueCertificate('${d.id}')" title="Issue Certificate"><i class="fas fa-certificate" style="color:#7c3aed"></i></button>` : ''}
-            </td>
-          </tr>`;
-        });
-        area.innerHTML = html + `</table></div>`;
+        try {
+          const snap = await db.collection('users').where('isDonor','==',true).where('approvalStatus','==','approved').get();
+          
+          let html = `<div class="table-card"><table class="table"><tr><th>Name</th><th>Blood Group</th><th>Phone</th><th>District</th><th>Donor ID</th><th>Certificate</th></tr>`;
+          snap.docs.forEach(d => {
+            const u = d.data();
+            const hasCert = u.certificates && u.certificates.length > 0;
+            html += `<tr>
+              <td>
+                ${getRoleSymbol(u.role || 'user')} ${u.fullName}
+                ${hasCert ? '<i class="fas fa-certificate cert-badge" title="Certified Donor"></i>' : ''}
+              </td>
+              <td><span class="blood-badge">${u.bloodGroup}</span></td>
+              <td>📱 ${u.phoneNumber || 'N/A'}</td>
+              <td>${u.district || 'N/A'}, ${u.upazila || ''}</td>
+              <td><code>${u.donorId || 'N/A'}</code></td>
+              <td>
+                ${canManageCertificates() ? `<button class="btn-icon" onclick="window._issueCertificate('${d.id}')" title="Issue Certificate"><i class="fas fa-certificate" style="color:#7c3aed"></i></button>` : ''}
+              </td>
+            </tr>`;
+          });
+          area.innerHTML = html + `</table></div>`;
+        } catch(e) {
+          area.innerHTML = `<p style="color:var(--danger);">Error loading donors: ${e.message}</p>`;
+        }
       }
 
       // ==================== REQUESTS TAB ====================
       async function loadRequests() { 
         const area = document.getElementById('contentArea');
         area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading blood requests...</p>';
-        const snap = await db.collection('bloodRequests').get();
         
-        let html = `<div class="table-card"><table class="table"><tr><th>Patient</th><th>Blood</th><th>Contact</th><th>Hospital</th><th>Urgency</th><th>Status</th><th>Actions</th></tr>`;
-        snap.docs.forEach(d => {
-          const req = d.data();
-          let bgStatus = req.status === 'active' ? 'var(--success)' : 'var(--text-secondary)';
-          let urgencyColor = req.urgency === 'emergency' ? 'var(--danger)' : (req.urgency === 'urgent' ? 'var(--warning)' : 'var(--text-secondary)');
-          html += `<tr>
-            <td><strong>${req.patientName}</strong><br><small>Req by: ${req.requesterName || 'N/A'}</small></td>
-            <td><span class="blood-badge">${req.bloodGroup}</span><br><small>${req.unitsNeeded || 1} Unit(s)</small></td>
-            <td>📱 ${req.contactNumber || 'N/A'}</td>
-            <td>${req.hospitalName || 'N/A'}</td>
-            <td><span class="status-badge" style="background:${urgencyColor}">${req.urgency || 'normal'}</span></td>
-            <td><span class="status-badge" style="background:${bgStatus}">${req.status || 'unknown'}</span></td>
-            <td>
-              ${canDelete() ? `<button class="btn-icon" onclick="window._deleteDoc('bloodRequests', '${d.id}')" title="Delete Request"><i class="fas fa-trash" style="color:var(--danger)"></i></button>` : '<span style="color:var(--text-secondary); font-size:12px;">No permission</span>'}
-            </td>
-          </tr>`;
-        });
-        area.innerHTML = html + `</table></div>`;
+        try {
+          const snap = await db.collection('bloodRequests').get();
+          
+          let html = `<div class="table-card"><table class="table"><tr><th>Patient</th><th>Blood</th><th>Contact</th><th>Hospital</th><th>Urgency</th><th>Status</th><th>Actions</th></tr>`;
+          snap.docs.forEach(d => {
+            const req = d.data();
+            let bgStatus = req.status === 'active' ? 'var(--success)' : 'var(--text-secondary)';
+            let urgencyColor = req.urgency === 'emergency' ? 'var(--danger)' : (req.urgency === 'urgent' ? 'var(--warning)' : 'var(--text-secondary)');
+            html += `<tr>
+              <td><strong>${req.patientName}</strong><br><small>Req by: ${req.requesterName || 'N/A'}</small></td>
+              <td><span class="blood-badge">${req.bloodGroup}</span><br><small>${req.unitsNeeded || 1} Unit(s)</small></td>
+              <td>📱 ${req.contactNumber || 'N/A'}</td>
+              <td>${req.hospitalName || 'N/A'}</td>
+              <td><span class="status-badge" style="background:${urgencyColor}">${req.urgency || 'normal'}</span></td>
+              <td><span class="status-badge" style="background:${bgStatus}">${req.status || 'unknown'}</span></td>
+              <td>
+                ${canDelete() ? `<button class="btn-icon" onclick="window._deleteDoc('bloodRequests', '${d.id}')" title="Delete Request"><i class="fas fa-trash" style="color:var(--danger)"></i></button>` : '<span style="color:var(--text-secondary); font-size:12px;">No permission</span>'}
+              </td>
+            </tr>`;
+          });
+          area.innerHTML = html + `</table></div>`;
+        } catch(e) {
+          area.innerHTML = `<p style="color:var(--danger);">Error loading requests: ${e.message}</p>`;
+        }
       }
 
       // ==================== CONTACT LOGS TAB ====================
@@ -761,19 +832,27 @@
           
           window._deleteContactLog = async (logId) => {
             if (confirm('Delete this contact log entry?')) {
-              await db.collection('contactLogs').doc(logId).delete();
-              showToast('Log deleted', 'success');
-              loadContactLogs();
+              try {
+                await db.collection('contactLogs').doc(logId).delete();
+                showToast('Log deleted', 'success');
+                loadContactLogs();
+              } catch(e) {
+                showToast('Error deleting log: ' + e.message, 'error');
+              }
             }
           };
           
           window._clearAllContactLogs = async () => {
             if (confirm('⚠️ Are you sure you want to delete ALL contact reveal logs? This cannot be undone.')) {
-              const batch = db.batch();
-              snap.docs.forEach(d => batch.delete(d.ref));
-              await batch.commit();
-              showToast('All contact logs cleared', 'success');
-              loadContactLogs();
+              try {
+                const batch = db.batch();
+                snap.docs.forEach(d => batch.delete(d.ref));
+                await batch.commit();
+                showToast('All contact logs cleared', 'success');
+                loadContactLogs();
+              } catch(e) {
+                showToast('Error clearing logs: ' + e.message, 'error');
+              }
             }
           };
         } catch (e) {
@@ -790,74 +869,89 @@
         const area = document.getElementById('contentArea');
         area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading certificates...</p>';
         
-        const certsSnap = await db.collection('certificates').orderBy('issuedDate', 'desc').get();
-        
-        if (certsSnap.empty) {
-          area.innerHTML = `
-            <div class="table-card" style="padding: 40px; text-align: center;">
-              <i class="fas fa-certificate" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
-              <h3>No Certificates Issued Yet</h3>
-              <p style="color: var(--text-secondary); margin-bottom: 20px;">Certificates are auto-issued when donors are approved</p>
-            </div>`;
-          return;
-        }
-        
-        let html = `<div class="table-card">
-          <h3 style="padding:16px;">📜 All Certificates (${certsSnap.size})</h3>
-          <table class="table">
-            <tr>
-              <th>Certificate ID</th>
-              <th>Donor</th>
-              <th>Donor ID</th>
-              <th>Blood Group</th>
-              <th>Issued Date</th>
-              <th>Issued By</th>
-              <th>Actions</th>
-            </tr>`;
-        
-        certsSnap.docs.forEach(d => {
-          const cert = d.data();
-          html += `<tr>
-            <td><code style="background:#f1f5f9; padding:4px 8px; border-radius:4px;">${cert.certificateId}</code></td>
-            <td><strong>${cert.userName}</strong></td>
-            <td>${cert.donorId || 'N/A'}</td>
-            <td><span class="blood-badge">${cert.bloodGroup}</span></td>
-            <td>${new Date(cert.issuedDate).toLocaleDateString('en-GB', {dateStyle:'medium'})}</td>
-            <td><span class="status-badge" style="background:${cert.issuedBy === 'auto' ? 'var(--success)' : 'var(--primary)'};">${cert.issuedBy || 'manual'}</span></td>
-            <td>
-              <button class="btn-icon" onclick="window._viewCertificate('${cert.certificateId}')" title="View"><i class="fas fa-eye" style="color:#3b82f6"></i></button>
-              ${canDelete() ? `<button class="btn-icon" onclick="window._revokeCertificate('${d.id}')" title="Revoke"><i class="fas fa-times-circle" style="color:var(--danger)"></i></button>` : ''}
-            </td>
-          </tr>`;
-        });
-        
-        html += `</table></div>
-        <div style="margin-top:20px; background:white; padding:20px; border-radius:20px; box-shadow:var(--shadow)">
-          <h4>➕ Issue Manual Certificate</h4>
-          <input id="manualCertEmail" placeholder="Donor Email" class="form-input">
-          <button onclick="window._issueManualCertificate()" class="btn-primary" style="width:100%">Issue Certificate</button>
-        </div>`;
-        
-        area.innerHTML = html;
-        
-        window._revokeCertificate = async (certId) => {
-          if (confirm('Are you sure you want to revoke this certificate? This will remove it from the donor as well.')) {
-            const certDoc = await db.collection('certificates').doc(certId).get();
-            if (certDoc.exists) {
-              const certData = certDoc.data();
-              // Remove certificate from user's array
-              if (certData.userId) {
-                await db.collection('users').doc(certData.userId).update({
-                  certificates: firebase.firestore.FieldValue.arrayRemove(certId)
-                });
-              }
-              // Delete the certificate
-              await db.collection('certificates').doc(certId).delete();
-              showToast('Certificate revoked', 'success');
-              loadCertificates();
-            }
+        try {
+          const certsSnap = await db.collection('certificates').orderBy('issuedDate', 'desc').get();
+          
+          if (certsSnap.empty) {
+            area.innerHTML = `
+              <div class="table-card" style="padding: 40px; text-align: center;">
+                <i class="fas fa-certificate" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
+                <h3>No Certificates Issued Yet</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">Certificates are auto-issued when donors are approved</p>
+              </div>`;
+            return;
           }
-        };
+          
+          let html = `<div class="table-card">
+            <h3 style="padding:16px;">📜 All Certificates (${certsSnap.size})</h3>
+            <table class="table">
+              <tr>
+                <th>Certificate ID</th>
+                <th>Donor</th>
+                <th>Donor ID</th>
+                <th>Blood Group</th>
+                <th>Issued Date</th>
+                <th>Issued By</th>
+                <th>Actions</th>
+              </tr>`;
+          
+          certsSnap.docs.forEach(d => {
+            const cert = d.data();
+            html += `<tr>
+              <td><code style="background:#f1f5f9; padding:4px 8px; border-radius:4px;">${cert.certificateId}</code></td>
+              <td><strong>${cert.userName}</strong></td>
+              <td>${cert.donorId || 'N/A'}</td>
+              <td><span class="blood-badge">${cert.bloodGroup}</span></td>
+              <td>${new Date(cert.issuedDate).toLocaleDateString('en-GB', {dateStyle:'medium'})}</td>
+              <td><span class="status-badge" style="background:${cert.issuedBy === 'auto' ? 'var(--success)' : 'var(--primary)'};">${cert.issuedBy || 'manual'}</span></td>
+              <td>
+                <button class="btn-icon" onclick="window._viewCertificate('${cert.certificateId}')" title="View"><i class="fas fa-eye" style="color:#3b82f6"></i></button>
+                ${canDelete() ? `<button class="btn-icon" onclick="window._revokeCertificate('${d.id}')" title="Revoke"><i class="fas fa-times-circle" style="color:var(--danger)"></i></button>` : ''}
+              </td>
+            </tr>`;
+          });
+          
+          html += `</table></div>
+          <div style="margin-top:20px; background:white; padding:20px; border-radius:20px; box-shadow:var(--shadow)">
+            <h4>➕ Issue Manual Certificate</h4>
+            <input id="manualCertEmail" placeholder="Donor Email" class="form-input">
+            <button onclick="window._issueManualCertificate()" class="btn-primary" style="width:100%">Issue Certificate</button>
+          </div>`;
+          
+          area.innerHTML = html;
+          
+          window._revokeCertificate = async (certId) => {
+            if (!certId || certId.trim() === '') {
+              showToast('Error: Invalid certificate ID', 'error');
+              return;
+            }
+            
+            if (confirm('Are you sure you want to revoke this certificate? This will remove it from the donor as well.')) {
+              try {
+                const certDoc = await db.collection('certificates').doc(certId).get();
+                if (certDoc.exists) {
+                  const certData = certDoc.data();
+                  // Remove certificate from user's array
+                  if (certData.userId) {
+                    await db.collection('users').doc(certData.userId).update({
+                      certificates: firebase.firestore.FieldValue.arrayRemove(certId)
+                    });
+                  }
+                  // Delete the certificate
+                  await db.collection('certificates').doc(certId).delete();
+                  showToast('Certificate revoked', 'success');
+                  loadCertificates();
+                } else {
+                  showToast('Certificate not found', 'error');
+                }
+              } catch(e) {
+                showToast('Error revoking certificate: ' + e.message, 'error');
+              }
+            }
+          };
+        } catch(e) {
+          area.innerHTML = `<p style="color:var(--danger);">Error loading certificates: ${e.message}</p>`;
+        }
       }
 
       window._issueCertificate = async (userId) => {
@@ -866,28 +960,41 @@
           return;
         }
         
-        const userDoc = await db.collection('users').doc(userId).get();
-        if (!userDoc.exists) { showToast('User not found', 'error'); return; }
-        
-        const userData = userDoc.data();
-        const certIssued = await autoIssueCertificate(userId, userData);
-        if (certIssued) {
-          showToast('Certificate issued successfully!', 'success');
-        } else {
-          showToast('Certificate already exists for this donor', 'info');
+        if (!userId || userId.trim() === '') {
+          showToast('Error: Invalid user ID', 'error');
+          return;
         }
-        loadTab('certificates');
+        
+        try {
+          const userDoc = await db.collection('users').doc(userId).get();
+          if (!userDoc.exists) { showToast('User not found', 'error'); return; }
+          
+          const userData = userDoc.data();
+          const certIssued = await autoIssueCertificate(userId, userData);
+          if (certIssued) {
+            showToast('Certificate issued successfully!', 'success');
+          } else {
+            showToast('Certificate already exists for this donor', 'info');
+          }
+          loadTab('certificates');
+        } catch(e) {
+          showToast('Error issuing certificate: ' + e.message, 'error');
+        }
       };
 
       window._issueManualCertificate = async () => {
-        const email = document.getElementById('manualCertEmail').value.trim();
+        const email = document.getElementById('manualCertEmail')?.value.trim();
         if (!email) { showToast('Please enter donor email', 'warning'); return; }
         
-        const userSnap = await db.collection('users').where('email', '==', email).get();
-        if (userSnap.empty) { showToast('Donor not found', 'error'); return; }
-        
-        const userId = userSnap.docs[0].id;
-        await window._issueCertificate(userId);
+        try {
+          const userSnap = await db.collection('users').where('email', '==', email).get();
+          if (userSnap.empty) { showToast('Donor not found', 'error'); return; }
+          
+          const userId = userSnap.docs[0].id;
+          await window._issueCertificate(userId);
+        } catch(e) {
+          showToast('Error finding donor: ' + e.message, 'error');
+        }
       };
 
       window._viewCertificate = (certId) => {
@@ -902,116 +1009,121 @@
         }
         
         const area = document.getElementById('contentArea');
+        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading email composer...</p>';
         
-        // Fetch all users for filters
-        const usersSnap = await db.collection('users').get();
-        const allUsers = usersSnap.docs.map(d => ({id: d.id, ...d.data()}));
-        
-        // Extract unique districts, upazilas, blood groups
-        const districts = [...new Set(allUsers.map(u => u.district).filter(Boolean))].sort();
-        const upazilas = [...new Set(allUsers.map(u => u.upazila).filter(Boolean))].sort();
-        const bloodGroups = [...new Set(allUsers.map(u => u.bloodGroup).filter(Boolean))].sort();
-        
-        area.innerHTML = `
-          <div class="grid-2">
-            <div class="table-card" style="padding:24px;">
-              <h3 style="margin-bottom:16px;"><i class="fas fa-filter"></i> Filter Recipients</h3>
-              
-              <label style="font-weight:600;">Select Districts</label>
-              <div class="checkbox-group" id="emailDistrictFilters">
-                ${districts.map(d => `
-                  <label class="checkbox-label">
-                    <input type="checkbox" value="${d}" class="email-district-check">
-                    ${d}
-                  </label>
-                `).join('')}
-              </div>
-              <button class="btn-secondary" onclick="window._selectAllEmailDistricts()" style="margin-top:8px;">Select All Districts</button>
-              <button class="btn-secondary" onclick="window._deselectAllEmailDistricts()" style="margin-top:8px;">Deselect All</button>
-              
-              <label style="font-weight:600; margin-top:16px; display:block;">Select Upazilas</label>
-              <div class="checkbox-group" id="emailUpazilaFilters">
-                ${upazilas.map(u => `
-                  <label class="checkbox-label">
-                    <input type="checkbox" value="${u}" class="email-upazila-check">
-                    ${u}
-                  </label>
-                `).join('')}
-              </div>
-              
-              <label style="font-weight:600; margin-top:16px; display:block;">Select Blood Groups</label>
-              <div class="checkbox-group" id="emailBloodGroupFilters">
-                ${bloodGroups.map(b => `
-                  <label class="checkbox-label">
-                    <input type="checkbox" value="${b}" class="email-bg-check">
-                    ${b}
-                  </label>
-                `).join('')}
-              </div>
-              
-              <div style="margin-top:16px;">
-                <label style="font-weight:600;">Role Filter</label>
-                <select id="emailRoleFilter" class="form-select">
-                  <option value="all">All Users</option>
-                  <option value="donor">Donors Only</option>
-                  <option value="seeker">Seekers Only</option>
-                  <option value="admin">Admins/Moderators</option>
-                </select>
-              </div>
-              
-              <button class="btn-primary" onclick="window._previewEmailRecipients()" style="margin-top:16px; width:100%;">
-                <i class="fas fa-eye"></i> Preview Recipients
-              </button>
-              <div id="emailRecipientCount" style="margin-top:12px; font-weight:600;"></div>
-              <div id="emailRecipientPreview" style="margin-top:8px; max-height:200px; overflow-y:auto; font-size:13px;"></div>
-            </div>
-            
-            <div class="table-card" style="padding:24px;">
-              <h3 style="margin-bottom:16px;"><i class="fas fa-envelope"></i> Compose Email</h3>
-              
-              <label style="font-weight:600;">Subject</label>
-              <input type="text" id="emailSubject" class="form-input" placeholder="Email subject...">
-              
-              <label style="font-weight:600;">Body</label>
-              <textarea id="emailBody" class="form-textarea" style="min-height:200px;" placeholder="Write your email body here..."></textarea>
-              
-              <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">
-                <i class="fas fa-info-circle"></i> Clicking "Send Email" will open your email app with all recipients in BCC.
-              </p>
-              
-              <button class="btn-primary" onclick="window._sendBulkEmail()" style="width:100%;">
-                <i class="fas fa-paper-plane"></i> Open Email App & Send
-              </button>
-            </div>
-          </div>
-        `;
-        
-        // Store users data globally for email functionality
-        window._allUsersForEmail = allUsers;
-        
-        window._selectAllEmailDistricts = () => {
-          document.querySelectorAll('.email-district-check').forEach(cb => cb.checked = true);
-        };
-        window._deselectAllEmailDistricts = () => {
-          document.querySelectorAll('.email-district-check').forEach(cb => cb.checked = false);
-        };
-        
-        window._previewEmailRecipients = () => {
-          const recipients = window._getFilteredEmailRecipients();
-          document.getElementById('emailRecipientCount').innerHTML = 
-            `<span style="color:var(--primary);">📧 ${recipients.length} recipients selected</span>`;
+        try {
+          // Fetch all users for filters
+          const usersSnap = await db.collection('users').get();
+          const allUsers = usersSnap.docs.map(d => ({id: d.id, ...d.data()}));
           
-          const preview = document.getElementById('emailRecipientPreview');
-          if (recipients.length === 0) {
-            preview.innerHTML = '<p style="color:var(--text-secondary);">No recipients match your filters.</p>';
-          } else if (recipients.length <= 20) {
-            preview.innerHTML = recipients.map(r => 
-              `<div style="padding:4px 0; border-bottom:1px solid #f1f5f9;">📧 ${r.email} - ${r.fullName || 'N/A'}</div>`
-            ).join('');
-          } else {
-            preview.innerHTML = `<p style="color:var(--text-secondary);">${recipients.length} recipients (too many to show individually)</p>`;
-          }
-        };
+          // Extract unique districts, upazilas, blood groups
+          const districts = [...new Set(allUsers.map(u => u.district).filter(Boolean))].sort();
+          const upazilas = [...new Set(allUsers.map(u => u.upazila).filter(Boolean))].sort();
+          const bloodGroups = [...new Set(allUsers.map(u => u.bloodGroup).filter(Boolean))].sort();
+          
+          area.innerHTML = `
+            <div class="grid-2">
+              <div class="table-card" style="padding:24px;">
+                <h3 style="margin-bottom:16px;"><i class="fas fa-filter"></i> Filter Recipients</h3>
+                
+                <label style="font-weight:600;">Select Districts</label>
+                <div class="checkbox-group" id="emailDistrictFilters">
+                  ${districts.map(d => `
+                    <label class="checkbox-label">
+                      <input type="checkbox" value="${d}" class="email-district-check">
+                      ${d}
+                    </label>
+                  `).join('')}
+                </div>
+                <button class="btn-secondary" onclick="window._selectAllEmailDistricts()" style="margin-top:8px;">Select All Districts</button>
+                <button class="btn-secondary" onclick="window._deselectAllEmailDistricts()" style="margin-top:8px;">Deselect All</button>
+                
+                <label style="font-weight:600; margin-top:16px; display:block;">Select Upazilas</label>
+                <div class="checkbox-group" id="emailUpazilaFilters">
+                  ${upazilas.map(u => `
+                    <label class="checkbox-label">
+                      <input type="checkbox" value="${u}" class="email-upazila-check">
+                      ${u}
+                    </label>
+                  `).join('')}
+                </div>
+                
+                <label style="font-weight:600; margin-top:16px; display:block;">Select Blood Groups</label>
+                <div class="checkbox-group" id="emailBloodGroupFilters">
+                  ${bloodGroups.map(b => `
+                    <label class="checkbox-label">
+                      <input type="checkbox" value="${b}" class="email-bg-check">
+                      ${b}
+                    </label>
+                  `).join('')}
+                </div>
+                
+                <div style="margin-top:16px;">
+                  <label style="font-weight:600;">Role Filter</label>
+                  <select id="emailRoleFilter" class="form-select">
+                    <option value="all">All Users</option>
+                    <option value="donor">Donors Only</option>
+                    <option value="seeker">Seekers Only</option>
+                    <option value="admin">Admins/Moderators</option>
+                  </select>
+                </div>
+                
+                <button class="btn-primary" onclick="window._previewEmailRecipients()" style="margin-top:16px; width:100%;">
+                  <i class="fas fa-eye"></i> Preview Recipients
+                </button>
+                <div id="emailRecipientCount" style="margin-top:12px; font-weight:600;"></div>
+                <div id="emailRecipientPreview" style="margin-top:8px; max-height:200px; overflow-y:auto; font-size:13px;"></div>
+              </div>
+              
+              <div class="table-card" style="padding:24px;">
+                <h3 style="margin-bottom:16px;"><i class="fas fa-envelope"></i> Compose Email</h3>
+                
+                <label style="font-weight:600;">Subject</label>
+                <input type="text" id="emailSubject" class="form-input" placeholder="Email subject...">
+                
+                <label style="font-weight:600;">Body</label>
+                <textarea id="emailBody" class="form-textarea" style="min-height:200px;" placeholder="Write your email body here..."></textarea>
+                
+                <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">
+                  <i class="fas fa-info-circle"></i> Clicking "Send Email" will open your email app with all recipients in BCC.
+                </p>
+                
+                <button class="btn-primary" onclick="window._sendBulkEmail()" style="width:100%;">
+                  <i class="fas fa-paper-plane"></i> Open Email App & Send
+                </button>
+              </div>
+            </div>
+          `;
+          
+          // Store users data globally for email functionality
+          window._allUsersForEmail = allUsers;
+          
+          window._selectAllEmailDistricts = () => {
+            document.querySelectorAll('.email-district-check').forEach(cb => cb.checked = true);
+          };
+          window._deselectAllEmailDistricts = () => {
+            document.querySelectorAll('.email-district-check').forEach(cb => cb.checked = false);
+          };
+          
+          window._previewEmailRecipients = () => {
+            const recipients = window._getFilteredEmailRecipients();
+            document.getElementById('emailRecipientCount').innerHTML = 
+              `<span style="color:var(--primary);">📧 ${recipients.length} recipients selected</span>`;
+            
+            const preview = document.getElementById('emailRecipientPreview');
+            if (recipients.length === 0) {
+              preview.innerHTML = '<p style="color:var(--text-secondary);">No recipients match your filters.</p>';
+            } else if (recipients.length <= 20) {
+              preview.innerHTML = recipients.map(r => 
+                `<div style="padding:4px 0; border-bottom:1px solid #f1f5f9;">📧 ${r.email} - ${r.fullName || 'N/A'}</div>`
+              ).join('');
+            } else {
+              preview.innerHTML = `<p style="color:var(--text-secondary);">${recipients.length} recipients (too many to show individually)</p>`;
+            }
+          };
+        } catch(e) {
+          area.innerHTML = `<p style="color:var(--danger);">Error loading email composer: ${e.message}</p>`;
+        }
       }
 
       window._getFilteredEmailRecipients = () => {
@@ -1059,7 +1171,7 @@
         showToast(`Opening email app with ${recipients.length} recipients in BCC`, 'success');
       };
 
-      // ==================== BULK REGISTER TAB (FIXED) ====================
+      // ==================== BULK REGISTER TAB ====================
       async function loadBulkRegister() {
         if (!canBulkRegister()) {
           document.getElementById('contentArea').innerHTML = '<p>Access denied. Only Administrators can bulk register donors.</p>';
@@ -1163,6 +1275,7 @@
         
         function addBulkLog(msg, type='info') {
           const container = document.getElementById('bulkLogContainer');
+          if (!container) return;
           const div = document.createElement('div');
           div.style.color = type === 'success' ? '#4ade80' : (type === 'error' ? '#f87171' : '#facc15');
           div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
@@ -1226,51 +1339,59 @@
           updateBulkStats();
         }
         
-        dropZone.addEventListener('click', () => fileInput.click());
-        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#dc2626'; });
-        dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = '#cbd5e1'; });
-        dropZone.addEventListener('drop', (e) => {
-          e.preventDefault();
-          dropZone.style.borderColor = '#cbd5e1';
-          if (e.dataTransfer.files[0]) handleBulkFile(e.dataTransfer.files[0]);
-        });
+        if (dropZone) {
+          dropZone.addEventListener('click', () => fileInput.click());
+          dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#dc2626'; });
+          dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = '#cbd5e1'; });
+          dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = '#cbd5e1';
+            if (e.dataTransfer.files[0]) handleBulkFile(e.dataTransfer.files[0]);
+          });
+        }
         
-        fileInput.addEventListener('change', (e) => {
-          if (e.target.files[0]) handleBulkFile(e.target.files[0]);
-        });
+        if (fileInput) {
+          fileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) handleBulkFile(e.target.files[0]);
+          });
+        }
         
         function handleBulkFile(file) {
           document.getElementById('bulkFileInfo').textContent = `📄 ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
           const reader = new FileReader();
           reader.onload = (e) => {
-            if (file.name.endsWith('.csv')) {
-              const lines = e.target.result.split(/\r?\n/).filter(l => l.trim());
-              uploadedData = lines.slice(1).map(line => {
-                const parts = line.split(',').map(s => s.trim());
-                return {
-                  email: parts[0] || '',
-                  fullName: parts[1] || '',
-                  phone: parts[2] || '',
-                  district: parts[3] || '',
-                  upazila: parts[4] || '',
-                  bloodGroup: parts[5] || ''
-                };
-              }).filter(r => r.email);
-            } else if (file.name.endsWith('.xlsx')) {
-              const workbook = XLSX.read(e.target.result, {type:'binary'});
-              const sheet = workbook.Sheets[workbook.SheetNames[0]];
-              const jsonData = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
-              uploadedData = jsonData.slice(1).map(row => ({
-                email: (row[0] || '').toString().trim(),
-                fullName: (row[1] || '').toString().trim(),
-                phone: (row[2] || '').toString().trim(),
-                district: (row[3] || '').toString().trim(),
-                upazila: (row[4] || '').toString().trim(),
-                bloodGroup: (row[5] || '').toString().trim()
-              })).filter(r => r.email);
+            try {
+              if (file.name.endsWith('.csv')) {
+                const lines = e.target.result.split(/\r?\n/).filter(l => l.trim());
+                uploadedData = lines.slice(1).map(line => {
+                  const parts = line.split(',').map(s => s.trim());
+                  return {
+                    email: parts[0] || '',
+                    fullName: parts[1] || '',
+                    phone: parts[2] || '',
+                    district: parts[3] || '',
+                    upazila: parts[4] || '',
+                    bloodGroup: parts[5] || ''
+                  };
+                }).filter(r => r.email);
+              } else if (file.name.endsWith('.xlsx')) {
+                const workbook = XLSX.read(e.target.result, {type:'binary'});
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+                uploadedData = jsonData.slice(1).map(row => ({
+                  email: (row[0] || '').toString().trim(),
+                  fullName: (row[1] || '').toString().trim(),
+                  phone: (row[2] || '').toString().trim(),
+                  district: (row[3] || '').toString().trim(),
+                  upazila: (row[4] || '').toString().trim(),
+                  bloodGroup: (row[5] || '').toString().trim()
+                })).filter(r => r.email);
+              }
+              addBulkLog(`File loaded: ${uploadedData.length} donors found`, 'highlight');
+              populateFromFileData(uploadedData);
+            } catch(err) {
+              addBulkLog(`Error reading file: ${err.message}`, 'error');
             }
-            addBulkLog(`File loaded: ${uploadedData.length} donors found`, 'highlight');
-            populateFromFileData(uploadedData);
           };
           
           if (file.name.endsWith('.xlsx')) {
@@ -1280,13 +1401,13 @@
           }
         }
         
-        document.getElementById('bulkClearFileBtn').addEventListener('click', () => {
+        document.getElementById('bulkClearFileBtn')?.addEventListener('click', () => {
           uploadedData = null;
           fileInput.value = '';
           document.getElementById('bulkFileInfo').textContent = '';
         });
         
-        document.getElementById('bulkPreviewBtn').addEventListener('click', () => {
+        document.getElementById('bulkPreviewBtn')?.addEventListener('click', () => {
           const rows = getBulkRows();
           if (rows.length === 0) { showToast('No valid donors found', 'warning'); return; }
           
@@ -1299,7 +1420,7 @@
           document.getElementById('bulkPreviewArea').style.display = 'block';
         });
         
-        document.getElementById('bulkRegisterBtn').addEventListener('click', async () => {
+        document.getElementById('bulkRegisterBtn')?.addEventListener('click', async () => {
           const rows = getBulkRows();
           if (rows.length === 0) { showToast('No donors to register', 'warning'); return; }
           
@@ -1425,7 +1546,7 @@
           refreshPendingCount();
         });
         
-        document.getElementById('bulkSampleBtn').addEventListener('click', () => {
+        document.getElementById('bulkSampleBtn')?.addEventListener('click', () => {
           document.getElementById('bulkEmailData').value = 'rahim@example.com\nkarim@test.org';
           document.getElementById('bulkNameData').value = 'Rahim Uddin\nKarim Mia';
           document.getElementById('bulkPhoneData').value = '01711111111\n01722222222';
@@ -1436,7 +1557,7 @@
           addBulkLog('Sample data loaded');
         });
         
-        document.getElementById('bulkClearBtn').addEventListener('click', () => {
+        document.getElementById('bulkClearBtn')?.addEventListener('click', () => {
           ['bulkEmailData','bulkNameData','bulkPhoneData','bulkDistrictData','bulkUpazilaData','bulkBloodData'].forEach(id => {
             document.getElementById(id).value = '';
           });
@@ -1446,7 +1567,7 @@
         
         // Listen for changes in textareas
         ['bulkEmailData','bulkNameData','bulkPhoneData','bulkDistrictData','bulkUpazilaData','bulkBloodData'].forEach(id => {
-          document.getElementById(id).addEventListener('input', updateBulkStats);
+          document.getElementById(id)?.addEventListener('input', updateBulkStats);
         });
       }
 
@@ -1455,97 +1576,120 @@
         if (!canManageRoles()) { document.getElementById('contentArea').innerHTML = '<p>Access denied.</p>'; return; }
         const area = document.getElementById('contentArea');
         area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading administrators...</p>';
-        const snap = await db.collection('users').where('role', 'in', ['main_admin','admin','moderator']).get();
-        const admins = snap.docs.map(d => ({id: d.id, ...d.data()}));
         
-        let html = `<div class="table-card"><h3 style="padding:16px;">👑 Administrators & Moderators</h3>
-        <table class="table"><tr><th>User</th><th>Email</th><th>Phone</th><th>Role</th><th>Action</th></tr>`;
-        admins.forEach(a => {
-          const symbol = getRoleSymbol(a.role);
-          html += `<tr><td>${a.fullName || 'N/A'}</td><td>${a.email}</td><td>📱 ${a.phoneNumber || 'N/A'}</td>
-            <td><span class="role-badge">${symbol} ${getRoleDisplayName(a.role)}</span></td>
-            <td>`;
-          if (currentRole === 'main_admin' && !SUPER_ADMINS.includes(a.email)) {
-            html += `<select onchange="window._changeRole('${a.id}', this.value)" class="form-select">
-              <option value="">Change Role</option>
-              <option value="user">👤 User (Demote)</option>
-              <option value="main_admin">👑 Main Admin</option>
+        try {
+          const snap = await db.collection('users').where('role', 'in', ['main_admin','admin','moderator']).get();
+          const admins = snap.docs.map(d => ({id: d.id, ...d.data()}));
+          
+          let html = `<div class="table-card"><h3 style="padding:16px;">👑 Administrators & Moderators</h3>
+          <table class="table"><tr><th>User</th><th>Email</th><th>Phone</th><th>Role</th><th>Action</th></tr>`;
+          admins.forEach(a => {
+            const symbol = getRoleSymbol(a.role);
+            html += `<tr><td>${a.fullName || 'N/A'}</td><td>${a.email}</td><td>📱 ${a.phoneNumber || 'N/A'}</td>
+              <td><span class="role-badge">${symbol} ${getRoleDisplayName(a.role)}</span></td>
+              <td>`;
+            if (currentRole === 'main_admin' && !SUPER_ADMINS.includes(a.email)) {
+              html += `<select onchange="window._changeRole('${a.id}', this.value)" class="form-select">
+                <option value="">Change Role</option>
+                <option value="user">👤 User (Demote)</option>
+                <option value="main_admin">👑 Main Admin</option>
+                <option value="admin">🛡️ Admin</option>
+                <option value="moderator">🔰 Moderator</option>
+              </select>`;
+            } else if (currentRole === 'admin' && a.role !== 'main_admin' && !SUPER_ADMINS.includes(a.email)) {
+              html += `<select onchange="window._changeRole('${a.id}', this.value)" class="form-select">
+                <option value="">Change Role</option>
+                <option value="user">👤 User (Demote)</option>
+                <option value="moderator">🔰 Moderator</option>
+              </select>`;
+            } else {
+              html += `<span style="color:var(--text-secondary); font-size:12px;">Protected</span>`;
+            }
+            html += `</td></tr>`;
+          });
+          html += `</table></div>
+          <div style="margin-top:20px; background:white; padding:20px; border-radius:20px; box-shadow:var(--shadow)">
+            <h4>➕ Appoint New Role</h4>
+            <input id="newAdminEmail" placeholder="user@email.com" class="form-input">
+            <select id="newRoleSelect" class="form-select" style="margin-bottom:10px;">
               <option value="admin">🛡️ Admin</option>
               <option value="moderator">🔰 Moderator</option>
-            </select>`;
-          } else if (currentRole === 'admin' && a.role !== 'main_admin' && !SUPER_ADMINS.includes(a.email)) {
-            html += `<select onchange="window._changeRole('${a.id}', this.value)" class="form-select">
-              <option value="">Change Role</option>
-              <option value="user">👤 User (Demote)</option>
-              <option value="moderator">🔰 Moderator</option>
-            </select>`;
-          } else {
-            html += `<span style="color:var(--text-secondary); font-size:12px;">Protected</span>`;
-          }
-          html += `</td></tr>`;
-        });
-        html += `</table></div>
-        <div style="margin-top:20px; background:white; padding:20px; border-radius:20px; box-shadow:var(--shadow)">
-          <h4>➕ Appoint New Role</h4>
-          <input id="newAdminEmail" placeholder="user@email.com" class="form-input">
-          <select id="newRoleSelect" class="form-select" style="margin-bottom:10px;">
-            <option value="admin">🛡️ Admin</option>
-            <option value="moderator">🔰 Moderator</option>
-          </select>
-          <button onclick="window._appointRole()" class="btn-primary" style="width:100%">Appoint</button>
-        </div>`;
-        area.innerHTML = html;
+            </select>
+            <button onclick="window._appointRole()" class="btn-primary" style="width:100%">Appoint</button>
+          </div>`;
+          area.innerHTML = html;
+        } catch(e) {
+          area.innerHTML = `<p style="color:var(--danger);">Error loading roles: ${e.message}</p>`;
+        }
       }
 
       window._changeRole = async (userId, newRole) => {
         if (!newRole) return;
         if (currentRole === 'admin' && newRole === 'main_admin') { showToast('Only main admin can assign main admin', 'error'); return; }
         
-        // Check if target user is super admin
-        const userDoc = await db.collection('users').doc(userId).get();
-        if (userDoc.exists && SUPER_ADMINS.includes(userDoc.data().email)) {
-          showToast('Cannot change role of super admin', 'error');
+        if (!userId || userId.trim() === '') {
+          showToast('Error: Invalid user ID', 'error');
           return;
         }
         
-        await db.collection('users').doc(userId).update({ role: newRole });
-        showToast('Role updated successfully', 'success'); 
-        loadRolesManagement();
+        try {
+          // Check if target user is super admin
+          const userDoc = await db.collection('users').doc(userId).get();
+          if (userDoc.exists && SUPER_ADMINS.includes(userDoc.data().email)) {
+            showToast('Cannot change role of super admin', 'error');
+            return;
+          }
+          
+          await db.collection('users').doc(userId).update({ role: newRole });
+          showToast('Role updated successfully', 'success'); 
+          loadRolesManagement();
+        } catch(e) {
+          showToast('Error changing role: ' + e.message, 'error');
+        }
       };
 
       window._appointRole = async () => {
-        const email = document.getElementById('newAdminEmail').value.trim();
-        const role = document.getElementById('newRoleSelect').value;
+        const email = document.getElementById('newAdminEmail')?.value.trim();
+        const role = document.getElementById('newRoleSelect')?.value;
         if (!email) {
           showToast('Please enter an email', 'warning');
           return;
         }
         
-        const snap = await db.collection('users').where('email','==',email).get();
-        if (snap.empty) { showToast('User not found', 'error'); return; }
-        const doc = snap.docs[0];
-        const userData = doc.data();
-        
-        if (SUPER_ADMINS.includes(userData.email)) {
-          showToast('Cannot modify super admin', 'error');
-          return;
+        try {
+          const snap = await db.collection('users').where('email','==',email).get();
+          if (snap.empty) { showToast('User not found', 'error'); return; }
+          const doc = snap.docs[0];
+          const userData = doc.data();
+          
+          if (SUPER_ADMINS.includes(userData.email)) {
+            showToast('Cannot modify super admin', 'error');
+            return;
+          }
+          
+          if (currentRole === 'admin' && role === 'main_admin') { 
+            showToast('Cannot appoint main admin', 'error'); 
+            return; 
+          }
+          
+          await db.collection('users').doc(doc.id).update({ role: role });
+          showToast(`Appointed as ${getRoleDisplayName(role)}!`, 'success'); 
+          document.getElementById('newAdminEmail').value = '';
+          loadRolesManagement();
+        } catch(e) {
+          showToast('Error appointing role: ' + e.message, 'error');
         }
-        
-        if (currentRole === 'admin' && role === 'main_admin') { 
-          showToast('Cannot appoint main admin', 'error'); 
-          return; 
-        }
-        
-        await db.collection('users').doc(doc.id).update({ role: role });
-        showToast(`Appointed as ${getRoleDisplayName(role)}!`, 'success'); 
-        document.getElementById('newAdminEmail').value = '';
-        loadRolesManagement();
       };
 
       // Generic delete function for other collections
       window._deleteDoc = async (collection, id) => {
         if (!canDelete()) {
           showToast('You do not have permission to delete', 'error');
+          return;
+        }
+        
+        if (!id || id.trim() === '') {
+          showToast('Error: Invalid document ID', 'error');
           return;
         }
         
