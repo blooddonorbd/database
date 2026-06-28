@@ -10,6 +10,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <!-- Fonts & Icons -->
   <link rel="icon" type="image/png" href="https://i.ibb.co/fd3zk65t/1000018685.jpg">
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
@@ -89,6 +90,11 @@
       border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.2s;
     }
     .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary {
+      padding: 10px 20px; background: #f1f5f9; color: var(--text); border: 1px solid var(--border);
+      border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.2s;
+    }
+    .btn-secondary:hover { background: #e2e8f0; }
     .form-input {
       padding: 12px; border-radius: 12px; border: 1px solid var(--border); width: 100%;
       font-size: 14px; margin-bottom: 10px;
@@ -96,21 +102,37 @@
     .form-select {
       padding: 12px; border-radius: 12px; border: 1px solid var(--border); font-size: 14px;
     }
+    .form-textarea {
+      padding: 12px; border-radius: 12px; border: 1px solid var(--border); width: 100%;
+      font-size: 14px; margin-bottom: 10px; resize: vertical; min-height: 100px;
+    }
     
     .toast-container { position: fixed; top: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
     .toast { background: white; padding: 14px 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 10px; }
     
     .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
     
-    /* Contact Log specific styles */
-    .contact-log-card {
-      background: white; padding: 16px; border-radius: 12px; margin-bottom: 12px;
-      border-left: 4px solid var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    .checkbox-group { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+    .checkbox-label {
+      display: flex; align-items: center; gap: 6px; padding: 8px 12px;
+      background: #f1f5f9; border-radius: 20px; cursor: pointer; font-size: 13px;
     }
-    .contact-log-card .timestamp { font-size: 12px; color: var(--text-secondary); }
-    .contact-log-card .phone-number { 
-      background: #f1f5f9; padding: 4px 12px; border-radius: 20px; 
-      font-family: monospace; font-size: 14px; letter-spacing: 0.5px;
+    .checkbox-label input { margin: 0; }
+    
+    .upload-area {
+      background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px;
+      padding: 30px; text-align: center; cursor: pointer; margin-bottom: 16px;
+    }
+    .upload-area:hover { border-color: var(--primary); background: #fff5f5; }
+    
+    .progress-bar-container {
+      height: 24px; background: #e2e8f0; border-radius: 12px; overflow: hidden; margin: 16px 0;
+    }
+    .progress-bar-fill {
+      height: 100%; background: var(--primary); width: 0%;
+      transition: width 0.3s; display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 12px; font-weight: 600;
     }
     
     @media (max-width: 768px) {
@@ -122,13 +144,15 @@
 </head>
 <body>
   <div class="toast-container" id="toastContainer"></div>
+  
+  <!-- User Details Modal -->
   <div id="userModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-  <div style="background:white; padding:24px; border-radius:20px; width:90%; max-width:500px; max-height:80vh; overflow-y:auto; position:relative;">
-    <button onclick="document.getElementById('userModal').style.display='none'" style="position:absolute; top:10px; right:10px; border:none; background:none; cursor:pointer;"><i class="fas fa-times"></i></button>
-    <h3>User Details</h3>
-    <div id="userModalContent" style="margin-top:15px;"></div>
+    <div style="background:white; padding:24px; border-radius:20px; width:90%; max-width:500px; max-height:80vh; overflow-y:auto; position:relative;">
+      <button onclick="document.getElementById('userModal').style.display='none'" style="position:absolute; top:10px; right:10px; border:none; background:none; cursor:pointer;"><i class="fas fa-times"></i></button>
+      <h3>User Details</h3>
+      <div id="userModalContent" style="margin-top:15px;"></div>
+    </div>
   </div>
-</div>
   
   <div class="app-container" id="appContainer" style="display: none;">
     <!-- Sidebar -->
@@ -146,6 +170,8 @@
         <li class="nav-item" data-tab="requests"><i class="fas fa-bell"></i>Blood Requests</li>
         <li class="nav-item" data-tab="contact-logs"><i class="fas fa-phone-alt"></i>Contact Reveals</li>
         <li class="nav-item" data-tab="certificates"><i class="fas fa-certificate"></i>Certificates</li>
+        <li class="nav-item" data-tab="bulk-email"><i class="fas fa-envelope"></i>Bulk Email</li>
+        <li class="nav-item" data-tab="bulk-register"><i class="fas fa-upload"></i>Bulk Register</li>
         <li class="nav-item" data-tab="roles"><i class="fas fa-shield-haltered"></i>Roles</li>
       </ul>
       <div class="sidebar-footer">
@@ -189,6 +215,36 @@
       let currentUser = null;
       let currentRole = 'user';
       
+      // Geo dictionary for bulk registration
+      const geoDict = {
+        "mymensingh": { lat:24.7471, lng:90.4203 },
+        "dhaka": { lat:23.8103, lng:90.4125 },
+        "kishoreganj": { lat:24.4414, lng:90.7766 },
+        "gazipur": { lat:23.9999, lng:90.4203 },
+        "chattogram": { lat:22.3569, lng:91.7832 },
+        "sylhet": { lat:24.8949, lng:91.8687 },
+        "rajshahi": { lat:24.3745, lng:88.6042 }
+      };
+
+      async function getLatLng(district, upazila) {
+        const dKey = district.trim().toLowerCase();
+        if (geoDict[dKey]) {
+          const base = geoDict[dKey];
+          return {
+            lat: parseFloat((base.lat + (Math.random()-0.5)*0.05).toFixed(4)),
+            lng: parseFloat((base.lng + (Math.random()-0.5)*0.05).toFixed(4))
+          };
+        }
+        return { lat:23.8103, lng:90.4125 };
+      }
+
+      function generateRandomPassword() {
+        const words = ["red", "donor", "save", "life", "blood", "hero", "care", "hope", "plus", "vital",
+                       "brave", "kind", "pure", "gift", "beat", "warm", "gold", "true", "rise", "safe"];
+        const shuffled = [...words].sort(()=>0.5-Math.random());
+        return shuffled.slice(0,5).join('-');
+      }
+
       function showToast(msg, type='info') {
         const container = document.getElementById('toastContainer');
         const el = document.createElement('div');
@@ -215,15 +271,28 @@
 
       function updateRoleUI() {
         const rolesTab = document.querySelector('[data-tab="roles"]');
-        if (rolesTab) {
-          rolesTab.style.display = (currentRole === 'main_admin' || currentRole === 'admin') ? 'flex' : 'none';
-        }
+        const bulkEmailTab = document.querySelector('[data-tab="bulk-email"]');
+        const bulkRegisterTab = document.querySelector('[data-tab="bulk-register"]');
+        
+        if (rolesTab) rolesTab.style.display = (currentRole === 'main_admin' || currentRole === 'admin') ? 'flex' : 'none';
+        if (bulkEmailTab) bulkEmailTab.style.display = (currentRole === 'main_admin' || currentRole === 'admin') ? 'flex' : 'none';
+        if (bulkRegisterTab) bulkRegisterTab.style.display = (currentRole === 'main_admin' || currentRole === 'admin') ? 'flex' : 'none';
       }
 
       function canManageRoles() { return currentRole === 'main_admin' || currentRole === 'admin'; }
       function canDelete() { return currentRole === 'main_admin' || currentRole === 'admin'; }
       function canManageCertificates() { return currentRole === 'main_admin' || currentRole === 'admin'; }
       function canViewContactLogs() { return currentRole === 'main_admin' || currentRole === 'admin'; }
+      function canBulkEmail() { return currentRole === 'main_admin' || currentRole === 'admin'; }
+      function canBulkRegister() { return currentRole === 'main_admin' || currentRole === 'admin'; }
+
+      function generateCertificateId() {
+        return 'BDC-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
+      }
+
+      function generateDonorId() {
+        return 'DNR-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+      }
 
       async function refreshPendingCount() {
         const snap = await db.collection('users').where('approvalStatus','==','pending').get();
@@ -232,12 +301,39 @@
         return snap.size;
       }
 
-      function generateCertificateId() {
-        return 'BDC-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
-      }
-
-      function generateDonorId() {
-        return 'DNR-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+      // Auto-issue certificate when donor is approved
+      async function autoIssueCertificate(userId, userData) {
+        try {
+          const existingSnap = await db.collection('certificates')
+            .where('userId', '==', userId)
+            .get();
+          
+          if (!existingSnap.empty) return; // Already has certificate
+          
+          const certificateId = generateCertificateId();
+          const donorId = userData.donorId || generateDonorId();
+          
+          await db.collection('certificates').doc(certificateId).set({
+            certificateId: certificateId,
+            userId: userId,
+            userName: userData.fullName,
+            donorId: donorId,
+            bloodGroup: userData.bloodGroup,
+            issuedDate: new Date().toISOString(),
+            issuedBy: 'auto',
+            validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+          });
+          
+          await db.collection('users').doc(userId).update({
+            donorId: donorId,
+            certificates: firebase.firestore.FieldValue.arrayUnion(certificateId)
+          });
+          
+          return true;
+        } catch(e) {
+          console.error('Auto-certificate error:', e);
+          return false;
+        }
       }
 
       auth.onAuthStateChanged(async (user) => {
@@ -298,6 +394,8 @@
           case 'requests': loadRequests(); break;
           case 'contact-logs': loadContactLogs(); break;
           case 'certificates': loadCertificates(); break;
+          case 'bulk-email': loadBulkEmail(); break;
+          case 'bulk-register': loadBulkRegister(); break;
           case 'roles': loadRolesManagement(); break;
         }
       }
@@ -334,7 +432,6 @@
           </div>
         `;
         
-        // Load recent contact logs for dashboard
         loadRecentContactLogsForDashboard();
         refreshPendingCount().then(count => {
           const el = document.getElementById('dashPendingCount');
@@ -356,11 +453,10 @@
             const log = d.data();
             const time = log.timestamp?.toDate?.() || new Date();
             return `
-              <div class="contact-log-card">
+              <div style="background:#f8fafc; padding:12px; border-radius:10px; margin-bottom:8px; border-left:4px solid var(--primary);">
                 <strong>${log.seekerName || 'Unknown'}</strong> revealed 
                 <strong>${log.donorName || 'Unknown'}</strong>'s number
-                <span class="phone-number">${log.contactType || 'phone'}</span>
-                <div class="timestamp">${time.toLocaleString('en-GB')}</div>
+                <br><small style="color:var(--text-secondary);">${time.toLocaleString('en-GB')}</small>
               </div>
             `;
           }).join('');
@@ -380,6 +476,146 @@
         el.textContent = snap.size;
       }
 
+      // ==================== PENDING TAB ====================
+      async function loadPending() {
+        const area = document.getElementById('contentArea');
+        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Fetching pending requests...</p>';
+        const snap = await db.collection('users').where('approvalStatus','==','pending').get();
+        if(snap.empty) { area.innerHTML = '<p>No pending approvals.</p>'; return; }
+        
+        const users = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        let html = `<div class="table-card"><table class="table"><tr><th>Name</th><th>Blood</th><th>Location</th><th>Action</th></tr>`;
+        users.forEach(u => {
+          html += `<tr>
+            <td><strong>${u.fullName}</strong><br><small>${u.phoneNumber || 'No phone'}</small></td>
+            <td><span class="blood-badge">${u.bloodGroup || 'N/A'}</span></td>
+            <td>${u.district || 'N/A'}, ${u.upazila || ''}</td>
+            <td>
+              <button class="btn-icon success" onclick="window._approveDonor('${u.id}')" title="Approve"><i class="fas fa-check"></i></button>
+              <button class="btn-icon" onclick="window._rejectDonor('${u.id}')" title="Reject"><i class="fas fa-times" style="color:var(--danger)"></i></button>
+            </td>
+          </tr>`;
+        });
+        area.innerHTML = html + `</table></div>`;
+        
+        window._approveDonor = async (id) => {
+          const userDoc = await db.collection('users').doc(id).get();
+          const userData = userDoc.data();
+          await db.collection('users').doc(id).update({
+            approvalStatus: 'approved', 
+            isDonor: true,
+            donorId: userData.donorId || generateDonorId()
+          });
+          // Auto-issue certificate
+          await autoIssueCertificate(id, userData);
+          showToast('Approved & Certificate Issued', 'success');
+          loadPending(); 
+          refreshPendingCount();
+        };
+        
+        window._rejectDonor = async (id) => {
+          if(confirm("Reject this donor?")) {
+            await db.collection('users').doc(id).update({approvalStatus:'rejected'});
+            showToast('Rejected','success'); loadPending(); refreshPendingCount();
+          }
+        };
+      }
+
+      // ==================== USERS TAB ====================
+      async function loadUsers() { 
+        const area = document.getElementById('contentArea');
+        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading all users...</p>';
+        const snap = await db.collection('users').get();
+        
+        let html = `<div class="table-card"><table class="table"><tr><th>User Details</th><th>Type</th><th>Status</th><th>Role</th><th>Actions</th></tr>`;
+        
+        snap.docs.forEach(d => {
+          const u = d.data();
+          let bgStatus = u.approvalStatus === 'approved' ? 'var(--success)' : (u.approvalStatus === 'pending' ? 'var(--warning)' : 'var(--danger)');
+          const userDataJson = JSON.stringify(u).replace(/"/g, '&quot;');
+
+          html += `<tr style="cursor:pointer;" onclick="window._showUserDetails('${userDataJson}')">
+            <td><strong>${getRoleSymbol(u.role || 'user')} ${u.fullName || 'Unknown'}</strong><br><small>${u.email}</small></td>
+            <td>${u.isDonor ? '🩸 Donor' : '🔍 Seeker'}</td>
+            <td><span class="status-badge" style="background:${bgStatus}">${u.approvalStatus || 'N/A'}</span></td>
+            <td><span class="role-badge">${getRoleSymbol(u.role || 'user')} ${u.role || 'user'}</span></td>
+            <td>`;
+          if(canDelete() && u.email !== currentUser.email && !SUPER_ADMINS.includes(u.email)) {
+            html += `<button class="btn-icon" onclick="event.stopPropagation(); window._deleteDoc('users', '${d.id}')" title="Delete User"><i class="fas fa-trash" style="color:var(--danger)"></i></button>`;
+          }
+          html += `</td></tr>`;
+        });
+        area.innerHTML = html + `</table></div>`;
+      }
+
+      window._showUserDetails = (dataStr) => {
+        const u = JSON.parse(dataStr);
+        const content = document.getElementById('userModalContent');
+        content.innerHTML = `
+          <p><strong>Name:</strong> ${u.fullName || 'N/A'}</p>
+          <p><strong>Email:</strong> ${u.email || 'N/A'}</p>
+          <p><strong>Phone:</strong> ${u.phoneNumber || 'N/A'}</p>
+          <p><strong>Blood Group:</strong> ${u.bloodGroup || 'N/A'}</p>
+          <p><strong>District:</strong> ${u.district || 'N/A'}</p>
+          <p><strong>Upazila:</strong> ${u.upazila || 'N/A'}</p>
+          <p><strong>Role:</strong> ${u.role || 'user'}</p>
+          <p><strong>Status:</strong> ${u.approvalStatus || 'N/A'}</p>
+          <p><strong>Is Donor:</strong> ${u.isDonor ? 'Yes' : 'No'}</p>
+          ${u.donorId ? `<p><strong>Donor ID:</strong> ${u.donorId}</p>` : ''}
+          ${u.certificates ? `<p><strong>Certificates:</strong> ${u.certificates.length}</p>` : ''}
+        `;
+        document.getElementById('userModal').style.display = 'flex';
+      };
+
+      // ==================== DONORS TAB ====================
+      async function loadDonors() { 
+        const area = document.getElementById('contentArea');
+        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading donors...</p>';
+        const snap = await db.collection('users').where('isDonor','==',true).where('approvalStatus','==','approved').get();
+        
+        let html = `<div class="table-card"><table class="table"><tr><th>Name</th><th>Blood Group</th><th>Phone</th><th>District</th><th>Donor ID</th><th>Certificate</th></tr>`;
+        snap.docs.forEach(d => {
+          const u = d.data();
+          html += `<tr>
+            <td>${getRoleSymbol(u.role || 'user')} ${u.fullName}</td>
+            <td><span class="blood-badge">${u.bloodGroup}</span></td>
+            <td>📱 ${u.phoneNumber || 'N/A'}</td>
+            <td>${u.district || 'N/A'}, ${u.upazila || ''}</td>
+            <td><code>${u.donorId || 'N/A'}</code></td>
+            <td>
+              ${canManageCertificates() ? `<button class="btn-icon" onclick="window._issueCertificate('${d.id}')" title="Issue Certificate"><i class="fas fa-certificate" style="color:#7c3aed"></i></button>` : ''}
+            </td>
+          </tr>`;
+        });
+        area.innerHTML = html + `</table></div>`;
+      }
+
+      // ==================== REQUESTS TAB ====================
+      async function loadRequests() { 
+        const area = document.getElementById('contentArea');
+        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading blood requests...</p>';
+        const snap = await db.collection('bloodRequests').get();
+        
+        let html = `<div class="table-card"><table class="table"><tr><th>Patient</th><th>Blood</th><th>Contact</th><th>Hospital</th><th>Urgency</th><th>Status</th><th>Actions</th></tr>`;
+        snap.docs.forEach(d => {
+          const req = d.data();
+          let bgStatus = req.status === 'active' ? 'var(--success)' : 'var(--text-secondary)';
+          let urgencyColor = req.urgency === 'emergency' ? 'var(--danger)' : (req.urgency === 'urgent' ? 'var(--warning)' : 'var(--text-secondary)');
+          html += `<tr>
+            <td><strong>${req.patientName}</strong><br><small>Req by: ${req.requesterName || 'N/A'}</small></td>
+            <td><span class="blood-badge">${req.bloodGroup}</span><br><small>${req.unitsNeeded || 1} Unit(s)</small></td>
+            <td>📱 ${req.contactNumber || 'N/A'}</td>
+            <td>${req.hospitalName || 'N/A'}</td>
+            <td><span class="status-badge" style="background:${urgencyColor}">${req.urgency || 'normal'}</span></td>
+            <td><span class="status-badge" style="background:${bgStatus}">${req.status || 'unknown'}</span></td>
+            <td>
+              ${canDelete() ? `<button class="btn-icon" onclick="window._deleteDoc('bloodRequests', '${d.id}')" title="Delete Request"><i class="fas fa-trash" style="color:var(--danger)"></i></button>` : ''}
+            </td>
+          </tr>`;
+        });
+        area.innerHTML = html + `</table></div>`;
+      }
+
       // ==================== CONTACT LOGS TAB ====================
       async function loadContactLogs() {
         if (!canViewContactLogs()) {
@@ -391,7 +627,7 @@
         area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading contact reveal logs...</p>';
         
         try {
-          const snap = await db.collection('contactLogs').orderBy('timestamp','desc').limit(100).get();
+          const snap = await db.collection('contactLogs').orderBy('timestamp','desc').limit(200).get();
           
           if (snap.empty) {
             area.innerHTML = `
@@ -416,7 +652,7 @@
                   <th>Donor</th>
                   <th>Donor ID</th>
                   <th>Seeker ID</th>
-                  <th>Type</th>
+                  <th>Contact</th>
                   <th>Actions</th>
                 </tr>`;
           
@@ -429,7 +665,11 @@
               <td><strong>${log.donorName || 'Unknown'}</strong></td>
               <td><code>${log.donorId || 'N/A'}</code></td>
               <td><code>${log.seekerId || 'N/A'}</code></td>
-              <td><span class="status-badge" style="background:var(--primary);">${log.contactType || 'reveal'}</span></td>
+              <td>
+                <span style="background:#f1f5f9; padding:4px 12px; border-radius:20px; font-family:monospace;">
+                  ${log.contactType === 'phone' ? '📱 ' : '📧 '}${log.contactValue || log.donorPhone || log.donorEmail || 'N/A'}
+                </span>
+              </td>
               <td>
                 ${canDelete() ? `<button class="btn-icon" onclick="window._deleteContactLog('${d.id}')" title="Delete Log"><i class="fas fa-trash" style="color:var(--danger)"></i></button>` : ''}
               </td>
@@ -461,132 +701,7 @@
         }
       }
 
-      async function loadPending() {
-        const area = document.getElementById('contentArea');
-        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Fetching pending requests...</p>';
-        const snap = await db.collection('users').where('approvalStatus','==','pending').get();
-        if(snap.empty) { area.innerHTML = '<p>No pending approvals.</p>'; return; }
-        
-        const users = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        let html = `<div class="table-card"><table class="table"><tr><th>Name</th><th>Blood</th><th>Location</th><th>Action</th></tr>`;
-        users.forEach(u => {
-          html += `<tr>
-            <td><strong>${u.fullName}</strong><br><small>${u.phoneNumber || 'No phone'}</small></td>
-            <td><span class="blood-badge">${u.bloodGroup || 'N/A'}</span></td>
-            <td>${u.district || 'N/A'}, ${u.upazila || ''}</td>
-            <td>
-              <button class="btn-icon success" onclick="window._approveDonor('${u.id}')" title="Approve"><i class="fas fa-check"></i></button>
-              <button class="btn-icon" onclick="window._rejectDonor('${u.id}')" title="Reject"><i class="fas fa-times" style="color:var(--danger)"></i></button>
-            </td>
-          </tr>`;
-        });
-        area.innerHTML = html + `</table></div>`;
-        
-        window._approveDonor = async (id) => {
-          await db.collection('users').doc(id).update({approvalStatus:'approved', isDonor:true});
-          showToast('Approved','success'); loadPending(); refreshPendingCount();
-        };
-        window._rejectDonor = async (id) => {
-          if(confirm("Reject this donor?")) {
-            await db.collection('users').doc(id).update({approvalStatus:'rejected'});
-            showToast('Rejected','success'); loadPending(); refreshPendingCount();
-          }
-        };
-      }
-
-      async function loadUsers() { 
-  const area = document.getElementById('contentArea');
-  area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading all users...</p>';
-  const snap = await db.collection('users').get();
-  
-  let html = `<div class="table-card"><table class="table"><tr><th>User Details</th><th>Type</th><th>Status</th><th>Role</th><th>Actions</th></tr>`;
-  
-  snap.docs.forEach(d => {
-    const u = d.data();
-    const uId = d.id; // User ID
-    let bgStatus = u.approvalStatus === 'approved' ? 'var(--success)' : (u.approvalStatus === 'pending' ? 'var(--warning)' : 'var(--danger)');
-    
-    // কনভার্ট ইউজার ডাটা টু JSON স্ট্রিং পপ-আপে দেখানোর জন্য
-    const userDataJson = JSON.stringify(u).replace(/"/g, '&quot;');
-
-    html += `<tr style="cursor:pointer;" onclick="window._showUserDetails('${userDataJson}')">
-      <td><strong>${getRoleSymbol(u.role || 'user')} ${u.fullName || 'Unknown'}</strong><br><small>${u.email}</small></td>
-      <td>${u.isDonor ? '🩸 Donor' : '🔍 Seeker'}</td>
-      <td><span class="status-badge" style="background:${bgStatus}">${u.approvalStatus || 'N/A'}</span></td>
-      <td><span class="role-badge">${getRoleSymbol(u.role || 'user')} ${u.role || 'user'}</span></td>
-      <td>`;
-    if(canDelete() && u.email !== currentUser.email && !SUPER_ADMINS.includes(u.email)) {
-      html += `<button class="btn-icon" onclick="event.stopPropagation(); window._deleteDoc('users', '${d.id}')" title="Delete User"><i class="fas fa-trash" style="color:var(--danger)"></i></button>`;
-    }
-    html += `</td></tr>`;
-  });
-  area.innerHTML = html + `</table></div>`;
-}
-
-// পপ-আপ দেখানোর ফাংশন
-window._showUserDetails = (dataStr) => {
-  const u = JSON.parse(dataStr);
-  const content = document.getElementById('userModalContent');
-  content.innerHTML = `
-    <p><strong>Name:</strong> ${u.fullName || 'N/A'}</p>
-    <p><strong>Email:</strong> ${u.email || 'N/A'}</p>
-    <p><strong>Phone:</strong> ${u.phoneNumber || 'N/A'}</p>
-    <p><strong>Blood Group:</strong> ${u.bloodGroup || 'N/A'}</p>
-    <p><strong>District:</strong> ${u.district || 'N/A'}</p>
-    <p><strong>Upazila:</strong> ${u.upazila || 'N/A'}</p>
-    <p><strong>Role:</strong> ${u.role || 'user'}</p>
-    <p><strong>Status:</strong> ${u.approvalStatus || 'N/A'}</p>
-    <p><strong>Is Donor:</strong> ${u.isDonor ? 'Yes' : 'No'}</p>
-  `;
-  document.getElementById('userModal').style.display = 'flex';
-};
-
-      async function loadDonors() { 
-        const area = document.getElementById('contentArea');
-        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading donors...</p>';
-        const snap = await db.collection('users').where('isDonor','==',true).where('approvalStatus','==','approved').get();
-        
-        let html = `<div class="table-card"><table class="table"><tr><th>Name</th><th>Blood Group</th><th>Phone</th><th>District</th><th>Certificate</th></tr>`;
-        snap.docs.forEach(d => {
-          const u = d.data();
-          html += `<tr>
-            <td>${getRoleSymbol(u.role || 'user')} ${u.fullName}</td>
-            <td><span class="blood-badge">${u.bloodGroup}</span></td>
-            <td>📱 ${u.phoneNumber || 'N/A'}</td>
-            <td>${u.district || 'N/A'}, ${u.upazila || ''}</td>
-            <td>
-              ${canManageCertificates() ? `<button class="btn-icon" onclick="window._issueCertificate('${d.id}')" title="Issue Certificate"><i class="fas fa-certificate" style="color:#7c3aed"></i></button>` : ''}
-            </td>
-          </tr>`;
-        });
-        area.innerHTML = html + `</table></div>`;
-      }
-
-      async function loadRequests() { 
-        const area = document.getElementById('contentArea');
-        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading blood requests...</p>';
-        const snap = await db.collection('bloodRequests').get();
-        
-        let html = `<div class="table-card"><table class="table"><tr><th>Patient</th><th>Blood</th><th>Contact</th><th>Hospital</th><th>Urgency</th><th>Status</th><th>Actions</th></tr>`;
-        snap.docs.forEach(d => {
-          const req = d.data();
-          let bgStatus = req.status === 'active' ? 'var(--success)' : 'var(--text-secondary)';
-          let urgencyColor = req.urgency === 'emergency' ? 'var(--danger)' : (req.urgency === 'urgent' ? 'var(--warning)' : 'var(--text-secondary)');
-          html += `<tr>
-            <td><strong>${req.patientName}</strong><br><small>Req by: ${req.requesterName || 'N/A'}</small></td>
-            <td><span class="blood-badge">${req.bloodGroup}</span><br><small>${req.unitsNeeded || 1} Unit(s)</small></td>
-            <td>📱 ${req.contactNumber || 'N/A'}</td>
-            <td>${req.hospitalName || 'N/A'}</td>
-            <td><span class="status-badge" style="background:${urgencyColor}">${req.urgency || 'normal'}</span></td>
-            <td><span class="status-badge" style="background:${bgStatus}">${req.status || 'unknown'}</span></td>
-            <td>
-              ${canDelete() ? `<button class="btn-icon" onclick="window._deleteDoc('bloodRequests', '${d.id}')" title="Delete Request"><i class="fas fa-trash" style="color:var(--danger)"></i></button>` : ''}
-            </td>
-          </tr>`;
-        });
-        area.innerHTML = html + `</table></div>`;
-      }
-
+      // ==================== CERTIFICATES TAB ====================
       async function loadCertificates() {
         if (!canManageCertificates()) { 
           document.getElementById('contentArea').innerHTML = '<p>Access denied. Only Administrators can manage certificates.</p>'; 
@@ -602,7 +717,7 @@ window._showUserDetails = (dataStr) => {
             <div class="table-card" style="padding: 40px; text-align: center;">
               <i class="fas fa-certificate" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
               <h3>No Certificates Issued Yet</h3>
-              <p style="color: var(--text-secondary); margin-bottom: 20px;">Approve donors and issue certificates from the Donors tab</p>
+              <p style="color: var(--text-secondary); margin-bottom: 20px;">Certificates are auto-issued when donors are approved</p>
             </div>`;
           return;
         }
@@ -616,6 +731,7 @@ window._showUserDetails = (dataStr) => {
               <th>Donor ID</th>
               <th>Blood Group</th>
               <th>Issued Date</th>
+              <th>Issued By</th>
               <th>Actions</th>
             </tr>`;
         
@@ -627,6 +743,7 @@ window._showUserDetails = (dataStr) => {
             <td>${cert.donorId || 'N/A'}</td>
             <td><span class="blood-badge">${cert.bloodGroup}</span></td>
             <td>${new Date(cert.issuedDate).toLocaleDateString('en-GB', {dateStyle:'medium'})}</td>
+            <td><span class="status-badge" style="background:${cert.issuedBy === 'auto' ? 'var(--success)' : 'var(--primary)'};">${cert.issuedBy || 'manual'}</span></td>
             <td>
               <button class="btn-icon" onclick="window._viewCertificate('${cert.certificateId}')" title="View"><i class="fas fa-eye" style="color:#3b82f6"></i></button>
               ${canDelete() ? `<button class="btn-icon" onclick="window._revokeCertificate('${d.id}')" title="Revoke"><i class="fas fa-times-circle" style="color:var(--danger)"></i></button>` : ''}
@@ -635,12 +752,10 @@ window._showUserDetails = (dataStr) => {
         });
         
         html += `</table></div>
-        <div class="grid-2" style="margin-top:20px;">
-          <div style="background:white; padding:20px; border-radius:20px; box-shadow:var(--shadow)">
-            <h4>➕ Issue Manual Certificate</h4>
-            <input id="manualCertEmail" placeholder="Donor Email" class="form-input">
-            <button onclick="window._issueManualCertificate()" class="btn-primary" style="width:100%">Issue Certificate</button>
-          </div>
+        <div style="margin-top:20px; background:white; padding:20px; border-radius:20px; box-shadow:var(--shadow)">
+          <h4>➕ Issue Manual Certificate</h4>
+          <input id="manualCertEmail" placeholder="Donor Email" class="form-input">
+          <button onclick="window._issueManualCertificate()" class="btn-primary" style="width:100%">Issue Certificate</button>
         </div>`;
         
         area.innerHTML = html;
@@ -664,35 +779,7 @@ window._showUserDetails = (dataStr) => {
         if (!userDoc.exists) { showToast('User not found', 'error'); return; }
         
         const userData = userDoc.data();
-        
-        const existingSnap = await db.collection('certificates')
-          .where('userId', '==', userId)
-          .get();
-        
-        if (!existingSnap.empty) {
-          showToast('Certificate already exists for this donor', 'warning');
-          return;
-        }
-        
-        const certificateId = generateCertificateId();
-        const donorId = generateDonorId();
-        
-        await db.collection('certificates').doc(certificateId).set({
-          certificateId: certificateId,
-          userId: userId,
-          userName: userData.fullName,
-          donorId: donorId,
-          bloodGroup: userData.bloodGroup,
-          issuedDate: new Date().toISOString(),
-          issuedBy: currentUser.email,
-          validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-        });
-        
-        await db.collection('users').doc(userId).update({
-          donorId: donorId,
-          certificates: firebase.firestore.FieldValue.arrayUnion(certificateId)
-        });
-        
+        await autoIssueCertificate(userId, userData);
         showToast('Certificate issued successfully!', 'success');
         loadTab('certificates');
       };
@@ -712,6 +799,525 @@ window._showUserDetails = (dataStr) => {
         window.open(`certificate.html?id=${certId}`, '_blank');
       };
 
+      // ==================== BULK EMAIL TAB ====================
+      async function loadBulkEmail() {
+        if (!canBulkEmail()) {
+          document.getElementById('contentArea').innerHTML = '<p>Access denied. Only Administrators can send bulk emails.</p>';
+          return;
+        }
+        
+        const area = document.getElementById('contentArea');
+        
+        // Fetch all users for filters
+        const usersSnap = await db.collection('users').get();
+        const allUsers = usersSnap.docs.map(d => ({id: d.id, ...d.data()}));
+        
+        // Extract unique districts, upazilas, blood groups
+        const districts = [...new Set(allUsers.map(u => u.district).filter(Boolean))].sort();
+        const upazilas = [...new Set(allUsers.map(u => u.upazila).filter(Boolean))].sort();
+        const bloodGroups = [...new Set(allUsers.map(u => u.bloodGroup).filter(Boolean))].sort();
+        
+        area.innerHTML = `
+          <div class="grid-2">
+            <div class="table-card" style="padding:24px;">
+              <h3 style="margin-bottom:16px;"><i class="fas fa-filter"></i> Filter Recipients</h3>
+              
+              <label style="font-weight:600;">Select Districts</label>
+              <div class="checkbox-group" id="emailDistrictFilters">
+                ${districts.map(d => `
+                  <label class="checkbox-label">
+                    <input type="checkbox" value="${d}" class="email-district-check">
+                    ${d}
+                  </label>
+                `).join('')}
+              </div>
+              <button class="btn-secondary" onclick="window._selectAllEmailDistricts()" style="margin-top:8px;">Select All Districts</button>
+              <button class="btn-secondary" onclick="window._deselectAllEmailDistricts()" style="margin-top:8px;">Deselect All</button>
+              
+              <label style="font-weight:600; margin-top:16px; display:block;">Select Upazilas</label>
+              <div class="checkbox-group" id="emailUpazilaFilters">
+                ${upazilas.map(u => `
+                  <label class="checkbox-label">
+                    <input type="checkbox" value="${u}" class="email-upazila-check">
+                    ${u}
+                  </label>
+                `).join('')}
+              </div>
+              
+              <label style="font-weight:600; margin-top:16px; display:block;">Select Blood Groups</label>
+              <div class="checkbox-group" id="emailBloodGroupFilters">
+                ${bloodGroups.map(b => `
+                  <label class="checkbox-label">
+                    <input type="checkbox" value="${b}" class="email-bg-check">
+                    ${b}
+                  </label>
+                `).join('')}
+              </div>
+              
+              <div style="margin-top:16px;">
+                <label style="font-weight:600;">Role Filter</label>
+                <select id="emailRoleFilter" class="form-select">
+                  <option value="all">All Users</option>
+                  <option value="donor">Donors Only</option>
+                  <option value="seeker">Seekers Only</option>
+                  <option value="admin">Admins/Moderators</option>
+                </select>
+              </div>
+              
+              <button class="btn-primary" onclick="window._previewEmailRecipients()" style="margin-top:16px; width:100%;">
+                <i class="fas fa-eye"></i> Preview Recipients
+              </button>
+              <div id="emailRecipientCount" style="margin-top:12px; font-weight:600;"></div>
+              <div id="emailRecipientPreview" style="margin-top:8px; max-height:200px; overflow-y:auto; font-size:13px;"></div>
+            </div>
+            
+            <div class="table-card" style="padding:24px;">
+              <h3 style="margin-bottom:16px;"><i class="fas fa-envelope"></i> Compose Email</h3>
+              
+              <label style="font-weight:600;">Subject</label>
+              <input type="text" id="emailSubject" class="form-input" placeholder="Email subject...">
+              
+              <label style="font-weight:600;">Body</label>
+              <textarea id="emailBody" class="form-textarea" style="min-height:200px;" placeholder="Write your email body here..."></textarea>
+              
+              <p style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;">
+                <i class="fas fa-info-circle"></i> Clicking "Send Email" will open your email app with all recipients in BCC.
+              </p>
+              
+              <button class="btn-primary" onclick="window._sendBulkEmail()" style="width:100%;">
+                <i class="fas fa-paper-plane"></i> Open Email App & Send
+              </button>
+            </div>
+          </div>
+        `;
+        
+        // Store users data globally for email functionality
+        window._allUsersForEmail = allUsers;
+        
+        window._selectAllEmailDistricts = () => {
+          document.querySelectorAll('.email-district-check').forEach(cb => cb.checked = true);
+        };
+        window._deselectAllEmailDistricts = () => {
+          document.querySelectorAll('.email-district-check').forEach(cb => cb.checked = false);
+        };
+        
+        window._previewEmailRecipients = () => {
+          const recipients = window._getFilteredEmailRecipients();
+          document.getElementById('emailRecipientCount').innerHTML = 
+            `<span style="color:var(--primary);">📧 ${recipients.length} recipients selected</span>`;
+          
+          const preview = document.getElementById('emailRecipientPreview');
+          if (recipients.length === 0) {
+            preview.innerHTML = '<p style="color:var(--text-secondary);">No recipients match your filters.</p>';
+          } else if (recipients.length <= 20) {
+            preview.innerHTML = recipients.map(r => 
+              `<div style="padding:4px 0; border-bottom:1px solid #f1f5f9;">📧 ${r.email} - ${r.fullName || 'N/A'}</div>`
+            ).join('');
+          } else {
+            preview.innerHTML = `<p style="color:var(--text-secondary);">${recipients.length} recipients (too many to show individually)</p>`;
+          }
+        };
+      }
+
+      window._getFilteredEmailRecipients = () => {
+        if (!window._allUsersForEmail) return [];
+        
+        const selectedDistricts = [...document.querySelectorAll('.email-district-check:checked')].map(cb => cb.value);
+        const selectedUpazilas = [...document.querySelectorAll('.email-upazila-check:checked')].map(cb => cb.value);
+        const selectedBloodGroups = [...document.querySelectorAll('.email-bg-check:checked')].map(cb => cb.value);
+        const roleFilter = document.getElementById('emailRoleFilter')?.value || 'all';
+        
+        return window._allUsersForEmail.filter(u => {
+          if (selectedDistricts.length > 0 && !selectedDistricts.includes(u.district)) return false;
+          if (selectedUpazilas.length > 0 && !selectedUpazilas.includes(u.upazila)) return false;
+          if (selectedBloodGroups.length > 0 && !selectedBloodGroups.includes(u.bloodGroup)) return false;
+          
+          if (roleFilter === 'donor' && !u.isDonor) return false;
+          if (roleFilter === 'seeker' && u.isDonor) return false;
+          if (roleFilter === 'admin' && !['admin', 'main_admin', 'moderator'].includes(u.role)) return false;
+          
+          return u.email && u.email.includes('@');
+        });
+      };
+
+      window._sendBulkEmail = () => {
+        const recipients = window._getFilteredEmailRecipients();
+        if (recipients.length === 0) {
+          showToast('No recipients selected. Please apply filters.', 'warning');
+          return;
+        }
+        
+        const subject = document.getElementById('emailSubject')?.value.trim() || 'Message from Blood Donor BD';
+        const body = document.getElementById('emailBody')?.value.trim() || '';
+        
+        if (!body) {
+          showToast('Please write an email body.', 'warning');
+          return;
+        }
+        
+        // Create mailto link with BCC
+        const emails = recipients.map(r => r.email).join(',');
+        const mailtoLink = `mailto:?bcc=${encodeURIComponent(emails)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        
+        // Open email client
+        window.open(mailtoLink, '_blank');
+        showToast(`Opening email app with ${recipients.length} recipients in BCC`, 'success');
+      };
+
+      // ==================== BULK REGISTER TAB ====================
+      async function loadBulkRegister() {
+        if (!canBulkRegister()) {
+          document.getElementById('contentArea').innerHTML = '<p>Access denied. Only Administrators can bulk register donors.</p>';
+          return;
+        }
+        
+        const area = document.getElementById('contentArea');
+        area.innerHTML = `
+          <div class="stats-grid" id="bulkStats">
+            <div class="stat-card"><div class="stat-icon"><i class="fas fa-users"></i></div><div><small>Total</small><h3 id="bulkTotal">0</h3></div></div>
+            <div class="stat-card"><div class="stat-icon" style="background:#d1fae5; color:var(--success);"><i class="fas fa-check-circle"></i></div><div><small>Success</small><h3 id="bulkSuccess" style="color:var(--success);">0</h3></div></div>
+            <div class="stat-card"><div class="stat-icon" style="background:#fee2e2; color:var(--danger);"><i class="fas fa-times-circle"></i></div><div><small>Failed</small><h3 id="bulkFailed" style="color:var(--danger);">0</h3></div></div>
+            <div class="stat-card"><div class="stat-icon" style="background:#fef3c7; color:var(--warning);"><i class="fas fa-clock"></i></div><div><small>Remaining</small><h3 id="bulkPending" style="color:var(--warning);">0</h3></div></div>
+          </div>
+          
+          <div class="table-card" style="padding:24px;">
+            <h3><i class="fas fa-file-upload"></i> Upload CSV or XLSX File</h3>
+            <div class="upload-area" id="bulkDropZone">
+              <div style="font-size:48px; margin-bottom:8px;">📤</div>
+              <p><strong>Select a file</strong> or drag and drop</p>
+              <p style="font-size:13px; color:var(--text-secondary);">Supported: .csv, .xlsx | Columns: Email, Name, Phone, District, Upazila, Blood Group</p>
+              <input type="file" id="bulkFileInput" accept=".csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;">
+            </div>
+            <div id="bulkFileInfo" style="margin:8px 0;"></div>
+            <button class="btn-secondary" id="bulkClearFileBtn"><i class="fas fa-times"></i> Clear File</button>
+          </div>
+          
+          <div class="table-card" style="padding:24px; margin-top:16px;">
+            <h3><i class="fas fa-edit"></i> Or Manual Entry</h3>
+            <div class="grid-3">
+              <div><label style="font-weight:600;">📧 Email *</label><textarea id="bulkEmailData" class="form-textarea" placeholder="donor@example.com" rows="4"></textarea></div>
+              <div><label style="font-weight:600;">👤 Full Name</label><textarea id="bulkNameData" class="form-textarea" placeholder="Rahim Uddin" rows="4"></textarea></div>
+              <div><label style="font-weight:600;">📱 Phone</label><textarea id="bulkPhoneData" class="form-textarea" placeholder="017xxxxxxxx" rows="4"></textarea></div>
+              <div><label style="font-weight:600;">📍 District</label><textarea id="bulkDistrictData" class="form-textarea" placeholder="Dhaka" rows="3"></textarea></div>
+              <div><label style="font-weight:600;">🏘️ Upazila</label><textarea id="bulkUpazilaData" class="form-textarea" placeholder="Mirpur" rows="3"></textarea></div>
+              <div><label style="font-weight:600;">🩸 Blood Group</label><textarea id="bulkBloodData" class="form-textarea" placeholder="B+" rows="3"></textarea></div>
+            </div>
+            <div style="display:flex; gap:12px; margin-top:16px;">
+              <select id="bulkDefaultDistrict" class="form-select">
+                <option value="Dhaka">Dhaka</option>
+                <option value="Mymensingh">Mymensingh</option>
+                <option value="Kishoreganj">Kishoreganj</option>
+                <option value="Chattogram">Chattogram</option>
+                <option value="Sylhet">Sylhet</option>
+                <option value="Rajshahi">Rajshahi</option>
+                <option value="Gazipur">Gazipur</option>
+              </select>
+              <select id="bulkDefaultBlood" class="form-select">
+                <option value="B+">B+</option>
+                <option value="O+">O+</option>
+                <option value="A+">A+</option>
+                <option value="AB+">AB+</option>
+                <option value="B-">B-</option>
+                <option value="O-">O-</option>
+                <option value="A-">A-</option>
+                <option value="AB-">AB-</option>
+              </select>
+            </div>
+            <div style="display:flex; gap:12px; margin-top:16px; flex-wrap:wrap;">
+              <button class="btn-secondary" id="bulkPreviewBtn"><i class="fas fa-eye"></i> Preview</button>
+              <button class="btn-primary" id="bulkRegisterBtn"><i class="fas fa-rocket"></i> Register All</button>
+              <button class="btn-secondary" id="bulkSampleBtn"><i class="fas fa-download"></i> Load Sample</button>
+              <button class="btn-secondary" id="bulkClearBtn"><i class="fas fa-eraser"></i> Clear</button>
+            </div>
+            <div id="bulkPreviewArea" style="margin-top:16px; display:none; overflow-x:auto;"></div>
+          </div>
+          
+          <div class="table-card" style="padding:24px; margin-top:16px; display:none;" id="bulkProgressCard">
+            <h3><i class="fas fa-spinner fa-spin"></i> Progress</h3>
+            <div class="progress-bar-container">
+              <div class="progress-bar-fill" id="bulkProgressFill">0%</div>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span id="bulkProgressText">Ready</span>
+              <span id="bulkProgressCount">0/0</span>
+            </div>
+          </div>
+          
+          <div class="table-card" style="padding:24px; margin-top:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3><i class="fas fa-terminal"></i> Log</h3>
+              <button class="btn-secondary" onclick="document.getElementById('bulkLogContainer').innerHTML='';">Clear Log</button>
+            </div>
+            <div id="bulkLogContainer" style="background:#0f172a; color:#cbd5e1; padding:16px; border-radius:12px; max-height:300px; overflow-y:auto; font-family:monospace; font-size:13px; margin-top:12px;">
+              Ready...
+            </div>
+          </div>
+        `;
+        
+        // Initialize bulk register functionality
+        initBulkRegister();
+      }
+
+      function initBulkRegister() {
+        const dropZone = document.getElementById('bulkDropZone');
+        const fileInput = document.getElementById('bulkFileInput');
+        let uploadedData = null;
+        
+        function addBulkLog(msg, type='info') {
+          const container = document.getElementById('bulkLogContainer');
+          const div = document.createElement('div');
+          div.style.color = type === 'success' ? '#4ade80' : (type === 'error' ? '#f87171' : '#facc15');
+          div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+          container.appendChild(div);
+          container.scrollTop = container.scrollHeight;
+        }
+        
+        function updateBulkStats() {
+          const rows = getBulkRows();
+          document.getElementById('bulkTotal').textContent = rows.length;
+          document.getElementById('bulkSuccess').textContent = '0';
+          document.getElementById('bulkFailed').textContent = '0';
+          document.getElementById('bulkPending').textContent = rows.length;
+        }
+        
+        function getBulkRows() {
+          const emails = document.getElementById('bulkEmailData').value.split('\n').map(l=>l.trim()).filter(Boolean);
+          const names = document.getElementById('bulkNameData').value.split('\n').map(l=>l.trim()).filter(Boolean);
+          const phones = document.getElementById('bulkPhoneData').value.split('\n').map(l=>l.trim()).filter(Boolean);
+          const districts = document.getElementById('bulkDistrictData').value.split('\n').map(l=>l.trim()).filter(Boolean);
+          const upazilas = document.getElementById('bulkUpazilaData').value.split('\n').map(l=>l.trim()).filter(Boolean);
+          const bloods = document.getElementById('bulkBloodData').value.split('\n').map(l=>l.trim()).filter(Boolean);
+          
+          const maxLen = Math.max(emails.length, names.length, phones.length, districts.length, upazilas.length, bloods.length);
+          const defDistrict = document.getElementById('bulkDefaultDistrict').value;
+          const defBlood = document.getElementById('bulkDefaultBlood').value;
+          const rows = [];
+          
+          for (let i = 0; i < maxLen; i++) {
+            const email = emails[i] || '';
+            if (!email || !email.includes('@')) continue;
+            rows.push({
+              email,
+              password: generateRandomPassword(),
+              fullName: names[i] || email.split('@')[0],
+              phone: phones[i] || '',
+              district: districts[i] || defDistrict,
+              upazila: upazilas[i] || 'Sadar',
+              bloodGroup: bloods[i] || defBlood
+            });
+          }
+          return rows;
+        }
+        
+        function populateFromFileData(data) {
+          const emails = [], names = [], phones = [], districts = [], upazilas = [], bloods = [];
+          data.forEach(r => {
+            emails.push(r.email);
+            names.push(r.fullName);
+            phones.push(r.phone);
+            districts.push(r.district);
+            upazilas.push(r.upazila);
+            bloods.push(r.bloodGroup);
+          });
+          document.getElementById('bulkEmailData').value = emails.join('\n');
+          document.getElementById('bulkNameData').value = names.join('\n');
+          document.getElementById('bulkPhoneData').value = phones.join('\n');
+          document.getElementById('bulkDistrictData').value = districts.join('\n');
+          document.getElementById('bulkUpazilaData').value = upazilas.join('\n');
+          document.getElementById('bulkBloodData').value = bloods.join('\n');
+          updateBulkStats();
+        }
+        
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#dc2626'; });
+        dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = '#cbd5e1'; });
+        dropZone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropZone.style.borderColor = '#cbd5e1';
+          if (e.dataTransfer.files[0]) handleBulkFile(e.dataTransfer.files[0]);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+          if (e.target.files[0]) handleBulkFile(e.target.files[0]);
+        });
+        
+        function handleBulkFile(file) {
+          document.getElementById('bulkFileInfo').textContent = `📄 ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            if (file.name.endsWith('.csv')) {
+              const lines = e.target.result.split(/\r?\n/).filter(l => l.trim());
+              uploadedData = lines.slice(1).map(line => {
+                const parts = line.split(',').map(s => s.trim());
+                return {
+                  email: parts[0] || '',
+                  fullName: parts[1] || '',
+                  phone: parts[2] || '',
+                  district: parts[3] || '',
+                  upazila: parts[4] || '',
+                  bloodGroup: parts[5] || ''
+                };
+              }).filter(r => r.email);
+            } else if (file.name.endsWith('.xlsx')) {
+              const workbook = XLSX.read(e.target.result, {type:'binary'});
+              const sheet = workbook.Sheets[workbook.SheetNames[0]];
+              const jsonData = XLSX.utils.sheet_to_json(sheet, {header:1, defval:''});
+              uploadedData = jsonData.slice(1).map(row => ({
+                email: (row[0] || '').toString().trim(),
+                fullName: (row[1] || '').toString().trim(),
+                phone: (row[2] || '').toString().trim(),
+                district: (row[3] || '').toString().trim(),
+                upazila: (row[4] || '').toString().trim(),
+                bloodGroup: (row[5] || '').toString().trim()
+              })).filter(r => r.email);
+            }
+            addBulkLog(`File loaded: ${uploadedData.length} donors found`, 'highlight');
+            populateFromFileData(uploadedData);
+          };
+          
+          if (file.name.endsWith('.xlsx')) {
+            reader.readAsArrayBuffer(file);
+          } else {
+            reader.readAsText(file);
+          }
+        }
+        
+        document.getElementById('bulkClearFileBtn').addEventListener('click', () => {
+          uploadedData = null;
+          fileInput.value = '';
+          document.getElementById('bulkFileInfo').textContent = '';
+        });
+        
+        document.getElementById('bulkPreviewBtn').addEventListener('click', () => {
+          const rows = getBulkRows();
+          if (rows.length === 0) { showToast('No valid donors found', 'warning'); return; }
+          
+          let html = '<table class="table"><tr><th>#</th><th>Email</th><th>Password</th><th>Name</th><th>Phone</th><th>District</th><th>Upazila</th><th>Blood</th></tr>';
+          rows.forEach((r, i) => {
+            html += `<tr><td>${i+1}</td><td>${r.email}</td><td>${r.password.substring(0,8)}...</td><td>${r.fullName}</td><td>${r.phone}</td><td>${r.district}</td><td>${r.upazila}</td><td><span class="blood-badge">${r.bloodGroup}</span></td></tr>`;
+          });
+          html += '</table>';
+          document.getElementById('bulkPreviewArea').innerHTML = html;
+          document.getElementById('bulkPreviewArea').style.display = 'block';
+        });
+        
+        document.getElementById('bulkRegisterBtn').addEventListener('click', async () => {
+          const rows = getBulkRows();
+          if (rows.length === 0) { showToast('No donors to register', 'warning'); return; }
+          if (!confirm(`Register ${rows.length} donors?`)) return;
+          
+          const progressCard = document.getElementById('bulkProgressCard');
+          const progressFill = document.getElementById('bulkProgressFill');
+          const progressText = document.getElementById('bulkProgressText');
+          const progressCount = document.getElementById('bulkProgressCount');
+          
+          progressCard.style.display = 'block';
+          document.getElementById('bulkRegisterBtn').disabled = true;
+          
+          let success = 0, failed = 0;
+          
+          for (let i = 0; i < rows.length; i++) {
+            const r = rows[i];
+            progressFill.style.width = `${Math.round((i/rows.length)*100)}%`;
+            progressFill.textContent = `${Math.round((i/rows.length)*100)}%`;
+            progressText.textContent = `Processing: ${r.fullName}`;
+            progressCount.textContent = `${i+1}/${rows.length}`;
+            
+            try {
+              addBulkLog(`⏳ Registering: ${r.email}`, 'info');
+              const coords = await getLatLng(r.district, r.upazila);
+              const userCred = await auth.createUserWithEmailAndPassword(r.email, r.password);
+              const uid = userCred.user.uid;
+              const unique = Math.random().toString(36).substring(2,8).toUpperCase();
+              
+              const donorData = {
+                address: "",
+                approvalStatus: "approved",
+                bloodGroup: r.bloodGroup,
+                certificates: [`BDC-${unique}`],
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                district: r.district,
+                donorId: `DNR-${unique}`,
+                email: r.email,
+                fullName: r.fullName,
+                isDonor: true,
+                isSeeker: false,
+                isVerified: false,
+                lat: coords.lat,
+                lng: coords.lng,
+                nidNumber: "0",
+                phoneNumber: r.phone,
+                role: "user",
+                uid: uid,
+                upazila: r.upazila,
+                userType: "donor"
+              };
+              
+              await db.collection('users').doc(uid).set(donorData);
+              
+              // Auto-issue certificate
+              await db.collection('certificates').doc(`BDC-${unique}`).set({
+                certificateId: `BDC-${unique}`,
+                userId: uid,
+                userName: r.fullName,
+                donorId: `DNR-${unique}`,
+                bloodGroup: r.bloodGroup,
+                issuedDate: new Date().toISOString(),
+                issuedBy: 'auto',
+                validUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+              });
+              
+              success++;
+              document.getElementById('bulkSuccess').textContent = success;
+              addBulkLog(`✅ Success: ${r.fullName}`, 'success');
+            } catch(err) {
+              failed++;
+              document.getElementById('bulkFailed').textContent = failed;
+              addBulkLog(`❌ Failed ${r.email}: ${err.message}`, 'error');
+            }
+            
+            document.getElementById('bulkPending').textContent = rows.length - i - 1;
+            
+            if (i < rows.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          }
+          
+          progressFill.style.width = '100%';
+          progressFill.textContent = '100%';
+          progressText.textContent = 'Completed';
+          document.getElementById('bulkRegisterBtn').disabled = false;
+          addBulkLog(`🎉 Done! ${success} success, ${failed} failed`, 'highlight');
+          showToast(`Registered ${success} donors successfully!`, 'success');
+          refreshPendingCount();
+        });
+        
+        document.getElementById('bulkSampleBtn').addEventListener('click', () => {
+          document.getElementById('bulkEmailData').value = 'rahim@example.com\nkarim@test.org';
+          document.getElementById('bulkNameData').value = 'Rahim Uddin\nKarim Mia';
+          document.getElementById('bulkPhoneData').value = '01711111111\n01722222222';
+          document.getElementById('bulkDistrictData').value = 'Dhaka\nMymensingh';
+          document.getElementById('bulkUpazilaData').value = 'Mirpur\nNandail';
+          document.getElementById('bulkBloodData').value = 'B+\nO+';
+          updateBulkStats();
+          addBulkLog('Sample data loaded');
+        });
+        
+        document.getElementById('bulkClearBtn').addEventListener('click', () => {
+          ['bulkEmailData','bulkNameData','bulkPhoneData','bulkDistrictData','bulkUpazilaData','bulkBloodData'].forEach(id => {
+            document.getElementById(id).value = '';
+          });
+          document.getElementById('bulkPreviewArea').style.display = 'none';
+          updateBulkStats();
+        });
+        
+        // Listen for changes in textareas
+        ['bulkEmailData','bulkNameData','bulkPhoneData','bulkDistrictData','bulkUpazilaData','bulkBloodData'].forEach(id => {
+          document.getElementById(id).addEventListener('input', updateBulkStats);
+        });
+      }
+
+      // ==================== ROLES TAB ====================
       async function loadRolesManagement() {
         if (!canManageRoles()) { document.getElementById('contentArea').innerHTML = '<p>Access denied.</p>'; return; }
         const area = document.getElementById('contentArea');
@@ -745,7 +1351,7 @@ window._showUserDetails = (dataStr) => {
         });
         html += `</table></div>
         <div style="margin-top:20px; background:white; padding:20px; border-radius:20px; box-shadow:var(--shadow)">
-          <h4>➕ Appoint new role</h4>
+          <h4>➕ Appoint New Role</h4>
           <input id="newAdminEmail" placeholder="user@email.com" class="form-input">
           <select id="newRoleSelect" class="form-select" style="margin-bottom:10px;">
             <option value="admin">🛡️ Admin</option>
