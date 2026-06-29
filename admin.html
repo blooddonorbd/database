@@ -734,7 +734,7 @@
         <li class="nav-item" data-tab="users"><i class="fas fa-users"></i> All Users</li>
         <li class="nav-item" data-tab="donors"><i class="fas fa-heart"></i> Donors <span class="badge green" id="donorsBadge">0</span></li>
         <li class="nav-item" data-tab="requests"><i class="fas fa-bell"></i> Blood Requests <span class="badge amber" id="requestsBadge">0</span></li>
-        <li class="nav-item" data-tab="contact-logs"><i class="fas fa-phone-alt"></i> Contact Reveals</li>
+        <li class="nav-item" data-tab="contact-reveal-logs"><i class="fas fa-phone-alt"></i> Contact Reveals</li>
         <li class="nav-item" data-tab="certificates"><i class="fas fa-certificate"></i> Certificates</li>
         <li class="nav-item" data-tab="bulk-email" id="bulkEmailNav"><i class="fas fa-envelope"></i> Bulk Email</li>
         <!-- Modified Bulk Register nav item: now redirects externally -->
@@ -846,7 +846,7 @@
       function canManageCertificates() { return currentRole === 'main_admin' || currentRole === 'admin'; }
       function canBulkEmail() { return currentRole === 'main_admin' || currentRole === 'admin'; }
       function canBulkRegister() { return currentRole === 'main_admin' || currentRole === 'admin'; }
-      function canViewContactLogs() { return currentRole === 'main_admin' || currentRole === 'admin'; }
+      function canViewContactRevealLogs() { return currentRole === 'main_admin' || currentRole === 'admin'; }
       function canApprovePending() { return currentRole === 'main_admin' || currentRole === 'admin' || currentRole === 'moderator'; }
 
       async function autoIssueCertificate(userId, userData) {
@@ -900,7 +900,7 @@
           await refreshBadges();
           setupNavigation();
           const hash = window.location.hash.substring(1);
-          const validTabs = ['dashboard','pending','users','donors','requests','contact-logs','certificates','bulk-email','roles'];
+          const validTabs = ['dashboard','pending','users','donors','requests','contact-reveal-logs','certificates','bulk-email','roles'];
           const defaultTab = validTabs.includes(hash) ? hash : 'dashboard';
           loadTab(defaultTab);
 
@@ -918,7 +918,7 @@
             if (!tab) return;
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             item.classList.add('active');
-            const titleMap = { 'dashboard':'Dashboard','pending':'Pending Approvals','users':'All Users','donors':'Donors','requests':'Blood Requests','contact-logs':'Contact Reveals','certificates':'Certificates','bulk-email':'Bulk Email','roles':'Roles Management' };
+            const titleMap = { 'dashboard':'Dashboard','pending':'Pending Approvals','users':'All Users','donors':'Donors','requests':'Blood Requests','contact-reveal-logs':'Contact Reveals','certificates':'Certificates','bulk-email':'Bulk Email','roles':'Roles Management' };
             document.getElementById('pageTitle').textContent = titleMap[tab] || tab;
             loadTab(tab);
             if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
@@ -935,7 +935,7 @@
           case 'users': loadUsers(); break;
           case 'donors': loadDonors(); break;
           case 'requests': loadRequests(); break;
-          case 'contact-logs': loadContactLogs(); break;
+          case 'contact-reveal-logs': loadContactRevealLogs(); break;
           case 'certificates': loadCertificates(); break;
           case 'bulk-email': loadBulkEmail(); break;
           case 'roles': loadRoles(); break;
@@ -949,7 +949,7 @@
         try {
           const [usersSnap, donorsSnap, requestsSnap, certsSnap, logsSnap] = await Promise.all([
             db.collection('users').get(), db.collection('users').where('isDonor','==',true).where('approvalStatus','==','approved').get(),
-            db.collection('bloodRequests').where('status','==','active').get(), db.collection('certificates').get(), db.collection('contactLogs').get()
+            db.collection('bloodRequests').where('status','==','active').get(), db.collection('certificates').get(), db.collection('contactRevealLogs').get()
           ]);
           area.innerHTML = `
             <div class="stats-grid">
@@ -975,13 +975,20 @@
       async function loadRecentLogs() {
         const container = document.getElementById('dashboardRecentLogs'); if(!container) return;
         try {
-          const snap = await db.collection('contactLogs').orderBy('timestamp','desc').limit(5).get();
+          const snap = await db.collection('contactRevealLogs').orderBy('revealedAt', 'desc').limit(5).get();
           if(snap.empty) { container.innerHTML = '<p style="color:var(--text-secondary);">No contact reveals yet.</p>'; return; }
-          container.innerHTML = snap.docs.map(d => { const log = d.data(); const time = log.timestamp?.toDate?.() || new Date(); return `<div style="background:#f8fafc; padding:12px; border-radius:10px; margin-bottom:8px; border-left:4px solid var(--primary);"><strong>${log.seekerName || 'Unknown'}</strong> revealed <strong>${log.donorName || 'Unknown'}</strong>'s contact<br><small style="color:var(--text-secondary);">${time.toLocaleString('en-GB')}</small></div>`; }).join('');
+          container.innerHTML = snap.docs.map(d => { 
+            const log = d.data(); 
+            let time = log.revealedAt || log.timestamp;
+            if (time?.toDate) time = time.toDate();
+            else if (typeof time === 'string') time = new Date(time);
+            else time = new Date();
+            return `<div style="background:#f8fafc; padding:12px; border-radius:10px; margin-bottom:8px; border-left:4px solid var(--primary);"><strong>${log.seekerName || 'Unknown'}</strong> revealed <strong>${log.donorName || 'Unknown'}</strong>'s contact<br><small style="color:var(--text-secondary);">${time.toLocaleString('en-GB')}</small></div>`;
+          }).join('');
         } catch (e) { container.innerHTML = '<p style="color:var(--text-secondary);">Error loading logs.</p>'; }
       }
 
-      async function loadTodayReveals() { const el = document.getElementById('dashTodayReveals'); if(!el) return; try { const today = new Date(); today.setHours(0,0,0,0); const snap = await db.collection('contactLogs').where('timestamp','>=',today).get(); el.textContent = snap.size; } catch(e) { el.textContent = 'Error'; } }
+      async function loadTodayReveals() { const el = document.getElementById('dashTodayReveals'); if(!el) return; try { const today = new Date(); today.setHours(0,0,0,0); const snap = await db.collection('contactRevealLogs').where('revealedAt','>=',today).get(); el.textContent = snap.size; } catch(e) { el.textContent = 'Error'; } }
 
       async function loadBloodGroupChart() {
         const canvas = document.getElementById('bloodGroupChart'); if(!canvas) return;
@@ -1100,18 +1107,105 @@
         } catch(e) { area.innerHTML = `<p style="color:var(--danger);">Error loading requests: ${e.message}</p>`; }
       }
 
-      async function loadContactLogs() {
-        if(!canViewContactLogs()) { document.getElementById('contentArea').innerHTML = '<p style="color:var(--danger);">Access denied. Only administrators can view contact logs.</p>'; return; }
-        const area = document.getElementById('contentArea'); area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading contact logs...</p>';
+      async function loadContactRevealLogs() {
+        if(!canViewContactRevealLogs()) { 
+          document.getElementById('contentArea').innerHTML = '<p style="color:var(--danger);">Access denied. Only administrators can view contact logs.</p>'; 
+          return; 
+        }
+        const area = document.getElementById('contentArea'); 
+        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading contact logs...</p>';
         try {
-          const snap = await db.collection('contactLogs').orderBy('timestamp','desc').limit(200).get();
-          if(snap.empty) { area.innerHTML = `<div class="table-card" style="padding:40px; text-align:center;"><i class="fas fa-phone-slash" style="font-size:48px; color:#ccc;"></i><h3 style="margin-top:16px;">No Contact Reveals</h3><p style="color:var(--text-secondary);">When users reveal contacts, they'll appear here.</p></div>`; return; }
-          let html = `<div class="table-card"><div class="card-header"><h3><i class="fas fa-phone-alt"></i> Contact Reveal Logs (${snap.size})</h3>${canDelete() ? `<button class="btn-danger btn-sm" onclick="window._clearAllLogs()"><i class="fas fa-trash"></i> Clear All</button>` : ''}</div><table class="table"><thead><tr><th>Date/Time</th><th>Seeker</th><th>Donor</th><th>Donor ID</th><th>Seeker ID</th><th>Contact</th><th>Actions</th></tr></thead><tbody>`;
-          snap.docs.forEach(d => { const log = d.data(); const time = log.timestamp?.toDate?.() || new Date(); html += `<tr><td><small>${time.toLocaleString('en-GB', {dateStyle:'medium', timeStyle:'short'})}</small></td><td><strong>${log.seekerName || 'Unknown'}</strong></td><td><strong>${log.donorName || 'Unknown'}</strong></td><td><code>${log.donorId || 'N/A'}</code></td><td><code>${log.seekerId || 'N/A'}</code></td><td><span style="background:#f1f5f9; padding:4px 12px; border-radius:20px; font-family:monospace;">${log.contactType === 'phone' ? '📱 ' : '📧 '}${log.contactValue || log.donorPhone || log.donorEmail || 'N/A'}</span></td><td>${canDelete() ? `<button class="btn-icon danger" onclick="window._deleteLog('${d.id}')" title="Delete Log"><i class="fas fa-trash"></i></button>` : ''}</td></tr>`; });
-          html += `</tbody></table></div>`; area.innerHTML = html;
-          window._deleteLog = async (id) => { if(!confirm('Delete this log entry?')) return; try { await db.collection('contactLogs').doc(id).delete(); showToast('Log deleted','success'); loadContactLogs(); } catch(e) { showToast('Error deleting log: '+e.message,'error'); } };
-          window._clearAllLogs = async () => { if(!confirm('⚠️ Delete ALL contact logs? This cannot be undone.')) return; try { const batch = db.batch(); snap.docs.forEach(d => batch.delete(d.ref)); await batch.commit(); showToast('All logs cleared','success'); loadContactLogs(); } catch(e) { showToast('Error clearing logs: '+e.message,'error'); } };
-        } catch(e) { area.innerHTML = `<p style="color:var(--danger);">Error loading contact logs: ${e.message}</p>`; }
+          const snap = await db.collection('contactRevealLogs').orderBy('revealedAt', 'desc').limit(200).get();
+          if(snap.empty) { 
+            area.innerHTML = `<div class="table-card" style="padding:40px; text-align:center;">
+              <i class="fas fa-phone-slash" style="font-size:48px; color:#ccc;"></i>
+              <h3 style="margin-top:16px;">No Contact Reveals</h3>
+              <p style="color:var(--text-secondary);">When users reveal contacts, they'll appear here.</p>
+            </div>`; 
+            return; 
+          }
+          
+          let html = `<div class="table-card">
+            <div class="card-header">
+              <h3><i class="fas fa-phone-alt"></i> Contact Reveal Logs (${snap.size})</h3>
+              ${canDelete() ? `<button class="btn-danger btn-sm" onclick="window._clearAllLogs()"><i class="fas fa-trash"></i> Clear All</button>` : ''}
+            </div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Date/Time</th>
+                  <th>Seeker</th>
+                  <th>Donor</th>
+                  <th>Donor ID</th>
+                  <th>Seeker ID</th>
+                  <th>Contact</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>`;
+              
+          snap.docs.forEach(d => { 
+            const log = d.data(); 
+            let time = log.revealedAt || log.timestamp;
+            if (time?.toDate) time = time.toDate();
+            else if (typeof time === 'string') time = new Date(time);
+            else time = new Date();
+            
+            let contactDisplay = 'N/A';
+            if (log.donorPhone) contactDisplay = log.donorPhone;
+            else if (log.donorEmail) contactDisplay = log.donorEmail;
+            else if (log.contactValue) contactDisplay = log.contactValue;
+            
+            let icon = '';
+            const contactType = log.contactType || '';
+            if (contactType.includes('phone') || contactType === 'phone_reval') icon = '📱 ';
+            else if (contactType.includes('email')) icon = '📧 ';
+            
+            html += `<tr>
+              <td><small>${time.toLocaleString('en-GB', {dateStyle:'medium', timeStyle:'short'})}</small></td>
+              <td><strong>${log.seekerName || 'Unknown'}</strong></td>
+              <td><strong>${log.donorName || 'Unknown'}</strong></td>
+              <td><code>${log.donorId || 'N/A'}</code></td>
+              <td><code>${log.seekerId || 'N/A'}</code></td>
+              <td>
+                <span style="background:#f1f5f9; padding:4px 12px; border-radius:20px; font-family:monospace;">
+                  ${icon}${contactDisplay}
+                </span>
+              </td>
+              <td>${canDelete() ? `<button class="btn-icon danger" onclick="window._deleteLog('${d.id}')" title="Delete Log"><i class="fas fa-trash"></i></button>` : ''}
+              </td>
+            </tr>`; 
+          });
+          
+          html += `</tbody></table></div>`;
+          area.innerHTML = html;
+          
+          window._deleteLog = async (id) => { 
+            if(!confirm('Delete this log entry?')) return; 
+            try { 
+              await db.collection('contactRevealLogs').doc(id).delete(); 
+              showToast('Log deleted','success'); 
+              loadContactRevealLogs(); 
+            } catch(e) { 
+              showToast('Error deleting log: '+e.message,'error'); 
+            } 
+          };
+          
+          window._clearAllLogs = async () => { 
+            if(!confirm('⚠️ Delete ALL contact logs? This cannot be undone.')) return; 
+            try { 
+              const batch = db.batch(); 
+              snap.docs.forEach(d => batch.delete(d.ref)); 
+              await batch.commit(); 
+              showToast('All logs cleared','success'); 
+              loadContactRevealLogs(); 
+            } catch(e) { 
+              showToast('Error clearing logs: '+e.message,'error'); 
+            } 
+          };
+        } catch(e) { 
+          area.innerHTML = `<p style="color:var(--danger);">Error loading contact logs: ${e.message}</p>`; 
+        }
       }
 
       async function loadCertificates() {
@@ -1165,8 +1259,6 @@
         } catch(e) { area.innerHTML = `<p style="color:var(--danger);">Error loading email composer: ${e.message}</p>`; }
       }
 
-      // Completely removed bulk register tab content – redirect handled in sidebar click
-
       async function loadRoles() {
         if(!canManageRoles()) { document.getElementById('contentArea').innerHTML = '<p style="color:var(--danger);">Access denied. Only administrators can manage roles.</p>'; return; }
         const area = document.getElementById('contentArea'); area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading roles...</p>';
@@ -1184,7 +1276,7 @@
 
       window.addEventListener('hashchange', () => {
         const hash = window.location.hash.substring(1);
-        const validTabs = ['dashboard','pending','users','donors','requests','contact-logs','certificates','bulk-email','roles'];
+        const validTabs = ['dashboard','pending','users','donors','requests','contact-reveal-logs','certificates','bulk-email','roles'];
         if(validTabs.includes(hash)) { const navItem = document.querySelector(`[data-tab="${hash}"]`); if(navItem) navItem.click(); }
       });
 
