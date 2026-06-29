@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -58,6 +58,19 @@
         .matching-preview td { padding: 6px; border-bottom: 1px solid #ffe69c; }
         .line-numbers { color: #e74c3c; font-weight: bold; text-align: center; }
 
+        .password-note { 
+            background: #e8f5e9; 
+            border: 1px solid #4caf50; 
+            border-radius: 6px; 
+            padding: 8px 12px; 
+            margin-top: 5px; 
+            font-size: 12px; 
+            color: #2e7d32;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         @media (max-width: 992px) { .form-grid-4, .form-grid-3 { grid-template-columns: repeat(2, 1fr); } .stats { grid-template-columns: 1fr 1fr; } }
         @media (max-width: 576px) { .form-grid-4, .form-grid-3, .stats { grid-template-columns: 1fr; } }
     </style>
@@ -67,41 +80,51 @@
         <h1>🩸 Bulk Donor Registration - Admin Panel</h1>
         
         <div class="card" style="background: #f8f9fa; border-left: 4px solid #27ae60;">
-            <div>✅ Firebase Connected Successfully | অটো Lat-Lng জেনারেটর অ্যাক্টিভ</div>
+            <div>✅ Firebase Connected Successfully | Auto Lat-Lng Generator Active | Auto Password Generator Active</div>
         </div>
 
         <div class="stats">
-            <div class="stat-box info"><div class="number" id="totalCount">0</div><div class="label">মোট ডোনার</div></div>
-            <div class="stat-box success"><div class="number" id="successCount">0</div><div class="label">সফল রেজিস্ট্রেশন</div></div>
-            <div class="stat-box danger"><div class="number" id="failedCount">0</div><div class="label">ব্যর্থ</div></div>
-            <div class="stat-box warning"><div class="number" id="pendingCount">0</div><div class="label">বাকি আছে</div></div>
+            <div class="stat-box info"><div class="number" id="totalCount">0</div><div class="label">Total Donors</div></div>
+            <div class="stat-box success"><div class="number" id="successCount">0</div><div class="label">Successful Registrations</div></div>
+            <div class="stat-box danger"><div class="number" id="failedCount">0</div><div class="label">Failed</div></div>
+            <div class="stat-box warning"><div class="number" id="pendingCount">0</div><div class="label">Remaining</div></div>
         </div>
 
         <div class="card">
-            <h2>📋 ডোনার ডেটা এন্ট্রি করুন (৭টি আলাদা বক্স)</h2>
+            <h2>📋 Enter Donor Data (7 Separate Boxes)</h2>
             <p style="color: #7f8c8d; margin-bottom: 15px;">
-                প্রতিটি বক্সে সিরিয়ালি ডেটা দিন। ১ নম্বর লাইনের ডেটা ১ নম্বর ডোনারের জন্য প্রযোজ্য হবে।
+                Enter data sequentially in each box. Line 1 data will apply to donor number 1, and so on.
             </p>
             
             <div class="sample-data">
-                <strong>📌 সিরিয়াল ম্যাচিং ক্রম:</strong> ইমেইল → পাসওয়ার্ড → সম্পূর্ণ নাম → ফোন → জেলা → উপজেলা → ব্লাড গ্রুপ
+                <strong>📌 Sequential Matching Order:</strong> Email → Password → Full Name → Phone → District → Upazila → Blood Group
+            </div>
+            <div class="sample-data" style="border-left-color: #4caf50; background: #e8f5e9;">
+                <strong>🔐 Auto-Password Feature:</strong> If the password box is <strong>empty</strong>, a secure 5-word passphrase will be auto-generated for each donor (e.g., "BlueTigerHorseLionBear").
             </div>
 
             <div class="form-grid-4" style="margin-bottom: 12px;">
-                <div class="form-group"><label>📧 ইমেইল *</label><textarea id="emailData" placeholder="roversiamhasan@gmail.com"></textarea></div>
-                <div class="form-group"><label>🔑 পাসওয়ার্ড</label><textarea id="passwordData" placeholder="12345678"></textarea></div>
-                <div class="form-group"><label>👤 সম্পূর্ণ নাম (Full Name) *</label><textarea id="nameData" placeholder="Siam Hasan"></textarea></div>
-                <div class="form-group"><label>📱 ফোন নম্বর</label><textarea id="phoneData" placeholder="01967502239"></textarea></div>
+                <div class="form-group"><label>📧 Email *</label><textarea id="emailData" placeholder="roversiamhasan@gmail.com"></textarea></div>
+                <div class="form-group">
+                    <label>🔑 Password</label>
+                    <textarea id="passwordData" placeholder="Leave empty for auto-generated 5-word passphrase"></textarea>
+                    <div class="password-note">
+                        <span>💡</span> 
+                        <span>Leave empty = Auto-generate secure <strong>5-word passphrase</strong> for each donor</span>
+                    </div>
+                </div>
+                <div class="form-group"><label>👤 Full Name *</label><textarea id="nameData" placeholder="Siam Hasan"></textarea></div>
+                <div class="form-group"><label>📱 Phone Number</label><textarea id="phoneData" placeholder="01967502239"></textarea></div>
             </div>
 
             <div class="form-grid-3">
-                <div class="form-group"><label>📍 জেলা</label><textarea id="districtData" placeholder="Mymensingh"></textarea></div>
-                <div class="form-group"><label>🏘️ উপজেলা</label><textarea id="upazilaData" placeholder="Nandail"></textarea></div>
-                <div class="form-group"><label>🩸 ব্লাড গ্রুপ</label><textarea id="bloodGroupData" placeholder="B+"></textarea></div>
+                <div class="form-group"><label>📍 District</label><textarea id="districtData" placeholder="Mymensingh"></textarea></div>
+                <div class="form-group"><label>🏘️ Upazila</label><textarea id="upazilaData" placeholder="Nandail"></textarea></div>
+                <div class="form-group"><label>🩸 Blood Group</label><textarea id="bloodGroupData" placeholder="B+"></textarea></div>
             </div>
 
             <div style="margin: 15px 0;">
-                <label style="font-weight: 600; display: block; margin-bottom: 5px;">ডিফল্ট ভ্যালু (বক্স ফাঁকা থাকলে)</label>
+                <label style="font-weight: 600; display: block; margin-bottom: 5px;">Default Values (if box is empty)</label>
                 <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                     <select id="defaultDistrict" style="padding: 8px; border-radius: 6px; border: 1px solid #ddd;">
                         <option value="Mymensingh">Mymensingh</option>
@@ -118,32 +141,32 @@
             </div>
 
             <div class="flex">
-                <button class="btn btn-info" onclick="previewMatching()">👁️ ম্যাচিং প্রিভিউ দেখুন</button>
-                <button class="btn btn-primary" onclick="registerBulk()" id="registerBtn">🚀 সব ডোনার রেজিস্টার করুন</button>
-                <button class="btn btn-warning" onclick="loadSampleData()">📥 স্যাম্পল ডেটা লোড</button>
-                <button class="btn btn-danger" onclick="clearAll()">🗑️ সব ক্লিয়ার</button>
+                <button class="btn btn-info" onclick="previewMatching()">👁️ View Matching Preview</button>
+                <button class="btn btn-primary" onclick="registerBulk()" id="registerBtn">🚀 Register All Donors</button>
+                <button class="btn btn-warning" onclick="loadSampleData()">📥 Load Sample Data</button>
+                <button class="btn btn-danger" onclick="clearAll()">🗑️ Clear All</button>
             </div>
 
             <div class="matching-preview" id="matchingPreview" style="display: none;">
-                <h3 style="margin-bottom: 10px;">🔍 সিরিয়াল ম্যাচিং প্রিভিউ</h3>
+                <h3 style="margin-bottom: 10px;">🔍 Sequential Matching Preview</h3>
                 <div id="previewTableContainer"></div>
             </div>
         </div>
 
         <div class="card" id="progressCard" style="display: none;">
-            <h2>⏳ রেজিস্ট্রেশন প্রগ্রেস</h2>
+            <h2>⏳ Registration Progress</h2>
             <div class="progress-container"><div class="progress-bar"><div class="progress-fill" id="progressFill">0%</div></div></div>
             <div style="display: flex; justify-content: space-between; font-size: 14px; color: #7f8c8d;">
-                <span id="progressText">প্রস্তুত</span><span id="progressCount">0 / 0</span>
+                <span id="progressText">Ready</span><span id="progressCount">0 / 0</span>
             </div>
         </div>
 
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h2>📜 রেজিস্ট্রেশন লগ</h2>
-                <button class="btn btn-warning" onclick="clearLogs()" style="padding: 5px 15px; font-size: 12px;">লগ ক্লিয়ার</button>
+                <h2>📜 Registration Log</h2>
+                <button class="btn btn-warning" onclick="clearLogs()" style="padding: 5px 15px; font-size: 12px;">Clear Log</button>
             </div>
-            <div class="log-container" id="logContainer"><div class="info">🔄 রেজিস্ট্রেশন শুরুর অপেক্ষায়...</div></div>
+            <div class="log-container" id="logContainer"><div class="info">🔄 Waiting for registration to start...</div></div>
         </div>
     </div>
 
@@ -163,7 +186,24 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // বাংলাদেশের প্রধান জেলাগুলোর অক্ষাংশ ও দ্রাঘিমাংশ ডেটাবেজ
+        // Word banks for 5-word passphrase generation
+        const wordBank1 = ["Blue", "Red", "Green", "Dark", "Light", "Golden", "Silver", "Crystal", "Iron", "Steel", "Brave", "Swift", "Noble", "Bright", "Storm"];
+        const wordBank2 = ["Tiger", "Lion", "Eagle", "Wolf", "Bear", "Hawk", "Fox", "Deer", "Horse", "Snake", "Shark", "Phoenix", "Dragon", "Falcon", "Raven"];
+        const wordBank3 = ["Mountain", "River", "Ocean", "Forest", "Valley", "Desert", "Cloud", "Star", "Moon", "Sky", "Lake", "Cave", "Island", "Storm", "Night"];
+        const wordBank4 = ["Hunter", "Warrior", "Guardian", "Seeker", "Master", "Knight", "Scout", "Ranger", "Pilot", "Captain", "Doctor", "Scholar", "Prince", "Chief", "Guide"];
+        const wordBank5 = ["2025", "2026", "2027", "101", "202", "303", "404", "505", "606", "707", "808", "909", "007", "111", "222", "333", "444", "555", "777", "888"];
+
+        // Function to generate a random 5-word passphrase
+        function generatePassword() {
+            const w1 = wordBank1[Math.floor(Math.random() * wordBank1.length)];
+            const w2 = wordBank2[Math.floor(Math.random() * wordBank2.length)];
+            const w3 = wordBank3[Math.floor(Math.random() * wordBank3.length)];
+            const w4 = wordBank4[Math.floor(Math.random() * wordBank4.length)];
+            const w5 = wordBank5[Math.floor(Math.random() * wordBank5.length)];
+            return `${w1}${w2}${w3}${w4}${w5}`;
+        }
+
+        // Database of latitude and longitude for major districts in Bangladesh
         const geoDictionary = {
             "mymensingh": { lat: 24.7471, lng: 90.4203, "nandail": { lat: 24.5901, lng: 90.6692 } },
             "kishoreganj": { lat: 24.4414, lng: 90.7766, "tarail": { lat: 24.5249, lng: 90.8147 }, "sadar": { lat: 24.4331, lng: 90.7866 } },
@@ -180,17 +220,17 @@
             "tangail": { lat: 24.2513, lng: 89.9167 }
         };
 
-        // স্বয়ংক্রিয় Lat-Lng জেনারেটর ফাংশন
+        // Auto Lat-Lng Generator Function
         async function autoGenerateLatLng(districtStr, upazilaStr) {
             const distKey = districtStr.trim().toLowerCase();
             const upKey = upazilaStr.trim().toLowerCase();
 
-            // ১. ডিকশনারি চেক
+            // 1. Check dictionary
             if (geoDictionary[distKey]) {
                 if (geoDictionary[distKey][upKey]) {
                     return geoDictionary[distKey][upKey];
                 }
-                // উপজেলা না পেলে জেলার কেন্দ্রবিন্দু + সামান্য র‍্যান্ডম অফসেট (যাতে সবার লোকেশন একদম এক বিন্দুতে না পড়ে)
+                // If upazila not found, use district center + slight random offset (so locations aren't exactly the same point)
                 const base = geoDictionary[distKey];
                 return {
                     lat: parseFloat((base.lat + (Math.random() - 0.5) * 0.05).toFixed(4)),
@@ -198,7 +238,7 @@
                 };
             }
 
-            // ২. ডিকশনারিতে না থাকলে অনলাইন ম্যাপ API থেকে রিয়েল লোকেশন বের করা
+            // 2. If not in dictionary, fetch real location from online map API
             try {
                 const query = encodeURIComponent(`${upazilaStr}, ${districtStr}, Bangladesh`);
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`);
@@ -208,7 +248,7 @@
                 }
             } catch(e) {}
 
-            // ৩. ফলব্যাক ডিফল্ট (ঢাকা)
+            // 3. Fallback default (Dhaka)
             return { lat: 23.8103, lng: 90.4125 };
         }
 
@@ -245,7 +285,7 @@
             logContainer.appendChild(div); logContainer.scrollTop = logContainer.scrollHeight;
         }
 
-        function clearLogs() { logContainer.innerHTML = ''; addLog('লগ ক্লিয়ার করা হয়েছে', 'info'); }
+        function clearLogs() { logContainer.innerHTML = ''; addLog('Log cleared', 'info'); }
         function updateStats() {
             totalCount.textContent = stats.total; successCount.textContent = stats.success;
             failedCount.textContent = stats.failed; pendingCount.textContent = stats.pending;
@@ -259,16 +299,31 @@
 
         function getLines(el) { return el.value.split('\n').map(l => l.trim()).filter(l => l.length > 0); }
 
+        // Check if password box is completely empty (no lines at all)
+        function isPasswordBoxEmpty() {
+            return passwordData.value.trim() === '';
+        }
+
         function parseDataRows() {
-            const emails = getLines(emailData), passwords = getLines(passwordData), names = getLines(nameData), phones = getLines(phoneData), districts = getLines(districtData), upazilas = getLines(upazilaData), bloodGroups = getLines(bloodGroupData);
+            const emails = getLines(emailData);
+            const passwords = getLines(passwordData);
+            const names = getLines(nameData);
+            const phones = getLines(phoneData);
+            const districts = getLines(districtData);
+            const upazilas = getLines(upazilaData);
+            const bloodGroups = getLines(bloodGroupData);
+            
             const totalMax = Math.max(emails.length, passwords.length, names.length, phones.length, districts.length, upazilas.length, bloodGroups.length);
-            const rows = [], defDist = defaultDistrict.value, defBlood = defaultBloodGroup.value;
+            const rows = [];
+            const defDist = defaultDistrict.value;
+            const defBlood = defaultBloodGroup.value;
+            const autoPass = isPasswordBoxEmpty(); // Check if we need auto-generated passwords
 
             for (let i = 0; i < totalMax; i++) {
                 rows.push({
                     serial: i + 1,
                     email: emails[i] || '',
-                    password: passwords[i] || '12345678',
+                    password: autoPass ? generatePassword() : (passwords[i] || generatePassword()),
                     fullName: names[i] || (emails[i] ? emails[i].split('@')[0] : 'Donor'),
                     phone: phones[i] || '',
                     district: districts[i] || defDist || 'Mymensingh',
@@ -282,108 +337,158 @@
         function getValidDonors(rows) { return rows.filter(r => r.email && r.email.includes('@')); }
 
         function previewMatching() {
-            const rows = parseDataRows(); if (rows.length === 0) { alert('কোনো ডেটা নেই!'); return; }
+            const rows = parseDataRows(); 
+            if (rows.length === 0) { alert('No data found!'); return; }
             matchingPreview.style.display = 'block';
-            let html = `<table><thead><tr><th>#</th><th>📧 ইমেইল</th><th>🔑 পাসওয়ার্ড</th><th>👤 নাম</th><th>📱 ফোন</th><th>📍 জেলা</th><th>🏘️ উপজেলা</th><th>🩸 ব্লাড</th><th>স্ট্যাটাস</th></tr></thead><tbody>`;
+            const autoPass = isPasswordBoxEmpty();
+            
+            let html = `<table><thead><tr>
+                <th>#</th><th>📧 Email</th><th>🔑 Password</th><th>👤 Name</th><th>📱 Phone</th><th>📍 District</th><th>🏘️ Upazila</th><th>🩸 Blood</th><th>Status</th>
+            </tr></thead><tbody>`;
+            
             rows.forEach(r => {
                 const ok = r.email && r.email.includes('@');
-                html += `<tr><td class="line-numbers">${r.serial}</td><td>${r.email||'-'}</td><td>${r.password?'***':'অটো'}</td><td><b>${r.fullName}</b></td><td>${r.phone||'-'}</td><td>${r.district}</td><td>${r.upazila}</td><td>${r.bloodGroup}</td><td style="color:${ok?'#27ae60':'#e74c3c'};font-weight:bold;">${ok?'✅ রেডি':'⚠️ ইমেইল নেই'}</td></tr>`;
+                const passDisplay = autoPass ? `${r.password} <span style="color:#27ae60;font-size:10px;">(auto)</span>` : (r.password ? r.password : '<span style="color:#e74c3c;">⚠️ Auto-gen</span>');
+                html += `<tr>
+                    <td class="line-numbers">${r.serial}</td>
+                    <td>${r.email||'-'}</td>
+                    <td>${passDisplay}</td>
+                    <td><b>${r.fullName}</b></td>
+                    <td>${r.phone||'-'}</td>
+                    <td>${r.district}</td>
+                    <td>${r.upazila}</td>
+                    <td>${r.bloodGroup}</td>
+                    <td style="color:${ok?'#27ae60':'#e74c3c'};font-weight:bold;">${ok?'✅ Ready':'⚠️ Missing Email'}</td>
+                </tr>`;
             });
             previewTableContainer.innerHTML = html + '</tbody></table>';
             matchingPreview.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            if (autoPass) {
+                addLog('🔐 Auto-password mode: Each donor will get a unique 5-word passphrase', 'highlight');
+            }
         }
 
         async function registerBulk() {
             if (isProcessing) return;
             const rows = getValidDonors(parseDataRows());
-            if (rows.length === 0) { alert('ভ্যালিড ইমেইল পাওয়া যায়নি!'); return; }
-            if (!confirm(`আপনি ${rows.length} জন ডোনারের ডেটা এন্ট্রি নিশ্চিত করছেন?`)) return;
+            if (rows.length === 0) { alert('No valid emails found!'); return; }
+            
+            const autoPass = isPasswordBoxEmpty();
+            const confirmMsg = autoPass 
+                ? `⚠️ Password box is empty.\n\n${rows.length} donor(s) will receive auto-generated 5-word passphrases.\n\nAre you sure you want to proceed?`
+                : `Are you sure you want to register ${rows.length} donors?`;
+                
+            if (!confirm(confirmMsg)) return;
 
             stats = { total: rows.length, success: 0, failed: 0, pending: rows.length };
-            updateStats(); progressCard.style.display = 'block'; registerBtn.disabled = true; isProcessing = true; clearLogs();
+            updateStats(); 
+            progressCard.style.display = 'block'; 
+            registerBtn.disabled = true; 
+            isProcessing = true; 
+            clearLogs();
+            
+            if (autoPass) {
+                addLog('🔐 Auto-Password Mode: Generating unique 5-word passphrases for each donor', 'highlight');
+            }
 
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
-                stats.pending = rows.length - i - 1; updateStats(); updateProgress(i, rows.length);
-                progressText.textContent = `প্রসেসিং: ${row.fullName}`;
+                stats.pending = rows.length - i - 1; 
+                updateStats(); 
+                updateProgress(i, rows.length);
+                progressText.textContent = `Processing: ${row.fullName}`;
 
                 try {
-                    addLog(`📝 প্রসেসিং: ${row.fullName} (${row.email})`, 'info');
+                    addLog(`📝 Processing: ${row.fullName} (${row.email})`, 'info');
+                    addLog(`   🔑 Password: ${autoPass ? 'AUTO: ' + row.password : row.password}`, 'highlight');
                     
-                    // লোকেশন জেনারেট করা হচ্ছে
+                    // Generating location
                     const coords = await autoGenerateLatLng(row.district, row.upazila);
-                    addLog(`   ↳ অটো জিও-কোড: Lat ${coords.lat}, Lng ${coords.lng}`, 'highlight');
+                    addLog(`   ↳ Auto Geo-Code: Lat ${coords.lat}, Lng ${coords.lng}`, 'highlight');
 
                     const userCredential = await auth.createUserWithEmailAndPassword(row.email, row.password);
                     const user = userCredential.user;
                     
-                    // ইউনিক কোড জেনারেট (মাঝের অংশ মিল রাখার জন্য)
+                    // Generate unique codes
                     const uniqueCode = Math.random().toString(36).substring(2, 10).toUpperCase();
                     const emailPrefix = row.email.split('@')[0].substring(0, 4).toUpperCase();
                     const certSuffix = Math.random().toString(36).substring(2, 7).toUpperCase();
 
-                    // ২য় স্ক্রিনশট অনুযায়ী হুবহু অবজেক্ট ফরম্যাট
                     const donorData = {
                         address: "",
                         approvalStatus: "approved",
                         bloodGroup: row.bloodGroup,
-                        certificates: [`BDC-${uniqueCode}-${certSuffix}`], // ডায়নামিক সার্টিফিকেট আইডি
+                        certificates: [`BDC-${uniqueCode}-${certSuffix}`],
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                         district: row.district,
-                        donorId: `DNR-${uniqueCode}-${emailPrefix}`, // ডায়নামিক ডোনার আইডি
+                        donorId: `DNR-${uniqueCode}-${emailPrefix}`,
                         email: row.email,
                         fullName: row.fullName,
                         isDonor: true,
                         isSeeker: false,
-                        isVerified: false, // স্ক্রিনশট অনুযায়ী false
+                        isVerified: false,
                         lastLocationUpdate: firebase.firestore.FieldValue.serverTimestamp(),
-                        lat: coords.lat, // ডাবল টাইপ অটো-জেনারেটেড Lat
-                        lng: coords.lng, // ডাবল টাইপ অটো-জেনারেটেড Lng
-                        nidNumber: "0",  // স্ক্রিনশট অনুযায়ী "0"
+                        lat: coords.lat,
+                        lng: coords.lng,
+                        nidNumber: "0",
                         phoneNumber: row.phone,
-                        role: "user",    // স্ক্রিনশট অনুযায়ী user
+                        role: "user",
                         uid: user.uid,
                         upazila: row.upazila,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                        userType: "donor" // স্ক্রিনশট অনুযায়ী donor
+                        userType: "donor"
                     };
 
                     await db.collection('users').doc(user.uid).set(donorData);
-                    addLog(`   ✅ ফায়ারস্টোরে সংরক্ষিত হয়েছে: ${row.fullName}`, 'success');
+                    addLog(`   ✅ Saved to Firestore: ${row.fullName}`, 'success');
                     stats.success++;
 
                 } catch (error) {
                     stats.failed++;
-                    addLog(`   ❌ ব্যর্থ (${row.email}): ${error.message}`, 'error');
+                    addLog(`   ❌ Failed (${row.email}): ${error.message}`, 'error');
                 }
 
-                updateStats(); updateProgress(i + 1, rows.length);
+                updateStats(); 
+                updateProgress(i + 1, rows.length);
                 if (i < rows.length - 1) await new Promise(r => setTimeout(r, 700));
             }
 
-            progressText.textContent = '✅ সব ডোনার এন্ট্রি সম্পন্ন!';
-            registerBtn.disabled = false; isProcessing = false;
+            progressText.textContent = '✅ All donor entries completed!';
+            registerBtn.disabled = false; 
+            isProcessing = false;
+            
+            if (autoPass) {
+                addLog('🔐 Auto-generated passwords were used for all donors', 'highlight');
+            }
         }
 
         function loadSampleData() {
             emailData.value = "roversiamhasan@gmail.com\ntanim2026@gmail.com";
-            passwordData.value = "12345678\n87654321";
+            // Password box left empty to demonstrate auto-password feature
+            passwordData.value = "";
             nameData.value = "Siam Hasan\nAshfaqur Rahman";
             phoneData.value = "01967502239\n01712345678";
             districtData.value = "Mymensingh\nKishoreganj";
             upazilaData.value = "Nandail\nTarail";
             bloodGroupData.value = "B+\nO+";
             updateStatsFromInput();
-            addLog('📥 স্যাম্পল ডেটা লোড হয়েছে।', 'info');
+            addLog('📥 Sample data loaded. Password box is empty - auto-password mode active.', 'info');
         }
 
         function updateStatsFromInput() {
-            const all = parseDataRows(); stats.total = all.length; stats.pending = getValidDonors(all).length; updateStats();
+            const all = parseDataRows(); 
+            stats.total = all.length; 
+            stats.pending = getValidDonors(all).length; 
+            updateStats();
         }
 
         function clearAll() {
             [emailData, passwordData, nameData, phoneData, districtData, upazilaData, bloodGroupData].forEach(el => el.value = '');
-            matchingPreview.style.display = 'none'; stats = { total: 0, success: 0, failed: 0, pending: 0 }; updateStats(); clearLogs();
+            matchingPreview.style.display = 'none'; 
+            stats = { total: 0, success: 0, failed: 0, pending: 0 }; 
+            updateStats(); 
+            clearLogs();
         }
 
         [emailData, passwordData, nameData, phoneData, districtData, upazilaData, bloodGroupData].forEach(el => el.addEventListener('input', updateStatsFromInput));
