@@ -1330,6 +1330,7 @@ window.addEventListener('scroll', () => {
   <span id="bdTime"></span>
   <span style="opacity: 0.7;">|</span>
   <span id="bdDate"></span>
+  
 </div>
       </div>
     </nav>
@@ -2420,7 +2421,7 @@ function findNearbyHospitals() {
           </div>
 
           <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <h3 style="margin-bottom: 20px;">Profile Information</h3>
+            <h3 style="margin-bottom: 20px;"><i class="fas fa-user"></i> Profile Information</h3>
             <div style="display: flex; flex-direction: column; gap: 12px;">
               <p><strong>Name:</strong> ${roleSymbol}${userProfile?.fullName || '-'}</p>
               <p><strong>Email:</strong> ${userProfile?.email || '-'}</p>
@@ -2564,7 +2565,7 @@ function findNearbyHospitals() {
                   <span style="background: #b71c1c; color: white; font-weight: 800; font-size: 14px; padding: 4px 10px; border-radius: 20px;">${req.bloodGroup}</span>
                   <div>
                     <strong style="font-size: 14px; display: block;">${req.patientName} (${req.unitsNeeded} Unit)</strong>
-                    <small style="color: #666;"><i class="fas fa-hospital"></i> ${req.hospitalName} | <i class="far fa-clock"></i> ${req.requiredBy} ${req.requiredTime || ''}</small>
+                    <small style="color: #666;"><i class="fas fa-hospital"></i> ${req.hospitalName} | ${req.hospitalAddress} | <i class="far fa-clock"></i> ${req.requiredBy} ${req.requiredTime || ''}</small>
                   </div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -2626,10 +2627,22 @@ function findNearbyHospitals() {
           card.innerHTML = `
             <div class="request-header"><div><h3>${req.patientName}</h3><span class="request-blood-group">${req.bloodGroup}</span></div><span class="badge" style="background:#2e7d32;color:white;padding:4px 12px;border-radius:20px;">Active Request</span></div>
             <div class="request-details">
-                <div class="request-detail"><i class="fas fa-hospital"></i><span>${req.hospitalName}</span></div>
+                <div class="request-detail"><i class="fas fa-hospital"></i><span>${req.hospitalName}</span><span> | </span><span> ${req.hospitalAddress}</span></div>
+                <div class="request-detail">
+  <i class="fas ${req.patientGender === 'Male' ? 'fa-mars' : req.patientGender === 'Female' ? 'fa-venus' : 'fa-genderless'}"></i>
+  <span>${req.patientGender}</span>
+</div>
+<div class="request-detail">
+  <i class="fas fa-birthday-cake"></i>
+  <span>${req.patientAge} years old</span>
+</div>
                 <div class="request-detail"><i class="fas fa-flask"></i><span>${req.unitsNeeded} Unit(s)</span></div>
                 <div class="request-detail"><i class="fas fa-calendar"></i><span>Required: ${req.requiredBy} ${req.requiredTime || ''}</span></div>
                 <div class="request-detail"><i class="fas fa-clock"></i><span>Posted: ${createdAt.toLocaleString()}</span></div>
+                <div class="request-detail">
+  <i class="fas fa-user"></i><span>Requested by </span>
+  <span>${req.requesterName}</span>
+</div>
             </div>
             <div class="request-actions">
                 <a href="tel:${req.contactNumber}" class="btn btn-primary"><i class="fas fa-phone"></i> Call Now</a>
@@ -2907,7 +2920,7 @@ function renderDonorPage(page) {
       </div>
       <div class="request-actions">
   ${currentUser ? `
-    <button onclick="revealContact('${donor.id}', '${donor.phoneNumber}', '${donor.fullName}')" class="btn btn-primary" style="flex: 1;"><i class="fas fa-phone"></i> Reveal Contact</button>
+    <button onclick="revealContact('${donor.id}', '${donor.phoneNumber}', '${donor.fullName}')" class="btn btn-primary" style="flex: 1;"><i class="fas fa-phone"></i> Call for Contact</button>
     <button onclick="goToPrivateDM('${donor.id}')" class="btn btn-outline" style="flex: 1;"><i class="fas fa-comment"></i> Message</button>
   ` : `<button onclick="promptRegistration()" class="btn btn-outline btn-block">Login to Contact</button>`}
 </div>
@@ -2963,7 +2976,7 @@ function renderDonorPage(page) {
         return;
       }
       
-      if (confirm(`Reveal contact number for ${donorName}?`)) {
+      if (confirm(`Do you want to call ${donorName}?`)) {
         await contactTracking.logContact(donorId, currentUser.uid, donorName, userProfile.fullName, phone);
         window.open(`tel:${phone}`);
         Toast.show('Contact revealed & logged securely.', 'info');
@@ -5955,6 +5968,16 @@ function shareStoryDirect(storyId) {
     });
   }
 }
+const genderIcon = req.patientGender === 'Male' ? 'fa-mars' : 
+                  req.patientGender === 'Female' ? 'fa-venus' : 
+                  'fa-genderless';
+
+const html = `
+  <div class="request-detail">
+    <i class="fas ${genderIcon}"></i>
+    <span>${req.patientGender}</span>
+  </div>
+`;
 
 // ============================================
 // GO TO PRIVATE DM FROM FIND DONORS
