@@ -108,6 +108,154 @@
       padding: 12px; border-radius: 12px; border: 1px solid var(--border); width: 100%;
       font-size: 14px; margin-bottom: 10px; resize: vertical; min-height: 100px;
     }
+    <!-- Add these styles within the <style> tag -->
+<style>
+  /* Additional styles for multi-select and search */
+  .search-container {
+    padding: 16px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+  }
+  
+  .search-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  
+  .search-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .search-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+  }
+  
+  .search-select {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    min-width: 150px;
+    background: white;
+    cursor: pointer;
+  }
+  
+  .search-select:focus {
+    outline: none;
+    border-color: var(--primary);
+  }
+  
+  .batch-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 12px 0;
+    flex-wrap: wrap;
+  }
+  
+  .batch-actions.hidden {
+    display: none;
+  }
+  
+  .btn-danger {
+    padding: 10px 20px;
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .btn-danger:hover {
+    background: #dc2626;
+  }
+  
+  .btn-danger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .selected-count {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  
+  .checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .checkbox-wrapper input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary);
+  }
+  
+  .select-all-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--primary);
+  }
+  
+  .search-icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+  
+  .search-icon i {
+    position: absolute;
+    left: 12px;
+    color: var(--text-secondary);
+  }
+  
+  .search-icon .search-input {
+    padding-left: 35px;
+  }
+  
+  .clear-search {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: 0.2s;
+  }
+  
+  .clear-search:hover {
+    background: #f1f5f9;
+    color: var(--text);
+  }
+  
+  .results-info {
+    padding: 8px 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+</style>
     
     .toast-container { position: fixed; top: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
     .toast { background: white; padding: 14px 20px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease; }
@@ -559,150 +707,438 @@
         }
       }
 
-      // ==================== USERS TAB (FIXED) ====================
-      async function loadUsers() { 
-        const area = document.getElementById('contentArea');
-        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading all users...</p>';
+      // ==================== USERS TAB (ENHANCED WITH MULTI-SELECT & SEARCH) ====================
+async function loadUsers() { 
+  const area = document.getElementById('contentArea');
+  area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading all users...</p>';
+  
+  try {
+    const snap = await db.collection('users').get();
+    const allUsers = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    
+    // Store all users globally for search functionality
+    window._allUsers = allUsers;
+    window._selectedUsers = new Set();
+    window._selectAllState = false;
+    
+    // Get unique values for filters
+    const districts = [...new Set(allUsers.map(u => u.district).filter(Boolean))].sort();
+    const bloodGroups = [...new Set(allUsers.map(u => u.bloodGroup).filter(Boolean))].sort();
+    
+    area.innerHTML = `
+      <div class="search-container">
+        <div class="search-row">
+          <div class="search-icon" style="flex: 2; min-width: 250px;">
+            <i class="fas fa-search"></i>
+            <input type="text" id="userSearchInput" class="search-input" placeholder="Search by name, email, phone..." oninput="window._filterUsers()">
+          </div>
+          <select id="bloodGroupFilter" class="search-select" onchange="window._filterUsers()">
+            <option value="">All Blood Groups</option>
+            ${bloodGroups.map(bg => `<option value="${bg}">${bg}</option>`).join('')}
+          </select>
+          <select id="districtFilter" class="search-select" onchange="window._filterUsers()">
+            <option value="">All Districts</option>
+            ${districts.map(d => `<option value="${d}">${d}</option>`).join('')}
+          </select>
+          <button class="clear-search" onclick="window._clearUserSearch()" title="Clear filters">
+            <i class="fas fa-times"></i> Clear
+          </button>
+        </div>
         
-        try {
-          const snap = await db.collection('users').get();
-          
-          let html = `<div class="table-card"><table class="table"><tr><th>User Details</th><th>Type</th><th>Status</th><th>Role</th><th>Actions</th></tr>`;
-          
-          snap.docs.forEach(d => {
-            const u = d.data();
-            const userId = d.id;
-            
-            // Validate userId
-            if (!userId || userId.trim() === '') {
-              console.warn('Found user with empty ID, skipping:', u);
-              return; // Skip users with empty IDs
-            }
-            
-            const hasCert = u.certificates && u.certificates.length > 0;
-            let bgStatus = u.approvalStatus === 'approved' ? 'var(--success)' : (u.approvalStatus === 'pending' ? 'var(--warning)' : 'var(--danger)');
-            const userDataJson = JSON.stringify(u).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        <div class="batch-actions hidden" id="batchActions">
+          <span class="selected-count" id="selectedCount">0 selected</span>
+          ${canDelete() ? `
+            <button class="btn-danger" id="batchDeleteBtn" disabled onclick="window._batchDeleteUsers()">
+              <i class="fas fa-trash"></i> Delete Selected
+            </button>
+          ` : ''}
+          <button class="btn-secondary" onclick="window._clearSelection()">
+            <i class="fas fa-times"></i> Clear Selection
+          </button>
+        </div>
+        
+        <div class="results-info" id="resultsInfo"></div>
+      </div>
+      
+      <div class="table-card">
+        <table class="table" id="usersTable">
+          <thead>
+            <tr>
+              <th style="width: 50px;">
+                <input type="checkbox" class="select-all-checkbox" id="selectAllCheckbox" onchange="window._toggleSelectAll()">
+              </th>
+              <th>User Details</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Role</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+          </tbody>
+        </table>
+      </div>
+    `;
+    
+    // Initial render
+    window._renderUsersTable(allUsers);
+    
+  } catch(e) {
+    area.innerHTML = `<p style="color:var(--danger);">Error loading users: ${e.message}</p>`;
+  }
+}
 
-            html += `<tr style="cursor:pointer;" onclick="window._showUserDetails('${userDataJson}')">
-              <td>
-                <strong>
-                  ${getRoleSymbol(u.role || 'user')} ${u.fullName || 'Unknown'}
-                  ${hasCert ? '<i class="fas fa-certificate cert-badge" title="Has Certificate"></i>' : ''}
-                </strong><br><small>${u.email}</small>
-              </td>
-              <td>${u.isDonor ? '🩸 Donor' : '🔍 Seeker'}</td>
-              <td><span class="status-badge" style="background:${bgStatus}">${u.approvalStatus || 'N/A'}</span></td>
-              <td><span class="role-badge">${getRoleSymbol(u.role || 'user')} ${u.role || 'user'}</span></td>
-              <td>`;
-            
-            if(canDelete()) {
-              if (u.email === currentUser.email) {
-                html += `<span style="color:var(--text-secondary); font-size:12px;">You</span>`;
-              } else if (SUPER_ADMINS.includes(u.email)) {
-                html += `<span style="color:var(--text-secondary); font-size:12px;">Protected</span>`;
-              } else {
-                html += `<button class="btn-icon" onclick="event.stopPropagation(); window._deleteUser('${userId}', '${(u.fullName || 'Unknown').replace(/'/g, "\\'")}')" title="Delete User"><i class="fas fa-trash" style="color:var(--danger)"></i></button>`;
-              }
-            } else {
-              html += `<span style="color:var(--text-secondary); font-size:12px;">No permission</span>`;
-            }
-            
-            html += `</td></tr>`;
-          });
-          area.innerHTML = html + `</table></div>`;
-        } catch(e) {
-          area.innerHTML = `<p style="color:var(--danger);">Error loading users: ${e.message}</p>`;
-        }
+window._filterUsers = function() {
+  const searchTerm = document.getElementById('userSearchInput')?.value.toLowerCase().trim() || '';
+  const bloodGroupFilter = document.getElementById('bloodGroupFilter')?.value || '';
+  const districtFilter = document.getElementById('districtFilter')?.value || '';
+  
+  if (!window._allUsers) return;
+  
+  let filteredUsers = window._allUsers.filter(u => {
+    // Search by name, email, phone
+    if (searchTerm) {
+      const nameMatch = (u.fullName || '').toLowerCase().includes(searchTerm);
+      const emailMatch = (u.email || '').toLowerCase().includes(searchTerm);
+      const phoneMatch = (u.phoneNumber || '').toLowerCase().includes(searchTerm);
+      const donorIdMatch = (u.donorId || '').toLowerCase().includes(searchTerm);
+      
+      if (!nameMatch && !emailMatch && !phoneMatch && !donorIdMatch) {
+        return false;
       }
+    }
+    
+    // Filter by blood group
+    if (bloodGroupFilter && u.bloodGroup !== bloodGroupFilter) {
+      return false;
+    }
+    
+    // Filter by district
+    if (districtFilter && u.district !== districtFilter) {
+      return false;
+    }
+    
+    return true;
+  });
+  
+  window._renderUsersTable(filteredUsers);
+};
 
-      window._showUserDetails = (dataStr) => {
-        try {
-          const u = JSON.parse(dataStr);
-          const content = document.getElementById('userModalContent');
-          const hasCert = u.certificates && u.certificates.length > 0;
-          content.innerHTML = `
-            <p><strong>Name:</strong> ${u.fullName || 'N/A'}</p>
-            <p><strong>Email:</strong> ${u.email || 'N/A'}</p>
-            <p><strong>Phone:</strong> ${u.phoneNumber || 'N/A'}</p>
-            <p><strong>Blood Group:</strong> ${u.bloodGroup || 'N/A'}</p>
-            <p><strong>District:</strong> ${u.district || 'N/A'}</p>
-            <p><strong>Upazila:</strong> ${u.upazila || 'N/A'}</p>
-            <p><strong>Role:</strong> ${getRoleSymbol(u.role || 'user')} ${u.role || 'user'}</p>
-            <p><strong>Status:</strong> ${u.approvalStatus || 'N/A'}</p>
-            <p><strong>Is Donor:</strong> ${u.isDonor ? 'Yes' : 'No'}</p>
-            ${u.donorId ? `<p><strong>Donor ID:</strong> ${u.donorId}</p>` : ''}
-            ${hasCert ? `<p><strong>Certificates:</strong> <i class="fas fa-certificate" style="color:#7c3aed;"></i> ${u.certificates.length} issued</p>` : '<p><strong>Certificates:</strong> None</p>'}
-          `;
-          document.getElementById('userModal').style.display = 'flex';
-        } catch(e) {
-          showToast('Error displaying user details', 'error');
-        }
-      };
+window._renderUsersTable = function(users) {
+  const tbody = document.getElementById('usersTableBody');
+  const resultsInfo = document.getElementById('resultsInfo');
+  
+  if (!tbody || !resultsInfo) return;
+  
+  // Update results info
+  if (users.length === 0) {
+    resultsInfo.innerHTML = '<i class="fas fa-info-circle"></i> No users found matching your criteria';
+  } else {
+    resultsInfo.innerHTML = `<i class="fas fa-users"></i> Showing ${users.length} user${users.length !== 1 ? 's' : ''}`;
+  }
+  
+  // Store currently displayed users
+  window._displayedUsers = users;
+  window._displayedUserIds = new Set(users.map(u => u.id));
+  
+  // Update select all checkbox state
+  const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+  if (selectAllCheckbox) {
+    const allDisplayedSelected = users.length > 0 && users.every(u => window._selectedUsers.has(u.id));
+    selectAllCheckbox.checked = allDisplayedSelected;
+    selectAllCheckbox.indeterminate = !allDisplayedSelected && users.some(u => window._selectedUsers.has(u.id));
+  }
+  
+  // Render table rows
+  tbody.innerHTML = users.map(u => {
+    const userId = u.id;
+    if (!userId || userId.trim() === '') return '';
+    
+    const hasCert = u.certificates && u.certificates.length > 0;
+    const bgStatus = u.approvalStatus === 'approved' ? 'var(--success)' : (u.approvalStatus === 'pending' ? 'var(--warning)' : 'var(--danger)');
+    const userDataJson = JSON.stringify(u).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    const isSelected = window._selectedUsers.has(userId);
+    
+    return `
+      <tr style="cursor:pointer; ${isSelected ? 'background: #fef2f2;' : ''}" onclick="window._showUserDetails('${userDataJson}')">
+        <td style="width: 50px;" onclick="event.stopPropagation();">
+          <div class="checkbox-wrapper">
+            <input type="checkbox" 
+                   class="user-checkbox" 
+                   data-user-id="${userId}" 
+                   ${isSelected ? 'checked' : ''} 
+                   onchange="window._toggleUserSelection('${userId}', this.checked)"
+                   ${(u.email === currentUser.email || SUPER_ADMINS.includes(u.email)) ? 'disabled' : ''}>
+          </div>
+        </td>
+        <td>
+          <strong>
+            ${getRoleSymbol(u.role || 'user')} ${u.fullName || 'Unknown'}
+            ${hasCert ? '<i class="fas fa-certificate cert-badge" title="Has Certificate"></i>' : ''}
+          </strong><br><small>${u.email}</small>
+        </td>
+        <td>${u.isDonor ? '🩸 Donor' : '🔍 Seeker'}</td>
+        <td><span class="status-badge" style="background:${bgStatus}">${u.approvalStatus || 'N/A'}</span></td>
+        <td><span class="role-badge">${getRoleSymbol(u.role || 'user')} ${u.role || 'user'}</span></td>
+        <td onclick="event.stopPropagation();">
+          ${canDelete() ? (
+            u.email === currentUser.email ? 
+              '<span style="color:var(--text-secondary); font-size:12px;">You</span>' :
+            SUPER_ADMINS.includes(u.email) ?
+              '<span style="color:var(--text-secondary); font-size:12px;">Protected</span>' :
+              `<button class="btn-icon" onclick="window._deleteUser('${userId}', '${(u.fullName || 'Unknown').replace(/'/g, "\\'")}')" title="Delete User"><i class="fas fa-trash" style="color:var(--danger)"></i></button>`
+          ) : '<span style="color:var(--text-secondary); font-size:12px;">No permission</span>'}
+        </td>
+      </tr>
+    `;
+  }).join('');
+  
+  // Update batch actions visibility and count
+  window._updateBatchActions();
+};
 
-      // Enhanced delete user function with validation
-      window._deleteUser = async (userId, userName) => {
-        // Validate userId first
-        if (!userId || typeof userId !== 'string' || userId.trim() === '') {
-          showToast('Error: Invalid user ID. Cannot delete user.', 'error');
-          console.error('Delete attempted with invalid userId:', userId);
-          return;
-        }
-        
-        if (!canDelete()) {
-          showToast('You do not have permission to delete users', 'error');
-          return;
-        }
-        
-        if (userId === currentUser.uid) {
-          showToast('You cannot delete your own account', 'error');
-          return;
-        }
-        
-        try {
-          // Check if user exists
-          const userDoc = await db.collection('users').doc(userId).get();
-          if (!userDoc.exists) {
-            showToast('User not found in database', 'error');
-            return;
+window._toggleUserSelection = function(userId, isChecked) {
+  if (!userId) return;
+  
+  if (isChecked) {
+    window._selectedUsers.add(userId);
+  } else {
+    window._selectedUsers.delete(userId);
+  }
+  
+  // Update select all checkbox
+  const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+  if (selectAllCheckbox && window._displayedUsers) {
+    const allDisplayedSelected = window._displayedUsers.every(u => window._selectedUsers.has(u.id));
+    selectAllCheckbox.checked = allDisplayedSelected;
+    selectAllCheckbox.indeterminate = !allDisplayedSelected && window._displayedUsers.some(u => window._selectedUsers.has(u.id));
+  }
+  
+  // Update row background
+  const row = document.querySelector(`input[data-user-id="${userId}"]`)?.closest('tr');
+  if (row) {
+    row.style.background = isChecked ? '#fef2f2' : '';
+  }
+  
+  window._updateBatchActions();
+};
+
+window._toggleSelectAll = function() {
+  const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+  const isChecked = selectAllCheckbox.checked;
+  
+  if (!window._displayedUsers) return;
+  
+  window._displayedUsers.forEach(u => {
+    const userId = u.id;
+    if (!userId) return;
+    
+    // Skip protected users
+    if (u.email === currentUser.email || SUPER_ADMINS.includes(u.email)) return;
+    
+    if (isChecked) {
+      window._selectedUsers.add(userId);
+    } else {
+      window._selectedUsers.delete(userId);
+    }
+  });
+  
+  // Re-render to update checkboxes and backgrounds
+  window._renderUsersTable(window._displayedUsers);
+};
+
+window._updateBatchActions = function() {
+  const batchActions = document.getElementById('batchActions');
+  const selectedCount = document.getElementById('selectedCount');
+  const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+  
+  if (!batchActions || !selectedCount) return;
+  
+  const count = window._selectedUsers.size;
+  
+  if (count > 0) {
+    batchActions.classList.remove('hidden');
+    selectedCount.textContent = `${count} user${count !== 1 ? 's' : ''} selected`;
+    if (batchDeleteBtn) {
+      batchDeleteBtn.disabled = false;
+      batchDeleteBtn.innerHTML = `<i class="fas fa-trash"></i> Delete ${count} Selected`;
+    }
+  } else {
+    batchActions.classList.add('hidden');
+    selectedCount.textContent = '0 selected';
+    if (batchDeleteBtn) {
+      batchDeleteBtn.disabled = true;
+      batchDeleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete Selected';
+    }
+  }
+};
+
+window._clearSelection = function() {
+  window._selectedUsers.clear();
+  if (window._displayedUsers) {
+    window._renderUsersTable(window._displayedUsers);
+  }
+};
+
+window._clearUserSearch = function() {
+  const searchInput = document.getElementById('userSearchInput');
+  const bloodGroupFilter = document.getElementById('bloodGroupFilter');
+  const districtFilter = document.getElementById('districtFilter');
+  
+  if (searchInput) searchInput.value = '';
+  if (bloodGroupFilter) bloodGroupFilter.value = '';
+  if (districtFilter) districtFilter.value = '';
+  
+  window._clearSelection();
+  window._filterUsers();
+};
+
+window._batchDeleteUsers = async function() {
+  const selectedIds = Array.from(window._selectedUsers);
+  
+  if (selectedIds.length === 0) {
+    showToast('No users selected for deletion', 'warning');
+    return;
+  }
+  
+  // Filter out any invalid IDs
+  const validIds = selectedIds.filter(id => id && id.trim() !== '');
+  if (validIds.length === 0) {
+    showToast('No valid users selected', 'warning');
+    return;
+  }
+  
+  // Check for protected users
+  const protectedEmails = [];
+  for (const userId of validIds) {
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (userDoc.exists) {
+      const userData = userDoc.data();
+      if (SUPER_ADMINS.includes(userData.email) || userData.email === currentUser.email) {
+        protectedEmails.push(userData.email);
+      }
+    }
+  }
+  
+  if (protectedEmails.length > 0) {
+    showToast(`Cannot delete protected users: ${protectedEmails.join(', ')}`, 'warning');
+    return;
+  }
+  
+  if (!confirm(`⚠️ Are you sure you want to permanently delete ${validIds.length} user${validIds.length !== 1 ? 's' : ''}?\n\nThis action cannot be undone!`)) {
+    return;
+  }
+  
+  // Second confirmation for bulk delete
+  if (validIds.length > 1) {
+    if (!confirm(`FINAL WARNING: You are about to delete ${validIds.length} users permanently.\n\nType DELETE to confirm:`)) {
+      return;
+    }
+  }
+  
+  let successCount = 0;
+  let failCount = 0;
+  
+  for (const userId of validIds) {
+    try {
+      const userDoc = await db.collection('users').doc(userId).get();
+      if (!userDoc.exists) {
+        failCount++;
+        continue;
+      }
+      
+      const userData = userDoc.data();
+      
+      // Delete associated certificates
+      if (userData.certificates && userData.certificates.length > 0) {
+        const batch = db.batch();
+        for (const certId of userData.certificates) {
+          if (certId) {
+            batch.delete(db.collection('certificates').doc(certId));
           }
-          
-          const userData = userDoc.data();
-          
-          // Check if user is super admin
-          if (SUPER_ADMINS.includes(userData.email)) {
-            showToast('Cannot delete super admin accounts', 'error');
-            return;
-          }
-          
-          if (confirm(`Are you sure you want to permanently delete user "${userName}"? This action cannot be undone.`)) {
-            try {
-              // Delete associated certificates
-              if (userData.certificates && userData.certificates.length > 0) {
-                const batch = db.batch();
-                for (const certId of userData.certificates) {
-                  if (certId) { // Ensure certId is not empty
-                    batch.delete(db.collection('certificates').doc(certId));
-                  }
-                }
-                await batch.commit();
-              }
-              
-              // Delete the user document
-              await db.collection('users').doc(userId).delete();
-              
-              showToast('User deleted successfully', 'success');
-              refreshPendingCount();
-              loadUsers();
-            } catch(e) {
-              showToast('Error deleting user: ' + e.message, 'error');
-              console.error('Delete error:', e);
+        }
+        await batch.commit();
+      }
+      
+      // Delete the user document
+      await db.collection('users').doc(userId).delete();
+      successCount++;
+    } catch(e) {
+      console.error('Error deleting user:', userId, e);
+      failCount++;
+    }
+  }
+  
+  window._selectedUsers.clear();
+  showToast(`Deleted ${successCount} users successfully${failCount > 0 ? `, ${failCount} failed` : ''}`, failCount > 0 ? 'warning' : 'success');
+  refreshPendingCount();
+  loadUsers();
+};
+
+// Enhanced delete user function (single delete)
+window._deleteUser = async (userId, userName) => {
+  if (!userId || typeof userId !== 'string' || userId.trim() === '') {
+    showToast('Error: Invalid user ID. Cannot delete user.', 'error');
+    console.error('Delete attempted with invalid userId:', userId);
+    return;
+  }
+  
+  if (!canDelete()) {
+    showToast('You do not have permission to delete users', 'error');
+    return;
+  }
+  
+  if (userId === currentUser.uid) {
+    showToast('You cannot delete your own account', 'error');
+    return;
+  }
+  
+  try {
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      showToast('User not found in database', 'error');
+      return;
+    }
+    
+    const userData = userDoc.data();
+    
+    if (SUPER_ADMINS.includes(userData.email)) {
+      showToast('Cannot delete super admin accounts', 'error');
+      return;
+    }
+    
+    if (confirm(`Are you sure you want to permanently delete user "${userName}"?\n\nThis action cannot be undone.`)) {
+      try {
+        // Delete associated certificates
+        if (userData.certificates && userData.certificates.length > 0) {
+          const batch = db.batch();
+          for (const certId of userData.certificates) {
+            if (certId) {
+              batch.delete(db.collection('certificates').doc(certId));
             }
           }
-        } catch(e) {
-          showToast('Error accessing user data: ' + e.message, 'error');
-          console.error('Error in delete function:', e);
+          await batch.commit();
         }
-      };
+        
+        // Delete the user document
+        await db.collection('users').doc(userId).delete();
+        
+        // Remove from selection if present
+        window._selectedUsers?.delete(userId);
+        
+        showToast('User deleted successfully', 'success');
+        refreshPendingCount();
+        loadUsers();
+      } catch(e) {
+        showToast('Error deleting user: ' + e.message, 'error');
+        console.error('Delete error:', e);
+      }
+    }
+  } catch(e) {
+    showToast('Error accessing user data: ' + e.message, 'error');
+    console.error('Error in delete function:', e);
+  }
+};
 
       // ==================== DONORS TAB ====================
       async function loadDonors() { 
