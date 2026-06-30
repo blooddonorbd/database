@@ -2620,9 +2620,47 @@ window.initNotices = initNotices;
       const roleSymbol = getRoleSymbol(userProfile?.role);
       
       main.innerHTML = `
-        <h1 style="margin-bottom: 24px;">Welcome, ${roleSymbol}${userProfile?.fullName?.split(' ')[0] || 'User'}!</h1>
-        
-        <div style="display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+    <h1 style="margin: 0;">Welcome, ${roleSymbol}${userProfile?.fullName?.split(' ')[0] || 'User'}!</h1>
+    
+    <!-- ঘড়ি + টেক্সট বক্স একসাথে -->
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      
+      <!-- 🕐 ঘড়ি আইফ্রেম -->
+      <iframe src="https://free.timeanddate.com/clock/iahdgxlb/n5259/szw110/szh110/hoc000/hbw0/hfcf00/cf100/hnc900/hwc000/facfff/fdi76/mqcfff/mqs4/mql18/mqw4/mqd60/mhcfff/mhs4/mhl5/mhw4/mhd62/mmcf00/mms1/hhcfff/hhs1/hhb10/hmcfff/hms1/hmb10/hscfff/hsw3" 
+              frameborder="0" 
+              width="110" 
+              height="110" 
+              style="border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+      </iframe>
+      
+      <!-- 🩸 টেক্সট বক্স -->
+      <div style="
+        background: white;
+        padding: 12px 24px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+        border-left: 4px solid #b71c1c;
+        border-right: 4px solid #b71c1c;
+        max-width: 280px;
+        text-align: center;
+      ">
+        <p style="
+          margin: 0;
+          color: #b71c1c;
+          font-weight: 700;
+          font-size: 15px;
+          line-height: 1.4;
+          letter-spacing: 0.3px;
+        ">
+          ⏳ Make your decision in time and save a life
+        </p>
+      </div>
+      
+    </div>
+  </div>
+  
+  <div style="display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
           <span class="badge" style="background: ${userProfile?.isDonor ? '#b71c1c' : '#1565c0'}; color: white; padding: 6px 16px; border-radius: 20px;">
             <i class="fas fa-${userProfile?.isDonor ? 'heart' : 'search'}"></i> ${userTypeLabel}
           </span>
