@@ -71,6 +71,19 @@
             gap: 8px;
         }
 
+        .geo-note {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-top: 5px;
+            font-size: 12px;
+            color: #1565c0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         @media (max-width: 992px) { .form-grid-4, .form-grid-3 { grid-template-columns: repeat(2, 1fr); } .stats { grid-template-columns: 1fr 1fr; } }
         @media (max-width: 576px) { .form-grid-4, .form-grid-3, .stats { grid-template-columns: 1fr; } }
     </style>
@@ -102,6 +115,12 @@
             <div class="sample-data" style="border-left-color: #4caf50; background: #e8f5e9;">
                 <strong>🔐 Auto-Password Feature:</strong> If the password box is <strong>empty</strong>, a secure 5-word passphrase will be auto-generated for each donor (e.g., "BlueTigerHorseLionBear").
             </div>
+            <div class="sample-data" style="border-left-color: #2196f3; background: #e3f2fd;">
+                <strong>📍 Auto Geo-Location:</strong> Latitude and longitude are <strong>automatically generated</strong> from District and Upazila names using:
+                <br>1️⃣ Built-in Bangladesh district/upazila database
+                <br>2️⃣ OpenStreetMap Nominatim API (for locations not in database)
+                <br>3️⃣ Fallback to Dhaka coordinates if lookup fails
+            </div>
 
             <div class="form-grid-4" style="margin-bottom: 12px;">
                 <div class="form-group"><label>📧 Email *</label><textarea id="emailData" placeholder="roversiamhasan@gmail.com"></textarea></div>
@@ -118,8 +137,22 @@
             </div>
 
             <div class="form-grid-3">
-                <div class="form-group"><label>📍 District</label><textarea id="districtData" placeholder="Mymensingh"></textarea></div>
-                <div class="form-group"><label>🏘️ Upazila</label><textarea id="upazilaData" placeholder="Nandail"></textarea></div>
+                <div class="form-group">
+                    <label>📍 District</label>
+                    <textarea id="districtData" placeholder="Mymensingh"></textarea>
+                    <div class="geo-note">
+                        <span>📍</span>
+                        <span>District name will be used to auto-generate coordinates</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>🏘️ Upazila</label>
+                    <textarea id="upazilaData" placeholder="Nandail"></textarea>
+                    <div class="geo-note">
+                        <span>🗺️</span>
+                        <span>Upazila name for more precise location (optional)</span>
+                    </div>
+                </div>
                 <div class="form-group"><label>🩸 Blood Group</label><textarea id="bloodGroupData" placeholder="B+"></textarea></div>
             </div>
 
@@ -130,25 +163,35 @@
                         <option value="Mymensingh">Mymensingh</option>
                         <option value="Kishoreganj">Kishoreganj</option>
                         <option value="Dhaka">Dhaka</option>
+                        <option value="Chattogram">Chattogram</option>
+                        <option value="Sylhet">Sylhet</option>
+                        <option value="Rajshahi">Rajshahi</option>
+                        <option value="Khulna">Khulna</option>
+                        <option value="Barishal">Barishal</option>
+                        <option value="Rangpur">Rangpur</option>
                     </select>
                     <select id="defaultBloodGroup" style="padding: 8px; border-radius: 6px; border: 1px solid #ddd;">
                         <option value="B+">B+</option>
                         <option value="O+">O+</option>
                         <option value="A+">A+</option>
                         <option value="AB+">AB+</option>
+                        <option value="A-">A-</option>
+                        <option value="B-">B-</option>
+                        <option value="O-">O-</option>
+                        <option value="AB-">AB-</option>
                     </select>
                 </div>
             </div>
 
             <div class="flex">
-                <button class="btn btn-info" onclick="previewMatching()">👁️ View Matching Preview</button>
+                <button class="btn btn-info" onclick="previewMatching()">👁️ View Matching Preview (with Coordinates)</button>
                 <button class="btn btn-primary" onclick="registerBulk()" id="registerBtn">🚀 Register All Donors</button>
                 <button class="btn btn-warning" onclick="loadSampleData()">📥 Load Sample Data</button>
                 <button class="btn btn-danger" onclick="clearAll()">🗑️ Clear All</button>
             </div>
 
             <div class="matching-preview" id="matchingPreview" style="display: none;">
-                <h3 style="margin-bottom: 10px;">🔍 Sequential Matching Preview</h3>
+                <h3 style="margin-bottom: 10px;">🔍 Sequential Matching Preview (with Auto-Generated Coordinates)</h3>
                 <div id="previewTableContainer"></div>
             </div>
         </div>
@@ -203,53 +246,183 @@
             return `${w1}${w2}${w3}${w4}${w5}`;
         }
 
-        // Database of latitude and longitude for major districts in Bangladesh
+        // Comprehensive database of latitude and longitude for Bangladesh districts and upazilas
         const geoDictionary = {
-            "mymensingh": { lat: 24.7471, lng: 90.4203, "nandail": { lat: 24.5901, lng: 90.6692 } },
-            "kishoreganj": { lat: 24.4414, lng: 90.7766, "tarail": { lat: 24.5249, lng: 90.8147 }, "sadar": { lat: 24.4331, lng: 90.7866 } },
-            "dhaka": { lat: 23.8103, lng: 90.4125 },
-            "gazipur": { lat: 23.9999, lng: 90.4203 },
-            "chattogram": { lat: 22.3569, lng: 91.7832 },
-            "sylhet": { lat: 24.8949, lng: 91.8687 },
-            "rajshahi": { lat: 24.3745, lng: 88.6042 },
-            "khulna": { lat: 22.8456, lng: 89.5403 },
-            "barishal": { lat: 22.7010, lng: 90.3535 },
-            "rangpur": { lat: 25.7439, lng: 89.2752 },
-            "comilla": { lat: 23.4607, lng: 91.1809 },
-            "natore": { lat: 24.4102, lng: 88.9817 },
-            "tangail": { lat: 24.2513, lng: 89.9167 }
+            "mymensingh": { 
+                lat: 24.7471, lng: 90.4203,
+                upazilas: {
+                    "nandail": { lat: 24.5700, lng: 90.6900 },
+                    "trishal": { lat: 24.5800, lng: 90.3900 },
+                    "gouripur": { lat: 24.6700, lng: 90.5700 },
+                    "muktagacha": { lat: 24.7600, lng: 90.2700 },
+                    "phulpur": { lat: 24.9500, lng: 90.3500 },
+                    "haluaghat": { lat: 25.1200, lng: 90.3500 },
+                    "dhobaura": { lat: 25.1000, lng: 90.5300 },
+                    "bhaluka": { lat: 24.3800, lng: 90.3800 },
+                    "gafargaon": { lat: 24.4200, lng: 90.5500 },
+                    "ishwarganj": { lat: 24.6800, lng: 90.6200 },
+                    "sadar": { lat: 24.7471, lng: 90.4203 }
+                }
+            },
+            "kishoreganj": { 
+                lat: 24.4414, lng: 90.7766,
+                upazilas: {
+                    "tarail": { lat: 24.5249, lng: 90.8147 },
+                    "sadar": { lat: 24.4331, lng: 90.7866 },
+                    "bajitpur": { lat: 24.2200, lng: 90.9500 },
+                    "bhairab": { lat: 24.0500, lng: 90.9800 },
+                    "hossainpur": { lat: 24.4200, lng: 90.6500 },
+                    "karimganj": { lat: 24.4500, lng: 90.8800 },
+                    "katiadi": { lat: 24.2500, lng: 90.8000 },
+                    "nikli": { lat: 24.3200, lng: 90.9300 },
+                    "pakundia": { lat: 24.3300, lng: 90.6800 },
+                    "austagram": { lat: 24.2700, lng: 91.1300 },
+                    "mithamoin": { lat: 24.4200, lng: 91.0500 },
+                    "itna": { lat: 24.5300, lng: 91.0800 }
+                }
+            },
+            "dhaka": { 
+                lat: 23.8103, lng: 90.4125,
+                upazilas: {
+                    "sadar": { lat: 23.8103, lng: 90.4125 },
+                    "gulshan": { lat: 23.7925, lng: 90.4077 },
+                    "mirpur": { lat: 23.8069, lng: 90.3687 },
+                    "uttara": { lat: 23.8759, lng: 90.3795 },
+                    "mohammadpur": { lat: 23.7667, lng: 90.3614 },
+                    "dhanmondi": { lat: 23.7459, lng: 90.3833 },
+                    "banani": { lat: 23.7946, lng: 90.4054 },
+                    "tejgaon": { lat: 23.7625, lng: 90.3938 },
+                    "motijheel": { lat: 23.7333, lng: 90.4167 },
+                    "ramna": { lat: 23.7399, lng: 90.4025 }
+                }
+            },
+            "gazipur": { 
+                lat: 23.9999, lng: 90.4203,
+                upazilas: {
+                    "sadar": { lat: 23.9900, lng: 90.4200 },
+                    "tongi": { lat: 23.8900, lng: 90.4000 }
+                }
+            },
+            "chattogram": { 
+                lat: 22.3569, lng: 91.7832,
+                upazilas: {
+                    "sadar": { lat: 22.3569, lng: 91.7832 },
+                    "halishahar": { lat: 22.3333, lng: 91.7833 },
+                    "pahartali": { lat: 22.3667, lng: 91.7833 },
+                    "kotwali": { lat: 22.3333, lng: 91.8333 },
+                    "patenga": { lat: 22.2333, lng: 91.8000 }
+                }
+            },
+            "sylhet": { 
+                lat: 24.8949, lng: 91.8687,
+                upazilas: {
+                    "sadar": { lat: 24.8949, lng: 91.8687 },
+                    "zindabazar": { lat: 24.8900, lng: 91.8700 }
+                }
+            },
+            "rajshahi": { 
+                lat: 24.3745, lng: 88.6042,
+                upazilas: {
+                    "sadar": { lat: 24.3745, lng: 88.6042 }
+                }
+            },
+            "khulna": { 
+                lat: 22.8456, lng: 89.5403,
+                upazilas: {
+                    "sadar": { lat: 22.8456, lng: 89.5403 }
+                }
+            },
+            "barishal": { 
+                lat: 22.7010, lng: 90.3535,
+                upazilas: {
+                    "sadar": { lat: 22.7010, lng: 90.3535 }
+                }
+            },
+            "rangpur": { 
+                lat: 25.7439, lng: 89.2752,
+                upazilas: {
+                    "sadar": { lat: 25.7439, lng: 89.2752 }
+                }
+            },
+            "comilla": { 
+                lat: 23.4607, lng: 91.1809,
+                upazilas: {
+                    "sadar": { lat: 23.4607, lng: 91.1809 }
+                }
+            },
+            "natore": { 
+                lat: 24.4102, lng: 88.9817,
+                upazilas: {
+                    "sadar": { lat: 24.4102, lng: 88.9817 }
+                }
+            },
+            "tangail": { 
+                lat: 24.2513, lng: 89.9167,
+                upazilas: {
+                    "sadar": { lat: 24.2513, lng: 89.9167 }
+                }
+            }
         };
 
-        // Auto Lat-Lng Generator Function
+        // Auto Lat-Lng Generator Function (Enhanced)
         async function autoGenerateLatLng(districtStr, upazilaStr) {
             const distKey = districtStr.trim().toLowerCase();
             const upKey = upazilaStr.trim().toLowerCase();
 
-            // 1. Check dictionary
+            // 1. Check dictionary for exact match
             if (geoDictionary[distKey]) {
-                if (geoDictionary[distKey][upKey]) {
-                    return geoDictionary[distKey][upKey];
+                const district = geoDictionary[distKey];
+                
+                // Check for upazila match
+                if (district.upazilas && district.upazilas[upKey]) {
+                    const upazila = district.upazilas[upKey];
+                    // Add slight random offset to avoid exact duplicate coordinates
+                    return {
+                        lat: parseFloat((upazila.lat + (Math.random() - 0.5) * 0.01).toFixed(4)),
+                        lng: parseFloat((upazila.lng + (Math.random() - 0.5) * 0.01).toFixed(4))
+                    };
                 }
-                // If upazila not found, use district center + slight random offset (so locations aren't exactly the same point)
-                const base = geoDictionary[distKey];
+                
+                // If upazila not found, use district center with offset
                 return {
-                    lat: parseFloat((base.lat + (Math.random() - 0.5) * 0.05).toFixed(4)),
-                    lng: parseFloat((base.lng + (Math.random() - 0.5) * 0.05).toFixed(4))
+                    lat: parseFloat((district.lat + (Math.random() - 0.5) * 0.05).toFixed(4)),
+                    lng: parseFloat((district.lng + (Math.random() - 0.5) * 0.05).toFixed(4))
                 };
             }
 
-            // 2. If not in dictionary, fetch real location from online map API
+            // 2. Try partial match in dictionary
+            for (const key in geoDictionary) {
+                if (key.includes(distKey) || distKey.includes(key)) {
+                    const district = geoDictionary[key];
+                    return {
+                        lat: parseFloat((district.lat + (Math.random() - 0.5) * 0.05).toFixed(4)),
+                        lng: parseFloat((district.lng + (Math.random() - 0.5) * 0.05).toFixed(4))
+                    };
+                }
+            }
+
+            // 3. Fetch from OpenStreetMap Nominatim API
             try {
                 const query = encodeURIComponent(`${upazilaStr}, ${districtStr}, Bangladesh`);
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`);
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1&countrycodes=bd`);
                 const data = await res.json();
                 if (data && data.length > 0) {
-                    return { lat: parseFloat(parseFloat(data[0].lat).toFixed(4)), lng: parseFloat(parseFloat(data[0].lon).toFixed(4)) };
+                    addLog(`   🌐 API: Found coordinates for ${districtStr}, ${upazilaStr}`, 'info');
+                    return { 
+                        lat: parseFloat(parseFloat(data[0].lat).toFixed(4)), 
+                        lng: parseFloat(parseFloat(data[0].lon).toFixed(4)) 
+                    };
                 }
-            } catch(e) {}
+            } catch(e) {
+                addLog(`   ⚠️ API lookup failed, using fallback`, 'info');
+            }
 
-            // 3. Fallback default (Dhaka)
-            return { lat: 23.8103, lng: 90.4125 };
+            // 4. Fallback default (Dhaka) with large random offset
+            addLog(`   📍 Using fallback coordinates for ${districtStr}`, 'info');
+            return { 
+                lat: parseFloat((23.8103 + (Math.random() - 0.5) * 0.1).toFixed(4)), 
+                lng: parseFloat((90.4125 + (Math.random() - 0.5) * 0.1).toFixed(4)) 
+            };
         }
 
         let stats = { total: 0, success: 0, failed: 0, pending: 0 };
@@ -299,7 +472,6 @@
 
         function getLines(el) { return el.value.split('\n').map(l => l.trim()).filter(l => l.length > 0); }
 
-        // Check if password box is completely empty (no lines at all)
         function isPasswordBoxEmpty() {
             return passwordData.value.trim() === '';
         }
@@ -317,7 +489,7 @@
             const rows = [];
             const defDist = defaultDistrict.value;
             const defBlood = defaultBloodGroup.value;
-            const autoPass = isPasswordBoxEmpty(); // Check if we need auto-generated passwords
+            const autoPass = isPasswordBoxEmpty();
 
             for (let i = 0; i < totalMax; i++) {
                 rows.push({
@@ -336,19 +508,25 @@
 
         function getValidDonors(rows) { return rows.filter(r => r.email && r.email.includes('@')); }
 
-        function previewMatching() {
+        async function previewMatching() {
             const rows = parseDataRows(); 
             if (rows.length === 0) { alert('No data found!'); return; }
             matchingPreview.style.display = 'block';
             const autoPass = isPasswordBoxEmpty();
             
             let html = `<table><thead><tr>
-                <th>#</th><th>📧 Email</th><th>🔑 Password</th><th>👤 Name</th><th>📱 Phone</th><th>📍 District</th><th>🏘️ Upazila</th><th>🩸 Blood</th><th>Status</th>
+                <th>#</th><th>📧 Email</th><th>🔑 Password</th><th>👤 Name</th><th>📱 Phone</th><th>📍 District</th><th>🏘️ Upazila</th><th>🩸 Blood</th><th>🗺️ Lat</th><th>🗺️ Lng</th><th>Status</th>
             </tr></thead><tbody>`;
             
-            rows.forEach(r => {
+            // Generate coordinates for preview
+            addLog('🔄 Generating coordinates for preview...', 'info');
+            for (const r of rows) {
                 const ok = r.email && r.email.includes('@');
                 const passDisplay = autoPass ? `${r.password} <span style="color:#27ae60;font-size:10px;">(auto)</span>` : (r.password ? r.password : '<span style="color:#e74c3c;">⚠️ Auto-gen</span>');
+                
+                // Generate coordinates
+                const coords = await autoGenerateLatLng(r.district, r.upazila);
+                
                 html += `<tr>
                     <td class="line-numbers">${r.serial}</td>
                     <td>${r.email||'-'}</td>
@@ -358,15 +536,18 @@
                     <td>${r.district}</td>
                     <td>${r.upazila}</td>
                     <td>${r.bloodGroup}</td>
+                    <td style="color:#2196f3;">${coords.lat}</td>
+                    <td style="color:#2196f3;">${coords.lng}</td>
                     <td style="color:${ok?'#27ae60':'#e74c3c'};font-weight:bold;">${ok?'✅ Ready':'⚠️ Missing Email'}</td>
                 </tr>`;
-            });
+            }
             previewTableContainer.innerHTML = html + '</tbody></table>';
             matchingPreview.scrollIntoView({ behavior: 'smooth', block: 'center' });
             
             if (autoPass) {
                 addLog('🔐 Auto-password mode: Each donor will get a unique 5-word passphrase', 'highlight');
             }
+            addLog('📍 Coordinates auto-generated from district/upazila names', 'highlight');
         }
 
         async function registerBulk() {
@@ -376,8 +557,8 @@
             
             const autoPass = isPasswordBoxEmpty();
             const confirmMsg = autoPass 
-                ? `⚠️ Password box is empty.\n\n${rows.length} donor(s) will receive auto-generated 5-word passphrases.\n\nAre you sure you want to proceed?`
-                : `Are you sure you want to register ${rows.length} donors?`;
+                ? `⚠️ Password box is empty.\n\n${rows.length} donor(s) will receive auto-generated 5-word passphrases.\n\nCoordinates will be auto-generated from district/upazila names.\n\nAre you sure you want to proceed?`
+                : `Coordinates will be auto-generated from district/upazila names.\n\nAre you sure you want to register ${rows.length} donors?`;
                 
             if (!confirm(confirmMsg)) return;
 
@@ -391,6 +572,7 @@
             if (autoPass) {
                 addLog('🔐 Auto-Password Mode: Generating unique 5-word passphrases for each donor', 'highlight');
             }
+            addLog('📍 Auto Geo-Location: Generating coordinates from district/upazila names', 'highlight');
 
             for (let i = 0; i < rows.length; i++) {
                 const row = rows[i];
@@ -403,9 +585,9 @@
                     addLog(`📝 Processing: ${row.fullName} (${row.email})`, 'info');
                     addLog(`   🔑 Password: ${autoPass ? 'AUTO: ' + row.password : row.password}`, 'highlight');
                     
-                    // Generating location
+                    // Generate location from district and upazila
                     const coords = await autoGenerateLatLng(row.district, row.upazila);
-                    addLog(`   ↳ Auto Geo-Code: Lat ${coords.lat}, Lng ${coords.lng}`, 'highlight');
+                    addLog(`   📍 Auto Geo-Code: Lat ${coords.lat}, Lng ${coords.lng} (from ${row.district}, ${row.upazila})`, 'highlight');
 
                     const userCredential = await auth.createUserWithEmailAndPassword(row.email, row.password);
                     const user = userCredential.user;
@@ -461,19 +643,19 @@
             if (autoPass) {
                 addLog('🔐 Auto-generated passwords were used for all donors', 'highlight');
             }
+            addLog('📍 Coordinates were auto-generated from district/upazila names', 'highlight');
         }
 
         function loadSampleData() {
-            emailData.value = "roversiamhasan@gmail.com\ntanim2026@gmail.com";
-            // Password box left empty to demonstrate auto-password feature
+            emailData.value = "roversiamhasan@gmail.com\ntanim2026@gmail.com\njohn.doe@example.com";
             passwordData.value = "";
-            nameData.value = "Siam Hasan\nAshfaqur Rahman";
-            phoneData.value = "01967502239\n01712345678";
-            districtData.value = "Mymensingh\nKishoreganj";
-            upazilaData.value = "Nandail\nTarail";
-            bloodGroupData.value = "B+\nO+";
+            nameData.value = "Siam Hasan\nAshfaqur Rahman\nJohn Doe";
+            phoneData.value = "01967502239\n01712345678\n01812345678";
+            districtData.value = "Mymensingh\nKishoreganj\nDhaka";
+            upazilaData.value = "Nandail\nTarail\nGulshan";
+            bloodGroupData.value = "B+\nO+\nA+";
             updateStatsFromInput();
-            addLog('📥 Sample data loaded. Password box is empty - auto-password mode active.', 'info');
+            addLog('📥 Sample data loaded with different districts for geo-coding demonstration', 'info');
         }
 
         function updateStatsFromInput() {
