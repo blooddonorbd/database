@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Live Donors Map · Blood Donor BD</title>
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Firebase (compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        /* Top bar */
+        .map-header {
+            background: #b71c1c;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            flex-shrink: 0;
+        }
+        .map-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+        }
+        .map-header h1 i {
+            font-size: 24px;
+        }
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .layer-control {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .layer-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 5px 14px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            backdrop-filter: blur(4px);
+        }
+        .layer-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .layer-btn.active {
+            background: white;
+            color: #b71c1c;
+            border-color: white;
+            font-weight: 600;
+        }
+        .stats-badge {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .filter-select {
+            padding: 4px 10px;
+            border-radius: 30px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-weight: 500;
+            font-size: 13px;
+            cursor: pointer;
+            outline: none;
+        }
+        .filter-select option {
+            color: #333;
+            background: white;
+        }
+        #mapContainer {
+            flex: 1;
+            width: 100%;
+            min-height: 0;
+            position: relative;
+            z-index: 1;
+        }
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        .leaflet-control-attribution {
+            background: rgba(255, 255, 255, 0.8) !important;
+            font-size: 11px !important;
+            padding: 2px 10px !important;
+        }
+        /* Popup */
+        .donor-popup {
+            text-align: center;
+            padding: 4px 2px;
+            min-width: 160px;
+        }
+        .donor-popup strong {
+            font-size: 16px;
+            display: block;
+        }
+        .donor-popup .blood-badge {
+            background: #b71c1c;
+            color: white;
+            padding: 2px 16px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 15px;
+            display: inline-block;
+            margin: 4px 0;
+        }
+        .donor-popup .location {
+            font-size: 13px;
+            color: #555;
+            margin: 4px 0;
+        }
+        .donor-popup .call-btn {
+            display: inline-block;
+            margin-top: 6px;
+            background: #b71c1c;
+            color: white;
+            padding: 4px 18px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .donor-popup .call-btn:hover {
+            background: #8b0000;
+        }
+        /* Loading */
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid #e0e0e0;
+            border-top-color: #b71c1c;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        .loader-text {
+            margin-top: 16px;
+            font-weight: 500;
+            color: #333;
+        }
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a1a;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 14px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        /* search box */
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 30px;
+            padding: 2px 12px 2px 16px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .search-box input {
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 6px 0;
+            font-size: 13px;
+            width: 120px;
+            outline: none;
+        }
+        .search-box input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .search-box button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        @media (max-width: 700px) {
+            .map-header h1 {
+                font-size: 17px;
+            }
+            .layer-btn {
+                font-size: 11px;
+                padding: 4px 10px;
+            }
+            .stats-badge {
+                font-size: 11px;
+                padding: 2px 8px;
+            }
+            .search-box input {
+                width: 80px;
+                font-size: 12px;
+            }
+            .filter-select {
+                font-size: 11px;
+                padding: 3px 8px;
+            }
+        }
+        @media (max-width: 500px) {
+            .map-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 6px;
+            }
+            .header-controls {
+                justify-content: space-between;
+            }
+            .search-box input {
+                width: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay">
+        <div class="loader"></div>
+        <div class="loader-text">Loading live donors...</div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast">🩸 Donors loaded</div>
+
+    <!-- Header -->
+    <div class="map-header">
+        <h1>
+            <i class="fas fa-map-marked-alt"></i>
+            <span>Live Donors Map</span>
+            <span class="stats-badge" id="donorCountBadge"><i class="fas fa-users"></i> <span id="donorCount">0</span></span>
+        </h1>
+        <div class="header-controls">
+            <!-- Blood group filter -->
+            <select id="bloodGroupFilter" class="filter-select">
+                <option value="">All Groups</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+            </select>
+            <!-- Search box -->
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search donor..." />
+                <button id="searchBtn"><i class="fas fa-search"></i></button>
+            </div>
+            <!-- Layer controls -->
+            <div class="layer-control" id="layerControl">
+                <button class="layer-btn active" data-layer="standard">🗺️ Standard</button>
+                <button class="layer-btn" data-layer="satellite">🛰️ Satellite</button>
+                <button class="layer-btn" data-layer="dark">🌙 Dark</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Container -->
+    <div id="mapContainer">
+        <div id="map"></div>
+    </div>
+
+    <script>
+        // =====================================================
+        // Firebase Config
+        // =====================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCnky8bzx3KuFoujU5DSlLRYSZgiAF8840",
+            authDomain: "blood-donor-bd-2025.firebaseapp.com",
+            projectId: "blood-donor-bd-2025",
+            storageBucket: "blood-donor-bd-2025.firebasestorage.app",
+            messagingSenderId: "271945142840",
+            appId: "1:271945142840:web:b0edefddb55cac5f604ccd"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // =====================================================
+        // Map Setup
+        // =====================================================
+        const map = L.map('map', {
+            center: [23.6850, 90.3563],
+            zoom: 7,
+            zoomControl: true,
+            fadeAnimation: true,
+            attributionControl: true
+        });
+
+        // ----- Layer Definitions -----
+        const tileLayers = {
+            standard: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors',
+                maxZoom: 19
+            }),
+            satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '&copy; Esri &amp; others',
+                maxZoom: 19
+            }),
+            dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &amp; CartoDB',
+                maxZoom: 19
+            })
+        };
+
+        // Default: Standard
+        let currentLayer = 'standard';
+        tileLayers.standard.addTo(map);
+
+        // ----- Layer Switcher -----
+        document.querySelectorAll('.layer-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const layer = this.dataset.layer;
+                if (layer === currentLayer) return;
+                Object.values(tileLayers).forEach(l => map.removeLayer(l));
+                tileLayers[layer].addTo(map);
+                currentLayer = layer;
+                document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                showToast(`Switched to ${layer.charAt(0).toUpperCase() + layer.slice(1)} view`);
+            });
+        });
+
+        // =====================================================
+        // Standard Leaflet Location Marker (blue icon)
+        // =====================================================
+        // Use default Leaflet blue marker (L.Icon.Default)
+        // We'll just use L.marker without custom icon
+
+        let donorMarkers = [];
+        let donorData = []; // store raw donor objects for filtering
+
+        // =====================================================
+        // Load donors from Firestore
+        // =====================================================
+        async function loadDonors() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.display = 'flex';
+
+            try {
+                // Clear existing markers
+                donorMarkers.forEach(m => map.removeLayer(m));
+                donorMarkers = [];
+                donorData = [];
+
+                const snapshot = await db.collection('users')
+                    .where('isDonor', '==', true)
+                    .where('approvalStatus', '==', 'approved')
+                    .get();
+
+                let count = 0;
+                snapshot.forEach(doc => {
+                    const donor = doc.data();
+                    if (donor.lat && donor.lng && typeof donor.lat === 'number' && typeof donor.lng === 'number') {
+                        // Use default Leaflet marker (blue location pin)
+                        const marker = L.marker([donor.lat, donor.lng])
+                            .addTo(map)
+                            .bindPopup(`
+                                <div class="donor-popup">
+                                    <strong>${donor.fullName || 'Anonymous Donor'}</strong>
+                                    <span class="blood-badge">${donor.bloodGroup || 'N/A'}</span>
+                                    <div class="location"><i class="fas fa-map-marker-alt"></i> ${donor.district || ''}, ${donor.upazila || ''}</div>
+                                    <a href="tel:${donor.phoneNumber || ''}" class="call-btn"><i class="fas fa-phone-alt"></i> Call</a>
+                                </div>
+                            `, { maxWidth: 220 });
+                        donorMarkers.push(marker);
+                        // store donor data with marker reference
+                        donorData.push({
+                            ...donor,
+                            _marker: marker
+                        });
+                        count++;
+                    }
+                });
+
+                document.getElementById('donorCount').textContent = count;
+                showToast(`✅ ${count} live donors loaded`);
+
+                if (count === 0) {
+                    L.popup()
+                        .setLatLng([23.6850, 90.3563])
+                        .setContent(`
+                            <div style="text-align:center; padding:12px;">
+                                <i class="fas fa-heart" style="color:#b71c1c; font-size:28px;"></i>
+                                <h4 style="margin:6px 0 4px;">No active donors right now</h4>
+                                <p style="font-size:13px; color:#666;">Check back later or register as a donor!</p>
+                            </div>
+                        `)
+                        .openOn(map);
+                }
+
+                // Apply current filters after load
+                applyFilters();
+
+            } catch (error) {
+                console.error('Error loading donors:', error);
+                showToast('❌ Failed to load donors. Please refresh.');
+            } finally {
+                overlay.style.display = 'none';
+            }
+        }
+
+        // =====================================================
+        // Filtering & Search
+        // =====================================================
+        function applyFilters() {
+            const bloodGroup = document.getElementById('bloodGroupFilter').value;
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            donorMarkers.forEach(m => map.removeLayer(m));
+            donorMarkers = [];
+
+            let visibleCount = 0;
+            donorData.forEach(donor => {
+                let match = true;
+                if (bloodGroup && donor.bloodGroup !== bloodGroup) match = false;
+                if (searchTerm) {
+                    const name = (donor.fullName || '').toLowerCase();
+                    const district = (donor.district || '').toLowerCase();
+                    const upazila = (donor.upazila || '').toLowerCase();
+                    if (!name.includes(searchTerm) && !district.includes(searchTerm) && !upazila.includes(searchTerm)) {
+                        match = false;
+                    }
+                }
+                if (match) {
+                    donor._marker.addTo(map);
+                    donorMarkers.push(donor._marker);
+                    visibleCount++;
+                }
+            });
+
+            document.getElementById('donorCount').textContent = visibleCount;
+            if (visibleCount === 0 && donorData.length > 0) {
+                showToast('No donors match your filters');
+            } else if (visibleCount > 0) {
+                // optional: toast not needed every time
+            }
+        }
+
+        // ----- Event listeners for filters -----
+        document.getElementById('bloodGroupFilter').addEventListener('change', applyFilters);
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('searchBtn').addEventListener('click', applyFilters);
+
+        // =====================================================
+        // Toast Helper
+        // =====================================================
+        function showToast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(el._hideTimer);
+            el._hideTimer = setTimeout(() => el.classList.remove('show'), 3000);
+        }
+
+        // =====================================================
+        // Locate User & zoom to their position
+        // =====================================================
+        function locateUser() {
+            if (!navigator.geolocation) {
+                showToast('Geolocation not supported by your browser');
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    map.setView([lat, lng], 13);
+                    // add a temporary marker
+                    const userMarker = L.marker([lat, lng], {
+                        icon: L.divIcon({
+                            className: 'user-location-marker',
+                            html: `<div style="background:#1565c0; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 0 0 3px #1565c0;"></div>`,
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
+                        })
+                    }).addTo(map)
+                        .bindPopup('📍 You are here')
+                        .openPopup();
+                    setTimeout(() => map.removeLayer(userMarker), 8000);
+                    showToast('📍 Showing your location');
+                },
+                () => {
+                    showToast('Unable to get your location');
+                }, { enableHighAccuracy: true }
+            );
+        }
+
+        // Add locate button to map controls (top-right)
+        const locateControl = L.control({ position: 'topleft' });
+        locateControl.onAdd = function() {
+            const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+            div.innerHTML = `<a href="#" title="Find my location" style="background:white; display:flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:4px; box-shadow:0 2px 6px rgba(0,0,0,0.3); cursor:pointer; font-size:18px; color:#333;">
+                <i class="fas fa-crosshairs"></i>
+            </a>`;
+            div.onclick = function(e) {
+                e.preventDefault();
+                locateUser();
+            };
+            return div;
+        };
+        locateControl.addTo(map);
+
+        // =====================================================
+        // Auto-refresh every 2 minutes
+        // =====================================================
+        let refreshInterval = null;
+
+        function startAutoRefresh() {
+            if (refreshInterval) clearInterval(refreshInterval);
+            refreshInterval = setInterval(() => {
+                if (document.visibilityState === 'visible') {
+                    loadDonors();
+                }
+            }, 120000);
+        }
+
+        // =====================================================
+        // Init
+        // =====================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDonors().then(() => {
+                startAutoRefresh();
+            });
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    loadDonors();
+                }
+            });
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (refreshInterval) clearInterval(refreshInterval);
+        });
+
+        // Expose for debugging
+        window.loadDonors = loadDonors;
+        window.applyFilters = applyFilters;
+        window.locateUser = locateUser;
+    </script>
+</body>
+</html>
