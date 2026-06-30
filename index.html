@@ -1460,6 +1460,286 @@ function findNearbyHospitals() {
     let userProfile = null;
     let currentPage = 'home';
     
+
+
+// ============================================
+// NOTICE SYSTEM - FIXED VERSION
+// ============================================
+
+let allNotices = [];
+let noticeRefreshInterval = null;
+let noticeLoadAttempts = 0;
+const MAX_NOTICE_ATTEMPTS = 10;
+
+// Replace the loadNotices function with this updated version
+async function loadNotices() {
+  const container = document.getElementById('noticeContainer');
+  const badge = document.getElementById('noticeBadge');
+  const noticeSection = document.getElementById('noticeSection');
+  
+  if (!container) {
+    if (noticeLoadAttempts < MAX_NOTICE_ATTEMPTS) {
+      noticeLoadAttempts++;
+      console.log(`Notice container not found, attempt ${noticeLoadAttempts}/${MAX_NOTICE_ATTEMPTS}`);
+      setTimeout(loadNotices, 500);
+    }
+    return;
+  }
+  
+  if (noticeLoadAttempts === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: #999;">
+        <i class="fas fa-spinner fa-spin"></i> Loading notices...
+      </div>
+    `;
+  }
+  
+  try {
+    console.log('Fetching notices from Firestore...');
+    
+    const snapshot = await db.collection('notices')
+      .where('isActive', '==', true)
+      .get();
+    
+    console.log(`Found ${snapshot.size} active notices`);
+    
+    allNotices = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      console.log('Notice:', data.title, 'Priority:', data.priority);
+      allNotices.push({ id: doc.id, ...data });
+    });
+    
+    // Sort in JavaScript instead of Firestore query
+    allNotices.sort((a, b) => {
+      // First sort by priority (higher priority first)
+      const priorityA = a.priority || 0;
+      const priorityB = b.priority || 0;
+      if (priorityA !== priorityB) {
+        return priorityB - priorityA;
+      }
+      // Then by createdAt (newer first)
+      const dateA = a.createdAt?.toDate?.() || new Date(0);
+      const dateB = b.createdAt?.toDate?.() || new Date(0);
+      return dateB - dateA;
+    });
+    
+    if (badge) {
+      if (allNotices.length > 0) {
+        badge.style.display = 'inline';
+        badge.textContent = allNotices.length;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+    
+    // Hide or show the entire notice section based on whether there are notices
+    if (noticeSection) {
+      if (allNotices.length === 0) {
+        noticeSection.style.display = 'none';
+      } else {
+        noticeSection.style.display = 'block';
+      }
+    }
+    
+    renderNotices(allNotices);
+    
+  } catch (error) {
+    console.error('Error loading notices:', error);
+    container.innerHTML = `
+      <div style="text-align: center; padding: 20px; color: #d32f2f;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p style="margin-top: 4px;">Failed to load notices. Please refresh.</p>
+        <button onclick="loadNotices()" style="margin-top: 8px; padding: 6px 16px; background: #b71c1c; color: white; border: none; border-radius: 8px; cursor: pointer;">
+          <i class="fas fa-redo"></i> Retry
+        </button>
+      </div>
+    `;
+  }
+}
+
+// Replace the renderNotices function with this updated version
+function renderNotices(notices) {
+  const container = document.getElementById('noticeContainer');
+  const noticeSection = document.getElementById('noticeSection');
+  
+  if (!container || !noticeSection) return;
+  
+  // Check if there are any active notices
+  if (!notices || notices.length === 0) {
+    // Hide the entire notice section
+    noticeSection.style.display = 'none';
+    return;
+  }
+  
+  // Show the notice section
+  noticeSection.style.display = 'block';
+  
+  const priorityColors = {
+    0: { bg: '#f5f5f5', border: '#999', icon: '📌', label: 'Normal' },
+    1: { bg: '#fff8e1', border: '#f57c00', icon: '🔶', label: 'High' },
+    2: { bg: '#ffebee', border: '#d32f2f', icon: '🚨', label: 'Urgent' }
+  };
+  
+  container.innerHTML = notices.map((notice, index) => {
+    const priority = notice.priority || 0;
+    const colors = priorityColors[priority] || priorityColors[0];
+    const createdDate = notice.createdAt?.toDate?.() || new Date();
+    const dateStr = createdDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+    const timeStr = createdDate.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    let priorityBadge = '';
+    if (priority === 2) {
+      priorityBadge = `
+        <span style="
+          background: #d32f2f;
+          color: white;
+          padding: 2px 12px;
+          border-radius: 12px;
+          font-size: 10px;
+          font-weight: 700;
+          text-transform: uppercase;
+          animation: pulse-red 1.5s infinite;
+          margin-left: 8px;
+        ">⚠️ URGENT</span>
+      `;
+    } else if (priority === 1) {
+      priorityBadge = `
+        <span style="
+          background: #f57c00;
+          color: white;
+          padding: 2px 12px;
+          border-radius: 12px;
+          font-size: 10px;
+          font-weight: 600;
+          margin-left: 8px;
+        ">HIGH</span>
+      `;
+    }
+    
+    return `
+      <div style="
+        background: ${colors.bg};
+        border-left: 4px solid ${colors.border};
+        border-radius: 10px;
+        padding: 16px 20px;
+        animation: fadeInUp 0.4s ease ${index * 0.08}s both;
+        transition: all 0.3s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      "
+      onmouseenter="this.style.transform='translateX(4px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';"
+      onmouseleave="this.style.transform='translateX(0)'; this.style.boxShadow='0 1px 3px rgba(0,0,0,0.05)';"
+      >
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span style="font-size: 18px;">${colors.icon}</span>
+            <strong style="font-size: 16px; color: #333;">${notice.title || 'Notice'}</strong>
+            ${priorityBadge}
+          </div>
+          <span style="font-size: 11px; color: #999; white-space: nowrap;">
+            <i class="far fa-clock"></i> ${dateStr} ${timeStr}
+          </span>
+        </div>
+        
+        <p style="
+          margin: 8px 0 0 34px;
+          color: #555;
+          font-size: 14px;
+          line-height: 1.6;
+          white-space: pre-wrap;
+        ">
+          ${notice.content || 'No content provided.'}
+        </p>
+        
+        ${notice.createdByName ? `
+          <div style="margin: 6px 0 0 34px; font-size: 11px; color: #aaa;">
+            <i class="fas fa-user"></i> Posted by ${notice.createdByName}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function startNoticeAutoRefresh() {
+  if (noticeRefreshInterval) {
+    clearInterval(noticeRefreshInterval);
+  }
+  
+  loadNotices();
+  
+  noticeRefreshInterval = setInterval(() => {
+    const noticeSection = document.getElementById('noticeSection');
+    if (noticeSection && noticeSection.offsetParent !== null) {
+      loadNotices();
+    }
+  }, 180000);
+}
+
+function initNotices() {
+  console.log('Initializing notice system...');
+  noticeLoadAttempts = 0;
+  
+  if (document.getElementById('noticeContainer')) {
+    startNoticeAutoRefresh();
+  } else {
+    const observer = new MutationObserver(() => {
+      if (document.getElementById('noticeContainer')) {
+        console.log('Notice container found, starting notice system');
+        observer.disconnect();
+        startNoticeAutoRefresh();
+      }
+    });
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+    
+    setTimeout(() => {
+      if (document.getElementById('noticeContainer')) {
+        startNoticeAutoRefresh();
+      } else {
+        console.warn('Notice container not found after 5 seconds');
+      }
+    }, 5000);
+  }
+}
+
+// FIXED: Router override after router is defined
+// এই কোডটি router ডিফাইন হওয়ার পর execute হবে
+document.addEventListener('DOMContentLoaded', function() {
+  // Router ডিফাইন হওয়ার পর wait করুন
+  setTimeout(function() {
+    if (typeof router !== 'undefined' && router.navigate) {
+      const originalNavigate = router.navigate;
+      router.navigate = function(page) {
+        originalNavigate.call(this, page);
+        
+        if (page === 'dashboard' || page === 'home') {
+          setTimeout(function() {
+            if (document.getElementById('noticeContainer')) {
+              loadNotices();
+            }
+          }, 500);
+        }
+      };
+      console.log('Notice router interceptor installed');
+    }
+  }, 2000);
+});
+
+// Export for debugging
+window.loadNotices = loadNotices;
+window.initNotices = initNotices;
+    
     // Role Mapping Utility
     function getRoleDisplayName(role) {
       if (role === 'main_admin') return '👑 Administrator';
@@ -2386,7 +2666,50 @@ function findNearbyHospitals() {
           </div>
         </div>
         
-        
+        <!-- ============================================
+     NOTICE SYSTEM - FROM ADMIN PANEL
+     ============================================ -->
+<div id="noticeSection" style="
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+  padding: 24px;
+  margin: 30px 0;
+  border-left: 4px solid #b71c1c;
+  transition: all 0.3s ease;
+">
+  <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+    <i class="fas fa-bullhorn" style="color: #b71c1c; font-size: 24px;"></i>
+    <h2 style="margin: 0; color: #333; font-size: 20px;">
+      <span style="color: #b71c1c;"></span> Announcements & Notices
+    </h2>
+    <span id="noticeBadge" style="
+      background: #b71c1c;
+      color: white;
+      padding: 2px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: auto;
+      display: none;
+    ">0</span>
+  </div>
+  
+  <div id="noticeContainer" style="
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+    border-radius: 10px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.48);
+  ">
+    <!-- Notices will be loaded here -->
+    <div class="loading-spinner" style="padding: 20px; text-align: center;">
+      <i class="fas fa-spinner fa-spin"></i> Loading notices...
+    </div>
+  </div>
+</div>
 
         <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 32px; border-top: 4px solid #d32f2f;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -2523,6 +2846,13 @@ function findNearbyHospitals() {
             console.error("Mini map donor load error:", err);
         }
       }, 100);
+      // Load notices after dashboard is rendered
+setTimeout(() => {
+  if (document.getElementById('noticeContainer')) {
+    loadNotices();
+    startNoticeAutoRefresh();
+  }
+}, 500);
     }
 
     // Helper to fetch and display compact emergency requests
@@ -4142,7 +4472,7 @@ function setupPrivateMessageListener() {
   }
 }
 
-    // Initialize App
+   // Initialize App
 auth.onAuthStateChanged(async (user) => {
   document.getElementById('loadingOverlay').style.display = 'none';
   document.getElementById('appContainer').style.display = 'block';
@@ -4162,6 +4492,29 @@ auth.onAuthStateChanged(async (user) => {
     const hash = window.location.hash.substring(1);
     if (hash && router.routes[hash]) router.navigate(hash);
     else router.navigate('dashboard');
+    
+    // renderDashboard ফাংশনের শেষে এই কোডটি যোগ করুন
+// Load notices after dashboard is rendered
+setTimeout(function() {
+  if (document.getElementById('noticeContainer')) {
+    loadNotices();
+    startNoticeAutoRefresh();
+  } else {
+    let attempts = 0;
+    var checkAndLoad = setInterval(function() {
+      attempts++;
+      if (document.getElementById('')) {
+        loadNotices();
+        startNoticeAutoRefresh();
+        clearInterval(checkAndLoad);
+      } else if (attempts > 10) {
+        clearInterval(checkAndLoad);
+        console.warn('Notice container not found after 10 attempts');
+      }
+    }, 500);
+  }
+}, 500);
+    
   } else {
     currentUser = null; 
     userProfile = null;
