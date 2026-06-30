@@ -734,10 +734,10 @@
         <li class="nav-item" data-tab="users"><i class="fas fa-users"></i> All Users</li>
         <li class="nav-item" data-tab="donors"><i class="fas fa-heart"></i> Donors <span class="badge green" id="donorsBadge">0</span></li>
         <li class="nav-item" data-tab="requests"><i class="fas fa-bell"></i> Blood Requests <span class="badge amber" id="requestsBadge">0</span></li>
+        <li class="nav-item" data-tab="notices"><i class="fas fa-bullhorn"></i> Notices</li>
         <li class="nav-item" data-tab="contact-reveal-logs"><i class="fas fa-phone-alt"></i> Contact Reveals</li>
         <li class="nav-item" data-tab="certificates"><i class="fas fa-certificate"></i> Certificates</li>
         <li class="nav-item" data-tab="bulk-email" id="bulkEmailNav"><i class="fas fa-envelope"></i> Bulk Email</li>
-        <!-- Modified Bulk Register nav item: now redirects externally -->
         <li class="nav-item" id="bulkRegisterNav" onclick="window.open('https://blooddonorbd.github.io/database/bulk.registration.html', '_blank')" style="cursor:pointer;">
           <i class="fas fa-upload"></i> Bulk Register
         </li>
@@ -848,6 +848,7 @@
       function canBulkRegister() { return currentRole === 'main_admin' || currentRole === 'admin'; }
       function canViewContactRevealLogs() { return currentRole === 'main_admin' || currentRole === 'admin'; }
       function canApprovePending() { return currentRole === 'main_admin' || currentRole === 'admin' || currentRole === 'moderator'; }
+      function canManageNotices() { return currentRole && ['main_admin', 'admin', 'moderator'].includes(currentRole); }
 
       async function autoIssueCertificate(userId, userData) {
         try {
@@ -871,6 +872,25 @@
           document.getElementById('requestsBadge').textContent = requestsSnap.size;
           return { pending: pendingSnap.size, donors: donorsSnap.size, requests: requestsSnap.size };
         } catch (e) { console.error('Badge refresh error:', e); return { pending: 0, donors: 0, requests: 0 }; }
+      }
+
+      // ============================================
+      // LOAD TAB FUNCTION - UPDATED WITH NOTICES
+      // ============================================
+      function loadTab(tab) {
+        switch (tab) {
+          case 'dashboard': loadDashboard(); break;
+          case 'pending': loadPending(); break;
+          case 'users': loadUsers(); break;
+          case 'donors': loadDonors(); break;
+          case 'requests': loadRequests(); break;
+          case 'contact-reveal-logs': loadContactRevealLogs(); break;
+          case 'certificates': loadCertificates(); break;
+          case 'notices': loadNotices(); break;
+          case 'bulk-email': loadBulkEmail(); break;
+          case 'roles': loadRoles(); break;
+          default: document.getElementById('contentArea').innerHTML = '<p style="color:var(--danger);">Page not found.</p>';
+        }
       }
 
       auth.onAuthStateChanged(async (user) => {
@@ -900,7 +920,7 @@
           await refreshBadges();
           setupNavigation();
           const hash = window.location.hash.substring(1);
-          const validTabs = ['dashboard','pending','users','donors','requests','contact-reveal-logs','certificates','bulk-email','roles'];
+          const validTabs = ['dashboard','pending','users','donors','requests','contact-reveal-logs','certificates','notices','bulk-email','roles'];
           const defaultTab = validTabs.includes(hash) ? hash : 'dashboard';
           loadTab(defaultTab);
 
@@ -918,7 +938,7 @@
             if (!tab) return;
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             item.classList.add('active');
-            const titleMap = { 'dashboard':'Dashboard','pending':'Pending Approvals','users':'All Users','donors':'Donors','requests':'Blood Requests','contact-reveal-logs':'Contact Reveals','certificates':'Certificates','bulk-email':'Bulk Email','roles':'Roles Management' };
+            const titleMap = { 'dashboard':'Dashboard','pending':'Pending Approvals','users':'All Users','donors':'Donors','requests':'Blood Requests','contact-reveal-logs':'Contact Reveals','certificates':'Certificates','notices':'Notices Management','bulk-email':'Bulk Email','roles':'Roles Management' };
             document.getElementById('pageTitle').textContent = titleMap[tab] || tab;
             loadTab(tab);
             if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
@@ -928,21 +948,9 @@
         document.getElementById('logoutBtn').addEventListener('click', () => { adminCredentials = null; auth.signOut().then(() => window.location.href = 'index.html'); });
       }
 
-      function loadTab(tab) {
-        switch (tab) {
-          case 'dashboard': loadDashboard(); break;
-          case 'pending': loadPending(); break;
-          case 'users': loadUsers(); break;
-          case 'donors': loadDonors(); break;
-          case 'requests': loadRequests(); break;
-          case 'contact-reveal-logs': loadContactRevealLogs(); break;
-          case 'certificates': loadCertificates(); break;
-          case 'bulk-email': loadBulkEmail(); break;
-          case 'roles': loadRoles(); break;
-          default: document.getElementById('contentArea').innerHTML = '<p>Page not found.</p>';
-        }
-      }
-
+      // ============================================
+      // DASHBOARD
+      // ============================================
       async function loadDashboard() {
         const area = document.getElementById('contentArea');
         area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading dashboard...</p>';
@@ -999,6 +1007,9 @@
         } catch(e) { console.error('Chart error:', e); }
       }
 
+      // ============================================
+      // PENDING APPROVALS
+      // ============================================
       async function loadPending() {
         const area = document.getElementById('contentArea');
         area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Fetching pending requests...</p>';
@@ -1014,6 +1025,9 @@
         } catch(e) { area.innerHTML = `<p style="color:var(--danger);">Error loading pending: ${e.message}</p>`; }
       }
 
+      // ============================================
+      // USERS
+      // ============================================
       async function loadUsers() {
         const area = document.getElementById('contentArea');
         area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading users...</p>';
@@ -1082,6 +1096,9 @@
       window._deleteUser = async function(userId) { if(!canDelete()) { showToast('You do not have permission to delete users','error'); return; } try { const doc = await db.collection('users').doc(userId).get(); if(!doc.exists) return showToast('User not found','error'); const data = doc.data(); if(SUPER_ADMINS.includes(data.email)) { showToast('Cannot delete super admin','error'); return; } if(data.email === currentUser?.email) { showToast('You cannot delete your own account','error'); return; } if(!confirm(`Are you sure you want to permanently delete user "${data.fullName || 'Unknown'}"?\n\nThis action cannot be undone.`)) return; await db.collection('users').doc(userId).delete(); selectedUsers.delete(userId); showToast('User deleted successfully','success'); refreshBadges(); loadUsers(); } catch(e) { showToast('Error deleting user: '+e.message,'error'); } };
       window._batchDeleteUsers = async function() { const ids = Array.from(selectedUsers); if(ids.length === 0) { showToast('No users selected','warning'); return; } const protectedUsers = []; for(const id of ids) { const doc = await db.collection('users').doc(id).get(); if(doc.exists) { const data = doc.data(); if(SUPER_ADMINS.includes(data.email) || data.email === currentUser?.email) protectedUsers.push(data.email); } } if(protectedUsers.length > 0) { showToast(`Cannot delete protected users: ${protectedUsers.join(', ')}`,'warning'); return; } if(!confirm(`⚠️ Are you sure you want to permanently delete ${ids.length} user${ids.length !== 1 ? 's' : ''}?\n\nThis action cannot be undone!`)) return; let success = 0, fail = 0; for(const id of ids) { try { await db.collection('users').doc(id).delete(); success++; } catch(e) { fail++; console.error('Delete error:', id, e); } } selectedUsers.clear(); showToast(`Deleted ${success} users${fail > 0 ? `, ${fail} failed` : ''}`, fail > 0 ? 'warning' : 'success'); refreshBadges(); loadUsers(); };
 
+      // ============================================
+      // DONORS
+      // ============================================
       async function loadDonors() {
         const area = document.getElementById('contentArea'); area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading donors...</p>';
         try {
@@ -1094,6 +1111,11 @@
         } catch(e) { area.innerHTML = `<p style="color:var(--danger);">Error loading donors: ${e.message}</p>`; }
       }
 
+      window._issueCertificate = async (userId) => { if(!canManageCertificates()) return showToast('Only administrators can issue certificates','error'); try { const doc = await db.collection('users').doc(userId).get(); if(!doc.exists) return showToast('User not found','error'); const data = doc.data(); const issued = await autoIssueCertificate(userId, data); showToast(issued ? 'Certificate issued successfully!' : 'Certificate already exists', issued ? 'success' : 'info'); loadDonors(); } catch(e) { showToast('Error issuing certificate: '+e.message,'error'); } };
+
+      // ============================================
+      // BLOOD REQUESTS
+      // ============================================
       async function loadRequests() {
         const area = document.getElementById('contentArea'); area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading blood requests...</p>';
         try {
@@ -1107,6 +1129,9 @@
         } catch(e) { area.innerHTML = `<p style="color:var(--danger);">Error loading requests: ${e.message}</p>`; }
       }
 
+      // ============================================
+      // CONTACT REVEAL LOGS
+      // ============================================
       async function loadContactRevealLogs() {
         if(!canViewContactRevealLogs()) { 
           document.getElementById('contentArea').innerHTML = '<p style="color:var(--danger);">Access denied. Only administrators can view contact logs.</p>'; 
@@ -1208,6 +1233,9 @@
         }
       }
 
+      // ============================================
+      // CERTIFICATES
+      // ============================================
       async function loadCertificates() {
         if(!canManageCertificates()) { document.getElementById('contentArea').innerHTML = '<p style="color:var(--danger);">Access denied. Only administrators can manage certificates.</p>'; return; }
         const area = document.getElementById('contentArea'); area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading certificates...</p>';
@@ -1224,8 +1252,344 @@
         } catch(e) { area.innerHTML = `<p style="color:var(--danger);">Error loading certificates: ${e.message}</p>`; }
       }
 
-      window._issueCertificate = async (userId) => { if(!canManageCertificates()) return showToast('Only administrators can issue certificates','error'); try { const doc = await db.collection('users').doc(userId).get(); if(!doc.exists) return showToast('User not found','error'); const data = doc.data(); const issued = await autoIssueCertificate(userId, data); showToast(issued ? 'Certificate issued successfully!' : 'Certificate already exists', issued ? 'success' : 'info'); loadDonors(); } catch(e) { showToast('Error issuing certificate: '+e.message,'error'); } };
+      // ============================================
+      // NOTICES MANAGEMENT
+      // ============================================
+      async function loadNotices() {
+        if (!canManageNotices()) {
+          document.getElementById('contentArea').innerHTML = '<p style="color:var(--danger);">Access denied. Only administrators and moderators can manage notices.</p>';
+          return;
+        }
+        
+        const area = document.getElementById('contentArea');
+        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading notices...</p>';
+        
+        try {
+          const snap = await db.collection('notices').orderBy('createdAt', 'desc').get();
+          const notices = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          
+          let html = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+              <h2 style="margin: 0;"><i class="fas fa-bullhorn"></i> Notices Management</h2>
+              <button class="btn-primary" onclick="openCreateNoticeModal()">
+                <i class="fas fa-plus-circle"></i> Create New Notice
+              </button>
+            </div>
+            
+            <div class="table-card">
+              <div class="card-header">
+                <h3>All Notices (${notices.length})</h3>
+                <span style="font-size:13px; color:var(--text-secondary);">
+                  <span style="background:#10b981; color:white; padding:2px 10px; border-radius:20px; font-size:11px;">
+                    ${notices.filter(n => n.isActive !== false).length} Active
+                  </span>
+                  <span style="background:#ef4444; color:white; padding:2px 10px; border-radius:20px; font-size:11px; margin-left:8px;">
+                    ${notices.filter(n => n.isActive === false).length} Inactive
+                  </span>
+                </span>
+              </div>
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Created By</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${notices.length === 0 ? `
+                    <tr>
+                      <td colspan="6" style="text-align:center; padding:40px; color:var(--text-secondary);">
+                        <i class="fas fa-bullhorn" style="font-size:48px; display:block; margin-bottom:16px; opacity:0.3;"></i>
+                        No notices created yet. Click "Create New Notice" to get started.
+                      </td>
+                    </tr>
+                  ` : notices.map(notice => {
+                    const priorityColors = { 0: '#64748b', 1: '#f59e0b', 2: '#ef4444' };
+                    const priorityLabels = { 0: 'Normal', 1: 'High', 2: 'Urgent' };
+                    const isActive = notice.isActive !== false;
+                    let createdByName = notice.createdByName || 'System';
+                    
+                    return `
+                      <tr>
+                        <td><strong>${notice.title || 'Untitled'}</strong></td>
+                        <td><span class="status-badge" style="background:${priorityColors[notice.priority] || '#64748b'};">${priorityLabels[notice.priority] || 'Normal'}</span></td>
+                        <td><span class="status-badge" style="background:${isActive ? '#10b981' : '#ef4444'};">${isActive ? 'Active' : 'Inactive'}</span></td>
+                        <td><small>${formatDate(notice.createdAt)}</small></td>
+                        <td><small>${createdByName}</small></td>
+                        <td>
+                          <button class="btn-icon" onclick="window._editNotice('${notice.id}')" title="Edit"><i class="fas fa-edit" style="color:#2563eb;"></i></button>
+                          <button class="btn-icon" onclick="window._toggleNoticeStatus('${notice.id}')" title="${isActive ? 'Deactivate' : 'Activate'}">
+                            <i class="fas fa-${isActive ? 'pause' : 'play'}" style="color:${isActive ? '#f59e0b' : '#10b981'};"></i>
+                          </button>
+                          <button class="btn-icon danger" onclick="window._deleteNotice('${notice.id}')" title="Delete"><i class="fas fa-trash"></i></button>
+                        </td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          `;
+          
+          area.innerHTML = html;
+          
+        } catch (error) {
+          area.innerHTML = `<p style="color:var(--danger);">Error loading notices: ${error.message}</p>`;
+        }
+      }
 
+      // Open Create Notice Modal - GLOBALLY ACCESSIBLE
+      window.openCreateNoticeModal = function() {
+        if (!canManageNotices()) {
+          showToast('You do not have permission to create notices', 'error');
+          return;
+        }
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+          <div class="modal-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h2><i class="fas fa-plus-circle"></i> Create New Notice</h2>
+              <button onclick="this.closest('.modal-overlay').remove()" style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-secondary);">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <p class="sub">Create a new notice that will be displayed on the main website.</p>
+            
+            <form id="createNoticeForm">
+              <div class="form-group" style="margin-bottom:16px;">
+                <label style="font-weight:600; display:block; margin-bottom:6px;">Title *</label>
+                <input type="text" id="createNoticeTitle" class="form-input" placeholder="Notice title..." required>
+              </div>
+              
+              <div class="form-group" style="margin-bottom:16px;">
+                <label style="font-weight:600; display:block; margin-bottom:6px;">Content *</label>
+                <textarea id="createNoticeContent" class="form-textarea" rows="5" placeholder="Write the notice content here..." required></textarea>
+              </div>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                  <label style="font-weight:600; display:block; margin-bottom:6px;">Priority</label>
+                  <select id="createNoticePriority" class="form-select">
+                    <option value="0">Normal</option>
+                    <option value="1">High</option>
+                    <option value="2">Urgent</option>
+                  </select>
+                </div>
+                <div class="form-group" style="display:flex; align-items:center; gap:12px; padding-top:24px;">
+                  <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                    <input type="checkbox" id="createNoticeActive" checked>
+                    <span>Active immediately</span>
+                  </label>
+                </div>
+              </div>
+              
+              <div class="modal-actions">
+                <button type="button" onclick="this.closest('.modal-overlay').remove()" class="btn-secondary">Cancel</button>
+                <button type="submit" class="btn-primary"><i class="fas fa-paper-plane"></i> Publish Notice</button>
+              </div>
+            </form>
+          </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        document.getElementById('createNoticeForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          
+          const title = document.getElementById('createNoticeTitle').value.trim();
+          const content = document.getElementById('createNoticeContent').value.trim();
+          const priority = parseInt(document.getElementById('createNoticePriority').value);
+          const isActive = document.getElementById('createNoticeActive').checked;
+          
+          if (!title || !content) {
+            showToast('Please fill in all required fields', 'warning');
+            return;
+          }
+          
+          try {
+            await db.collection('notices').add({
+              title: title,
+              content: content,
+              priority: priority,
+              isActive: isActive,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+              createdBy: currentUser.uid,
+              createdByName: currentUser.fullName || 'Admin',
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            showToast('Notice published successfully!', 'success');
+            modal.remove();
+            loadNotices();
+            
+          } catch (error) {
+            showToast('Error creating notice: ' + error.message, 'error');
+          }
+        });
+      };
+
+      // Edit Notice (Admin/Moderator)
+      window._editNotice = async function(noticeId) {
+        if (!canManageNotices()) {
+          showToast('You do not have permission to edit notices', 'error');
+          return;
+        }
+        
+        try {
+          const doc = await db.collection('notices').doc(noticeId).get();
+          if (!doc.exists) {
+            showToast('Notice not found', 'error');
+            return;
+          }
+          const notice = { id: doc.id, ...doc.data() };
+          
+          const modal = document.createElement('div');
+          modal.className = 'modal-overlay';
+          modal.style.display = 'flex';
+          modal.innerHTML = `
+            <div class="modal-box">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h2><i class="fas fa-edit"></i> Edit Notice</h2>
+                <button onclick="this.closest('.modal-overlay').remove()" style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-secondary);">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              
+              <form id="editNoticeForm">
+                <div class="form-group" style="margin-bottom:16px;">
+                  <label style="font-weight:600; display:block; margin-bottom:6px;">Title *</label>
+                  <input type="text" id="editNoticeTitle" class="form-input" value="${notice.title || ''}" required>
+                </div>
+                
+                <div class="form-group" style="margin-bottom:16px;">
+                  <label style="font-weight:600; display:block; margin-bottom:6px;">Content *</label>
+                  <textarea id="editNoticeContent" class="form-textarea" rows="5" required>${notice.content || ''}</textarea>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                  <div class="form-group">
+                    <label style="font-weight:600; display:block; margin-bottom:6px;">Priority</label>
+                    <select id="editNoticePriority" class="form-select">
+                      <option value="0" ${notice.priority === 0 ? 'selected' : ''}>Normal</option>
+                      <option value="1" ${notice.priority === 1 ? 'selected' : ''}>High</option>
+                      <option value="2" ${notice.priority === 2 ? 'selected' : ''}>Urgent</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="display:flex; align-items:center; gap:12px; padding-top:24px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                      <input type="checkbox" id="editNoticeActive" ${notice.isActive !== false ? 'checked' : ''}>
+                      <span>Active</span>
+                    </label>
+                  </div>
+                </div>
+                
+                <div class="modal-actions">
+                  <button type="button" onclick="this.closest('.modal-overlay').remove()" class="btn-secondary">Cancel</button>
+                  <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Update Notice</button>
+                </div>
+              </form>
+            </div>
+          `;
+          
+          document.body.appendChild(modal);
+          
+          document.getElementById('editNoticeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const title = document.getElementById('editNoticeTitle').value.trim();
+            const content = document.getElementById('editNoticeContent').value.trim();
+            const priority = parseInt(document.getElementById('editNoticePriority').value);
+            const isActive = document.getElementById('editNoticeActive').checked;
+            
+            if (!title || !content) {
+              showToast('Please fill in all required fields', 'warning');
+              return;
+            }
+            
+            try {
+              await db.collection('notices').doc(noticeId).update({
+                title: title,
+                content: content,
+                priority: priority,
+                isActive: isActive,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                updatedBy: currentUser.uid,
+                updatedByName: currentUser.fullName || 'Admin'
+              });
+              
+              showToast('Notice updated successfully!', 'success');
+              modal.remove();
+              loadNotices();
+              
+            } catch (error) {
+              showToast('Error updating notice: ' + error.message, 'error');
+            }
+          });
+          
+        } catch (error) {
+          showToast('Error loading notice: ' + error.message, 'error');
+        }
+      };
+
+      // Toggle Notice Status (Active/Inactive)
+      window._toggleNoticeStatus = async function(noticeId) {
+        if (!canManageNotices()) {
+          showToast('You do not have permission to manage notices', 'error');
+          return;
+        }
+        
+        try {
+          const doc = await db.collection('notices').doc(noticeId).get();
+          if (!doc.exists) {
+            showToast('Notice not found', 'error');
+            return;
+          }
+          const notice = doc.data();
+          const newStatus = notice.isActive === false ? true : false;
+          
+          await db.collection('notices').doc(noticeId).update({
+            isActive: newStatus,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          
+          showToast(`Notice ${newStatus ? 'activated' : 'deactivated'} successfully!`, 'success');
+          loadNotices();
+          
+        } catch (error) {
+          showToast('Error toggling notice status: ' + error.message, 'error');
+        }
+      };
+
+      // Delete Notice
+      window._deleteNotice = async function(noticeId) {
+        if (!canManageNotices()) {
+          showToast('You do not have permission to delete notices', 'error');
+          return;
+        }
+        
+        if (!confirm('⚠️ Are you sure you want to delete this notice? This cannot be undone.')) {
+          return;
+        }
+        
+        try {
+          await db.collection('notices').doc(noticeId).delete();
+          showToast('Notice deleted successfully!', 'success');
+          loadNotices();
+        } catch (error) {
+          showToast('Error deleting notice: ' + error.message, 'error');
+        }
+      };
+
+      // ============================================
+      // BULK EMAIL
+      // ============================================
       async function loadBulkEmail() {
         if(!canBulkEmail()) { document.getElementById('contentArea').innerHTML = '<p style="color:var(--danger);">Access denied. Only administrators can send bulk emails.</p>'; return; }
         const area = document.getElementById('contentArea'); area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading email composer...</p>';
@@ -1259,6 +1623,9 @@
         } catch(e) { area.innerHTML = `<p style="color:var(--danger);">Error loading email composer: ${e.message}</p>`; }
       }
 
+      // ============================================
+      // ROLES MANAGEMENT
+      // ============================================
       async function loadRoles() {
         if(!canManageRoles()) { document.getElementById('contentArea').innerHTML = '<p style="color:var(--danger);">Access denied. Only administrators can manage roles.</p>'; return; }
         const area = document.getElementById('contentArea'); area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading roles...</p>';
@@ -1274,13 +1641,16 @@
         } catch(e) { area.innerHTML = `<p style="color:var(--danger);">Error loading roles: ${e.message}</p>`; }
       }
 
+      // ============================================
+      // HASH CHANGE LISTENER
+      // ============================================
       window.addEventListener('hashchange', () => {
         const hash = window.location.hash.substring(1);
-        const validTabs = ['dashboard','pending','users','donors','requests','contact-reveal-logs','certificates','bulk-email','roles'];
+        const validTabs = ['dashboard','pending','users','donors','requests','contact-reveal-logs','certificates','notices','bulk-email','roles'];
         if(validTabs.includes(hash)) { const navItem = document.querySelector(`[data-tab="${hash}"]`); if(navItem) navItem.click(); }
       });
 
-      console.log('🩸 Blood Donor BD Admin Panel loaded – Bulk Register redirects externally.');
+      console.log('🩸 Blood Donor BD Admin Panel loaded with Notices System.');
     })();
   </script>
 </body>
