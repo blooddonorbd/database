@@ -12,6 +12,7 @@
     <!-- Firebase (compat) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -131,7 +132,7 @@
         .donor-popup {
             text-align: center;
             padding: 4px 2px;
-            min-width: 160px;
+            min-width: 180px;
         }
         .donor-popup strong {
             font-size: 16px;
@@ -162,9 +163,39 @@
             text-decoration: none;
             font-weight: 600;
             font-size: 14px;
+            border: none;
+            cursor: pointer;
         }
         .donor-popup .call-btn:hover {
             background: #8b0000;
+        }
+        .donor-popup .register-btn {
+            display: inline-block;
+            margin-top: 6px;
+            background: #1565c0;
+            color: white;
+            padding: 4px 18px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+        }
+        .donor-popup .register-btn:hover {
+            background: #0d47a1;
+        }
+        .donor-popup .status-badge {
+            font-size: 11px;
+            color: #888;
+            display: block;
+            margin-top: 2px;
+        }
+        .donor-popup .login-badge {
+            font-size: 11px;
+            color: #4caf50;
+            display: block;
+            margin-top: 2px;
         }
         /* Loading */
         #loadingOverlay {
@@ -251,6 +282,36 @@
             cursor: pointer;
             font-size: 14px;
         }
+        /* Auth Status in header */
+        .auth-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.1);
+            padding: 4px 14px 4px 10px;
+            border-radius: 30px;
+            font-size: 13px;
+        }
+        .auth-status .login-btn {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 2px 10px;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 20px;
+            transition: all 0.2s;
+        }
+        .auth-status .login-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .auth-status .user-email {
+            font-size: 12px;
+            opacity: 0.8;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
         @media (max-width: 700px) {
             .map-header h1 {
                 font-size: 17px;
@@ -270,6 +331,9 @@
             .filter-select {
                 font-size: 11px;
                 padding: 3px 8px;
+            }
+            .auth-status .user-email {
+                max-width: 80px;
             }
         }
         @media (max-width: 500px) {
@@ -306,6 +370,12 @@
             <span class="stats-badge" id="donorCountBadge"><i class="fas fa-users"></i> <span id="donorCount">0</span></span>
         </h1>
         <div class="header-controls">
+            <!-- Auth Status -->
+            <div class="auth-status" id="authStatus">
+                <i class="fas fa-user-circle"></i>
+                <span id="authUserDisplay">Not logged in</span>
+                <a href="#" id="authActionBtn" class="login-btn">Login</a>
+            </div>
             <!-- Blood group filter -->
             <select id="bloodGroupFilter" class="filter-select">
                 <option value="">All Groups</option>
@@ -351,6 +421,50 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // =====================================================
+        // Global: Track login state
+        // =====================================================
+        let currentUser = null;
+        let isLoggedIn = false;
+
+        // =====================================================
+        // Auth State Listener
+        // =====================================================
+        auth.onAuthStateChanged(user => {
+            const authDisplay = document.getElementById('authUserDisplay');
+            const authBtn = document.getElementById('authActionBtn');
+
+            if (user) {
+                currentUser = user;
+                isLoggedIn = true;
+                authDisplay.textContent = user.email || 'Logged in';
+                authDisplay.style.color = '#4caf50';
+                authBtn.textContent = 'Logout';
+                authBtn.href = '#';
+                authBtn.onclick = (e) => {
+                    e.preventDefault();
+                    auth.signOut().then(() => {
+                        showToast('Logged out successfully');
+                        // Reload donors to update buttons
+                        loadDonors();
+                    }).catch(err => showToast('Logout failed'));
+                };
+                // Reload donors to show call buttons
+                loadDonors();
+            } else {
+                currentUser = null;
+                isLoggedIn = false;
+                authDisplay.textContent = 'Not logged in';
+                authDisplay.style.color = 'rgba(255,255,255,0.7)';
+                authBtn.textContent = 'Login';
+                authBtn.href = 'https://blooddonorbd.github.io/database/index.html#login';
+                authBtn.onclick = null;
+                // Reload donors to show register buttons
+                loadDonors();
+            }
+        });
 
         // =====================================================
         // Map Setup
@@ -398,13 +512,8 @@
         });
 
         // =====================================================
-        // Standard Leaflet Location Marker (blue icon)
-        // =====================================================
-        // Use default Leaflet blue marker (L.Icon.Default)
-        // We'll just use L.marker without custom icon
-
         let donorMarkers = [];
-        let donorData = []; // store raw donor objects for filtering
+        let donorData = [];
 
         // =====================================================
         // Load donors from Firestore
@@ -414,11 +523,11 @@
             overlay.style.display = 'flex';
 
             try {
-                // Clear existing markers
                 donorMarkers.forEach(m => map.removeLayer(m));
                 donorMarkers = [];
                 donorData = [];
 
+                // Load ONLY approved donors (isDonor=true AND approvalStatus=approved)
                 const snapshot = await db.collection('users')
                     .where('isDonor', '==', true)
                     .where('approvalStatus', '==', 'approved')
@@ -428,19 +537,43 @@
                 snapshot.forEach(doc => {
                     const donor = doc.data();
                     if (donor.lat && donor.lng && typeof donor.lat === 'number' && typeof donor.lng === 'number') {
-                        // Use default Leaflet marker (blue location pin)
+                        
+                        // --- Build popup based on LOGIN STATUS (caller) ---
+                        let popupContent = `
+                            <div class="donor-popup">
+                                <strong>${donor.fullName || 'Anonymous Donor'}</strong>
+                                <span class="blood-badge">${donor.bloodGroup || 'N/A'}</span>
+                                <div class="location"><i class="fas fa-map-marker-alt"></i> ${donor.district || ''}, ${donor.upazila || ''}</div>
+                        `;
+
+                        // ✅ If CALLER is logged in → Show CALL button
+                        if (isLoggedIn && donor.phoneNumber) {
+                            popupContent += `
+                                <a href="tel:${donor.phoneNumber}" class="call-btn">
+                                    <i class="fas fa-phone-alt"></i> Call Now
+                                </a>
+                                <span class="login-badge">✅ You are logged in</span>
+                            `;
+                        } 
+                        // ❌ If CALLER is NOT logged in → Show REGISTER button
+                        else {
+                            popupContent += `
+                                <a href="https://blooddonorbd.github.io/database/index.html#register" 
+                                   target="_blank" 
+                                   class="register-btn">
+                                    <i class="fas fa-user-plus"></i> Register to Call
+                                </a>
+                                <span class="status-badge">🔒 Login required to call</span>
+                            `;
+                        }
+
+                        popupContent += `</div>`;
+
                         const marker = L.marker([donor.lat, donor.lng])
                             .addTo(map)
-                            .bindPopup(`
-                                <div class="donor-popup">
-                                    <strong>${donor.fullName || 'Anonymous Donor'}</strong>
-                                    <span class="blood-badge">${donor.bloodGroup || 'N/A'}</span>
-                                    <div class="location"><i class="fas fa-map-marker-alt"></i> ${donor.district || ''}, ${donor.upazila || ''}</div>
-                                    <a href="tel:${donor.phoneNumber || ''}" class="call-btn"><i class="fas fa-phone-alt"></i> Call</a>
-                                </div>
-                            `, { maxWidth: 220 });
+                            .bindPopup(popupContent, { maxWidth: 240 });
+                        
                         donorMarkers.push(marker);
-                        // store donor data with marker reference
                         donorData.push({
                             ...donor,
                             _marker: marker
@@ -450,7 +583,7 @@
                 });
 
                 document.getElementById('donorCount').textContent = count;
-                showToast(`✅ ${count} live donors loaded`);
+                showToast(`✅ ${count} active donors loaded`);
 
                 if (count === 0) {
                     L.popup()
@@ -465,7 +598,6 @@
                         .openOn(map);
                 }
 
-                // Apply current filters after load
                 applyFilters();
 
             } catch (error) {
@@ -506,14 +638,8 @@
             });
 
             document.getElementById('donorCount').textContent = visibleCount;
-            if (visibleCount === 0 && donorData.length > 0) {
-                showToast('No donors match your filters');
-            } else if (visibleCount > 0) {
-                // optional: toast not needed every time
-            }
         }
 
-        // ----- Event listeners for filters -----
         document.getElementById('bloodGroupFilter').addEventListener('change', applyFilters);
         document.getElementById('searchInput').addEventListener('input', applyFilters);
         document.getElementById('searchBtn').addEventListener('click', applyFilters);
@@ -530,7 +656,7 @@
         }
 
         // =====================================================
-        // Locate User & zoom to their position
+        // Locate User
         // =====================================================
         function locateUser() {
             if (!navigator.geolocation) {
@@ -542,7 +668,6 @@
                     const lat = pos.coords.latitude;
                     const lng = pos.coords.longitude;
                     map.setView([lat, lng], 13);
-                    // add a temporary marker
                     const userMarker = L.marker([lat, lng], {
                         icon: L.divIcon({
                             className: 'user-location-marker',
@@ -562,7 +687,6 @@
             );
         }
 
-        // Add locate button to map controls (top-right)
         const locateControl = L.control({ position: 'topleft' });
         locateControl.onAdd = function() {
             const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
@@ -595,6 +719,12 @@
         // Init
         // =====================================================
         document.addEventListener('DOMContentLoaded', () => {
+            // Auth will trigger loadDonors() on state change
+            // But load initially if already logged in
+            if (auth.currentUser) {
+                isLoggedIn = true;
+                currentUser = auth.currentUser;
+            }
             loadDonors().then(() => {
                 startAutoRefresh();
             });
@@ -610,7 +740,6 @@
             if (refreshInterval) clearInterval(refreshInterval);
         });
 
-        // Expose for debugging
         window.loadDonors = loadDonors;
         window.applyFilters = applyFilters;
         window.locateUser = locateUser;
