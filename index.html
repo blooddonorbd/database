@@ -2469,17 +2469,10 @@ function updateLiveLocation() {
       });
     }
 
-    async function resetPassword() {
-      const email = prompt('Enter your email address to reset password:');
-      if (email) {
-        try {
-          await auth.sendPasswordResetEmail(email);
-          Toast.show('Password reset email sent! Check your inbox.', 'success');
-        } catch (error) {
-          Toast.show('Failed to send reset email: ' + error.message, 'error');
-        }
-      }
-    }
+    function resetPassword() {
+  // Redirect to the forget password page
+  window.location.href = 'forget.password.html';
+}
 
     function renderRegisterPage() {
       const main = document.getElementById('mainContent');
