@@ -1855,24 +1855,26 @@ window.initNotices = initNotices;
           const isDonorType = userData.userType === 'donor';
           
           const profile = {
-            uid: result.user.uid,
-            email: userData.email,
-            fullName: userData.fullName,
-            phoneNumber: userData.phoneNumber,
-            bloodGroup: userData.bloodGroup || null,
-            nidNumber: userData.nidNumber || '',
-            userType: userData.userType,
-            isDonor: isDonorType,
-            isSeeker: !isDonorType,
-            district: userData.district || '',
-            upazila: userData.upazila || '',
-            address: userData.address || '',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            isVerified: false,
-            approvalStatus: isDonorType ? 'pending' : 'approved',
-            role: 'user',
-            certificates: []
-          };
+  uid: result.user.uid,
+  email: userData.email,
+  fullName: userData.fullName,
+  phoneNumber: userData.phoneNumber,
+  bloodGroup: userData.bloodGroup || null,
+  nidNumber: userData.nidNumber || '',
+  birthday: userData.birthday || '',  // 🎂 ADD THIS
+  weight: userData.weight || null,     // ⚖️ ADD THIS
+  userType: userData.userType,
+  isDonor: isDonorType,
+  isSeeker: !isDonorType,
+  district: userData.district || '',
+  upazila: userData.upazila || '',
+  address: userData.address || '',
+  createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+  isVerified: false,
+  approvalStatus: isDonorType ? 'pending' : 'approved',
+  role: 'user',
+  certificates: []
+};
           
           await db.collection('users').doc(result.user.uid).set(profile);
           userProfile = profile;
@@ -2518,18 +2520,32 @@ function updateLiveLocation() {
               </div>
               
               <div class="form-group" id="bloodGroupGroup">
-                <label>Blood Group *</label>
-                <select id="regBloodGroup">
-                  <option value="">Select Blood Group (if known)</option>
-                  <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
-                  <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
-                </select>
-              </div>
-              
-              <div class="form-group">
-                <label>District * (Type to search)</label>
-                <input list="districtsList" id="regDistrict" required placeholder="Start typing your district name...">
-              </div>
+  <label>Blood Group *</label>
+  <select id="regBloodGroup">
+    <option value="">Select Blood Group (if known)</option>
+    <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+    <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+  </select>
+</div>
+
+<!-- 🎂 BIRTHDAY FIELD -->
+<div class="form-group">
+  <label>Date of Birth *</label>
+  <input type="date" id="regBirthday" required max="2008-07-05">
+  <small>Must be at least 18 years old to donate blood</small>
+</div>
+
+<!-- ⚖️ WEIGHT FIELD -->
+<div class="form-group">
+  <label>Weight (kg)</label>
+  <input type="number" id="regWeight" min="45" max="300" placeholder="Enter your weight in kg">
+  <small>Minimum 45 kg required for blood donation</small>
+</div>
+
+<div class="form-group">
+  <label>District * (Type to search)</label>
+  <input list="districtsList" id="regDistrict" required placeholder="Start typing your district name...">
+</div>
               
               <div class="form-group">
                 <label>Upazila *</label>
@@ -2620,17 +2636,19 @@ function updateLiveLocation() {
         }
         
         const userData = {
-          fullName: document.getElementById('regFullName').value.trim(),
-          email: document.getElementById('regEmail').value.trim(),
-          phoneNumber: document.getElementById('regPhone').value.trim(),
-          nidNumber: document.getElementById('regNidNumber').value.trim(),
-          bloodGroup: bloodGroup || null,
-          district: districtVal,
-          upazila: document.getElementById('regUpazila').value.trim(),
-          address: document.getElementById('regAddress').value.trim(),
-          userType: userType,
-          password: password
-        };
+  fullName: document.getElementById('regFullName').value.trim(),
+  email: document.getElementById('regEmail').value.trim(),
+  phoneNumber: document.getElementById('regPhone').value.trim(),
+  nidNumber: document.getElementById('regNidNumber').value.trim(),
+  bloodGroup: bloodGroup || null,
+  birthday: document.getElementById('regBirthday').value,  // 🎂 ADD THIS
+  weight: parseFloat(document.getElementById('regWeight').value) || null,  // ⚖️ ADD THIS
+  district: districtVal,
+  upazila: document.getElementById('regUpazila').value.trim(),
+  address: document.getElementById('regAddress').value.trim(),
+  userType: userType,
+  password: password
+};
         await authSystem.register(userData);
       });
     }
@@ -2842,18 +2860,22 @@ setTimeout(() => {
   </button>
 </div>
           <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <h3 style="margin-bottom: 20px;"><i class="fas fa-user"></i> Profile Information</h3>
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-              <p><strong>Name:</strong> ${roleSymbol}${userProfile?.fullName || '-'}</p>
-              <p><strong>Email:</strong> ${userProfile?.email || '-'}</p>
-              <p><strong>Phone:</strong> ${userProfile?.phoneNumber || '-'}</p>
-              <p><strong>NID/Birth Reg:</strong> ${userProfile?.nidNumber || '-'}</p>
-              ${userProfile?.isDonor ? `<p><strong>Blood Group:</strong> ${userProfile?.bloodGroup || '-'}</p>` : ''}
-              <p><strong>District:</strong> ${userProfile?.district || '-'}, ${userProfile?.upazila || ''}</p>
-              <p><strong>Registered:</strong> ${userProfile?.createdAt ? new Date(userProfile.createdAt.toDate()).toLocaleDateString() : '-'}</p>
-              ${userProfile?.donorId ? `<p><strong>Donor ID:</strong> ${userProfile?.donorId}</p>` : ''}
-            </div>
-          </div><div style="background: white; padding: 24px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px 0;">
+  <h3 style="margin-bottom: 20px;"><i class="fas fa-user"></i> Profile Information</h3>
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <p><strong>Name:</strong> ${roleSymbol}${userProfile?.fullName || '-'}</p>
+    <p><strong>Email:</strong> ${userProfile?.email || '-'}</p>
+    <p><strong>Phone:</strong> ${userProfile?.phoneNumber || '-'}</p>
+    <p><strong>NID/Birth Reg:</strong> ${userProfile?.nidNumber || '-'}</p>
+    <p><strong>Date of Birth:</strong> ${userProfile?.birthday ? new Date(userProfile.birthday).toLocaleDateString() : '-'}</p>
+    <p><strong>Weight:</strong> ${userProfile?.weight ? userProfile.weight + ' kg' : '-'}</p>
+    ${userProfile?.isDonor ? `<p><strong>Blood Group:</strong> ${userProfile?.bloodGroup || '-'}</p>` : ''}
+    <p><strong>District:</strong> ${userProfile?.district || '-'}, ${userProfile?.upazila || ''}</p>
+    <p><strong>Registered:</strong> ${userProfile?.createdAt ? new Date(userProfile.createdAt.toDate()).toLocaleDateString() : '-'}</p>
+    ${userProfile?.donorId ? `<p><strong>Donor ID:</strong> ${userProfile?.donorId}</p>` : ''}
+  </div>
+</div>
+          
+          <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px 0;">
   <h3><i class="fas fa-coins"></i> Blood Cost Calculator</h3>
   <p style="font-size: 14px; color: #666;">See how much your donation is worth</p>
   <select id="bloodComponent" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; margin: 12px 0;">
@@ -3182,27 +3204,42 @@ setTimeout(() => {
             <div class="form-group"><label>Full Name</label><input type="text" id="profileFullName" value="${userProfile?.fullName || ''}" required></div>
             <div class="form-group"><label>Phone Number</label><input type="tel" id="profilePhone" value="${userProfile?.phoneNumber || ''}" required></div>
             <div class="form-group"><label>NID / Birth Registration No.</label><input type="text" id="profileNid" value="${userProfile?.nidNumber || ''}" required></div>
-            ${userProfile?.isDonor ?
-            `
-              <div class="form-group">
-                <label>Blood Group</label>
-                <select id="profileBloodGroup">
-                  <option value="">Select</option>
-                  <option ${userProfile?.bloodGroup === 'A+' ? 'selected' : ''}>A+</option>
-                  <option ${userProfile?.bloodGroup === 'A-' ? 'selected' : ''}>A-</option>
-                  <option ${userProfile?.bloodGroup === 'B+' ? 'selected' : ''}>B+</option>
-                  <option ${userProfile?.bloodGroup === 'B-' ? 'selected' : ''}>B-</option>
-                  <option ${userProfile?.bloodGroup === 'O+' ? 'selected' : ''}>O+</option>
-                  <option ${userProfile?.bloodGroup === 'O-' ? 'selected' : ''}>O-</option>
-                  <option ${userProfile?.bloodGroup === 'AB+' ? 'selected' : ''}>AB+</option>
-                  <option ${userProfile?.bloodGroup === 'AB-' ? 'selected' : ''}>AB-</option>
-                </select>
-              </div>
-            ` : ''}
-            <div class="form-group">
-              <label>District (Type or select)</label>
-              <input list="districtsList" id="profileDistrict" value="${userProfile?.district || ''}" required placeholder="Type your district...">
-            </div>
+
+<!-- 🎂 BIRTHDAY FIELD IN PROFILE -->
+<div class="form-group">
+  <label>Date of Birth</label>
+  <input type="date" id="profileBirthday" value="${userProfile?.birthday || ''}">
+  <small>Must be at least 18 years old to donate blood</small>
+</div>
+
+<!-- ⚖️ WEIGHT FIELD IN PROFILE -->
+<div class="form-group">
+  <label>Weight (kg)</label>
+  <input type="number" id="profileWeight" min="45" max="300" value="${userProfile?.weight || ''}" placeholder="Enter your weight in kg">
+  <small>Minimum 45 kg required for blood donation</small>
+</div>
+
+${userProfile?.isDonor ?
+`
+  <div class="form-group">
+    <label>Blood Group</label>
+    <select id="profileBloodGroup">
+      <option value="">Select</option>
+      <option ${userProfile?.bloodGroup === 'A+' ? 'selected' : ''}>A+</option>
+      <option ${userProfile?.bloodGroup === 'A-' ? 'selected' : ''}>A-</option>
+      <option ${userProfile?.bloodGroup === 'B+' ? 'selected' : ''}>B+</option>
+      <option ${userProfile?.bloodGroup === 'B-' ? 'selected' : ''}>B-</option>
+      <option ${userProfile?.bloodGroup === 'O+' ? 'selected' : ''}>O+</option>
+      <option ${userProfile?.bloodGroup === 'O-' ? 'selected' : ''}>O-</option>
+      <option ${userProfile?.bloodGroup === 'AB+' ? 'selected' : ''}>AB+</option>
+      <option ${userProfile?.bloodGroup === 'AB-' ? 'selected' : ''}>AB-</option>
+    </select>
+  </div>
+` : ''}
+<div class="form-group">
+  <label>District (Type or select)</label>
+  <input list="districtsList" id="profileDistrict" value="${userProfile?.district || ''}" required placeholder="Type your district...">
+</div>
             <div class="form-group"><label>Upazila</label><input type="text" id="profileUpazila" value="${userProfile?.upazila || ''}"></div>
             <div class="form-group"><label>Address</label><textarea id="profileAddress" rows="3">${userProfile?.address || ''}</textarea></div>
             <button type="submit" class="btn btn-primary">Update Profile</button>
@@ -3211,30 +3248,52 @@ setTimeout(() => {
       `;
       
       document.getElementById('profileForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        try {
-          const updates = {
-            fullName: document.getElementById('profileFullName').value.trim(),
-            phoneNumber: document.getElementById('profilePhone').value.trim(),
-            nidNumber: document.getElementById('profileNid').value.trim(),
-            district: document.getElementById('profileDistrict').value,
-            upazila: document.getElementById('profileUpazila').value.trim(),
-            address: document.getElementById('profileAddress').value.trim(),
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          };
-          
-          if (userProfile?.isDonor) {
-            updates.bloodGroup = document.getElementById('profileBloodGroup').value;
-          }
-          
-          await db.collection('users').doc(currentUser.uid).update(updates);
-          await authSystem.loadUserProfile(currentUser.uid);
-          Toast.show('Profile updated!', 'success');
-          router.navigate('dashboard');
-        } catch (error) {
-          Toast.show('Failed to update profile', 'error');
-        }
-      });
+  e.preventDefault();
+  try {
+    const birthday = document.getElementById('profileBirthday').value;
+    const weight = parseFloat(document.getElementById('profileWeight').value);
+    
+    // Age validation (optional)
+    if (birthday) {
+      const age = new Date().getFullYear() - new Date(birthday).getFullYear();
+      const monthDiff = new Date().getMonth() - new Date(birthday).getMonth();
+      const calculatedAge = monthDiff < 0 || (monthDiff === 0 && new Date().getDate() < new Date(birthday).getDate()) ? age - 1 : age;
+      if (calculatedAge < 18) {
+        Toast.show('You must be at least 18 years old', 'error');
+        return;
+      }
+    }
+    
+    // Weight validation (optional)
+    if (weight && weight < 45) {
+      Toast.show('Minimum weight 45 kg required for donation', 'warning');
+      // Still allow update but show warning
+    }
+    
+    const updates = {
+      fullName: document.getElementById('profileFullName').value.trim(),
+      phoneNumber: document.getElementById('profilePhone').value.trim(),
+      nidNumber: document.getElementById('profileNid').value.trim(),
+      birthday: birthday,  // 🎂 ADD THIS
+      weight: weight || null,  // ⚖️ ADD THIS
+      district: document.getElementById('profileDistrict').value,
+      upazila: document.getElementById('profileUpazila').value.trim(),
+      address: document.getElementById('profileAddress').value.trim(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    
+    if (userProfile?.isDonor) {
+      updates.bloodGroup = document.getElementById('profileBloodGroup').value;
+    }
+    
+    await db.collection('users').doc(currentUser.uid).update(updates);
+    await authSystem.loadUserProfile(currentUser.uid);
+    Toast.show('Profile updated!', 'success');
+    router.navigate('dashboard');
+  } catch (error) {
+    Toast.show('Failed to update profile', 'error');
+  }
+});
     }
 
     async function renderFindDonorsPage() {
