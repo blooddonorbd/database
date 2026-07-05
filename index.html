@@ -2641,7 +2641,7 @@ function updateLiveLocation() {
   phoneNumber: document.getElementById('regPhone').value.trim(),
   nidNumber: document.getElementById('regNidNumber').value.trim(),
   bloodGroup: bloodGroup || null,
-  birthday: document.getElementById('regBirthday').value,  // 🎂 ADD THIS
+  birthday: document.getElementById('reg').value,  // 🎂 ADD THIS
   weight: parseFloat(document.getElementById('regWeight').value) || null,  // ⚖️ ADD THIS
   district: districtVal,
   upazila: document.getElementById('regUpazila').value.trim(),
@@ -2740,7 +2740,17 @@ setTimeout(() => {
             <div class="stat-icon"><i class="fas fa-map-marker-alt"></i></div>
             <div class="stat-info"><h3>Location</h3><p>${userProfile?.district || 'N/A'}</p></div>
           </div>
+          
+          <div class="stat-card">
+  <div class="stat-icon"><i class="fas fa-birthday-cake"></i></div>
+  <div class="stat-info">
+    <h3>Birthday</h3>
+    <p id="birthdayDisplay">${userProfile?.birthday || 'N/A'}</p>
+  </div>
+</div>
+          
         </div>
+        
 
 
 <div id="weatherWidget" style="
@@ -2919,6 +2929,13 @@ setTimeout(() => {
 </div>
         </div>
       `;
+      
+      // Update birthday display
+setTimeout(() => {
+  updateBirthdayDisplay();
+  // Update every hour
+  setInterval(updateBirthdayDisplay, 3600000);
+}, 100);
 
       // Trigger Load of Requests and Leaflet Map
       setTimeout(async () => {
@@ -3295,6 +3312,72 @@ ${userProfile?.isDonor ?
   }
 });
     }
+    // ============================================
+// BIRTHDAY COUNTDOWN SYSTEM
+// ============================================
+
+function updateBirthdayDisplay() {
+  const birthdayDisplay = document.getElementById('birthdayDisplay');
+  if (!birthdayDisplay) return;
+  
+  // Get birthday from userProfile
+  const birthdayDate = userProfile?.birthday; // '2005-11-13'
+  
+  if (!birthdayDate) {
+    birthdayDisplay.textContent = 'N/A';
+    return;
+  }
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Parse birthday from Firebase format 'YYYY-MM-DD'
+  const parts = birthdayDate.split('-');
+  const birthMonth = parseInt(parts[1]) - 1; // Month is 0-indexed
+  const birthDay = parseInt(parts[2]);
+  const birthYear = parseInt(parts[0]);
+  
+  // Get this year's birthday
+  let nextBirthday = new Date(today.getFullYear(), birthMonth, birthDay);
+  nextBirthday.setHours(0, 0, 0, 0);
+  
+  // If birthday has passed this year, use next year's birthday
+  if (nextBirthday < today) {
+    nextBirthday = new Date(today.getFullYear() + 1, birthMonth, birthDay);
+    nextBirthday.setHours(0, 0, 0, 0);
+  }
+  
+  // Calculate days until birthday
+  const timeDiff = nextBirthday - today;
+  const daysUntil = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+  
+  // Calculate turning age
+  const turningAge = nextBirthday.getFullYear() - birthYear;
+  
+  // Determine what to display
+  if (daysUntil === 0) {
+    // Today is the birthday
+    birthdayDisplay.innerHTML = '🎉 Happy Birthday! 🎂';
+    birthdayDisplay.style.color = 'var(--dark);';
+    birthdayDisplay.style.fontWeight = 'bold';
+    birthdayDisplay.style.fontSize = '28px';
+  } else if (daysUntil === 1) {
+    // Tomorrow is the birthday
+    birthdayDisplay.textContent = '🎈 Tomorrow is your birthday!';
+    birthdayDisplay.style.color = 'var(--dark);';
+    birthdayDisplay.style.fontWeight = '800';
+    birthdayDisplay.style.fontSize = '25px';
+  } else {
+    // Countdown display
+    birthdayDisplay.textContent = `🎂 ${daysUntil} days until birthday (turning ${turningAge})`;
+    birthdayDisplay.style.color = '';
+    birthdayDisplay.style.fontWeight = '';
+    birthdayDisplay.style.fontSize = '25px';
+  }
+}
+
+// Call this function after dashboard renders
+// Add this inside renderDashboard() after the HTML is set
 
     async function renderFindDonorsPage() {
   const main = document.getElementById('mainContent');
