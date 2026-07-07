@@ -3079,7 +3079,15 @@ setTimeout(() => {
 </div>
          
 <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-  <h3 style="margin-bottom: 20px;"><i class="fas fa-user"></i> Profile Information</h3>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h3 style="margin: 0;"><i class="fas fa-user"></i> Profile Information</h3>
+    <a href="#profile" onclick="router.navigate('profile'); return false;" 
+       style="color: #b71c1c; font-size: 14px; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 6px; transition: all 0.3s ease;"
+       onmouseover="this.style.color='#8b0000'; this.style.transform='scale(1.05)';"
+       onmouseout="this.style.color='#b71c1c'; this.style.transform='scale(1)';">
+      <i class="fas fa-edit"></i> Edit info
+    </a>
+  </div>
   
   <!-- Add Profile Picture Display -->
   <div style="text-align: center; margin-bottom: 16px;">
