@@ -2323,6 +2323,16 @@ function updateLiveLocation() {
             <h3>DM Donors</h3>
             <p>Chat directly with donors and seekers</p>
           </div>
+          <div style="text-align: center;  display: flex; flex-direction: column; align-items: center; justify-content: center;"><h3 style="margin-top: 8px; color: #b71c1c;">Donate Blood, Save Lives</h3>
+  <p style="color: #666; font-size: 14px;">Every drop counts. Be a hero today!</p>
+  <dotlottie-wc 
+    src="https://lottie.host/cd3b1852-332d-4cdf-8de5-25c50315d386/aLmewcycu7.json" 
+    style="width: 130px; height: 130px;" 
+    autoplay 
+    loop>
+  </dotlottie-wc>
+
+</div>
         </div>
 
 
@@ -3105,12 +3115,23 @@ setTimeout(() => {
         
         <div class="dashboard-grid">
           ${userProfile?.isDonor ?
-            `
-            <div class="stat-card">
-              <div class="stat-icon"><i class="fas fa-tint"></i></div>
-              <div class="stat-info"><h3>Blood Group</h3><p>${userProfile?.bloodGroup || 'N/A'}</p></div>
-            </div>
-          ` : ''}
+  `
+  <div class="stat-card" style="position: relative; overflow: hidden; min-height: 100px;">
+    <div style="position: absolute; right: -2px; top: 50%; transform: translateY(-50%); opacity: 0.99; pointer-events: none; z-index: 0;">
+      <dotlottie-wc 
+        src="https://lottie.host/cd3b1852-332d-4cdf-8de5-25c50315d386/aLmewcycu7.json" 
+        style="width: 130px; height: 130px;" 
+        autoplay 
+        loop>
+      </dotlottie-wc>
+    </div>
+    <div class="stat-icon" style="position: relative; z-index: 1;"><i class="fas fa-tint"></i></div>
+    <div class="stat-info" style="position: relative; z-index: 1;">
+      <h3>Blood Group</h3>
+      <p>${userProfile?.bloodGroup || 'N/A'}</p>
+    </div>
+  </div>
+` : ''}
           <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-certificate"></i></div>
             <div class="stat-info"><h3>Certificates</h3><p>${userProfile?.certificates?.length || 0}</p></div>
@@ -3247,6 +3268,26 @@ setTimeout(() => {
   <button onclick="router.navigate('live-map')" class="btn btn-primary btn-block mt-3">
     <i class="fas fa-expand-arrows-alt"></i> View Full Map
   </button>
+ 
+<div style="
+  margin-top: 10px;
+  text-align: center;
+  background: 
+  border-radius: 12px;
+  padding: 8px 0;
+  border: 1px solid #ffebee;
+  
+">
+  <dotlottie-wc 
+    src="https://lottie.host/bf55c5c8-b9f3-4ffe-b51f-115d0405d4d0/kie6xdupQj.json" 
+    style="width: auto; height: auto; margin: 0 auto;" 
+    autoplay 
+    loop>
+  </dotlottie-wc>
+  <p style="font-size: 12px; color: #b71c1c; margin-top: -10px; font-weight: 500;">
+    <i class="fas fa-heartbeat"></i> Find donors near you
+  </p>
+</div>
 </div>
          
 <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
