@@ -6,6 +6,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="#b71c1c">
 <meta name="apple-mobile-web-app-title" content="Blood Donor BD">
 <meta name="theme-color" content="#b71c1c">
+<!-- Lottie Animation Library -->
+<script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.14/dist/dotlottie-wc.js" type="module"></script>
 <link rel="manifest" href="manifest.json">
   <meta name="viewport" content="width=1200, initial-scale=1.0">
   <meta property="og:image" content="https://i.ibb.co/JRNPVP6S/1000018718.png" />
@@ -339,6 +341,17 @@
       min-height: 400px;
     }
   }
+  
+  @keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+}
+
+@keyframes loading-bar {
+  0% { width: 0%; margin-left: 0%; }
+  50% { width: 70%; margin-left: 15%; }
+  100% { width: 0%; margin-left: 100%; }
+}
 
     /* Loading Overlay */
     .loading-overlay {
@@ -1244,10 +1257,131 @@ window.addEventListener('scroll', () => {
   document.getElementById('readingProgress').style.width = scrolled + '%';
 });
 </script>
-  <div id="loadingOverlay" class="loading-overlay">
-    <div class="loader"></div>
-    <p>Loading Blood Donor BD...</p>
+  <div id="loadingOverlay" class="loading-overlay" style="
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #fff5f5, #ffffff, #fff5f5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  transition: opacity 0.6s ease;
+">
+  <!-- Lottie Animation -->
+  <dotlottie-wc 
+    src="https://lottie.host/02c4ddf5-d184-4bb5-af56-750695a160b5/u7gf3fbPlm.json" 
+    style="width: 250px; height: 250px;" 
+    autoplay 
+    loop>
+  </dotlottie-wc>
+  
+  <!-- Loading Text -->
+  <h2 style="
+    margin-top: 16px;
+    font-family: 'Poppins', sans-serif;
+    color: #b71c1c;
+    font-weight: 700;
+    font-size: 24px;
+    letter-spacing: 1px;
+  ">
+    Blood Donor BD
+  </h2>
+  
+  <div style="
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  ">
+    <span style="
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      background: #b71c1c;
+      border-radius: 50%;
+      animation: pulse-dot 1s ease-in-out infinite;
+    "></span>
+    <span style="
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      background: #b71c1c;
+      border-radius: 50%;
+      animation: pulse-dot 1s ease-in-out infinite 0.3s;
+    "></span>
+    <span style="
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      background: #b71c1c;
+      border-radius: 50%;
+      animation: pulse-dot 1s ease-in-out infinite 0.6s;
+    "></span>
   </div>
+  
+  <p style="
+    margin-top: 12px;
+    color: #999;
+    font-size: 14px;
+    font-family: 'Poppins', sans-serif;
+  ">
+    <i class="fas fa-heart" style="color: #b71c1c;"></i> Saving lives, one drop at a time <i class="fas fa-heart" style="color: #b71c1c;"></i>
+  </p>
+
+  <!-- Loading Bar -->
+  <div style="
+    width: 200px;
+    height: 3px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    margin-top: 20px;
+    overflow: hidden;
+  ">
+    <div style="
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #b71c1c, #ff5252, #b71c1c);
+      border-radius: 4px;
+      animation: loading-bar 2s ease-in-out infinite;
+    "></div>
+  </div>
+
+  <!-- ✅ NEW: Founder & Lead Developer Credit -->
+  <div style="
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    color: #bbb;
+    letter-spacing: 0.5px;
+    padding: 0 16px;
+  ">
+    <span style="opacity: 0.6;">Founder & Lead Developer</span>
+    <br>
+    <span style="
+      font-weight: 600;
+      color: #b71c1c;
+      opacity: 0.8;
+      font-size: 13px;
+      background: linear-gradient(90deg, #b71c1c, #ff5252);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    ">
+      Md. Ashfaqur Rahman Tanim
+    </span>
+  </div>
+</div>
+    
+  </div>
+</div>
 
   <div id="toastContainer" class="toast-container"></div>
 
@@ -1480,8 +1614,17 @@ function findNearbyHospitals() {
         </div>
       </div>
       <div class="footer-bottom">
-        <p>&copy; 2025 Blood Donor BD. All rights reserved.</p>
-      </div>
+  <p>&copy; <script>document.write(new Date().getFullYear())</script> Blood Donor BD. All rights reserved.</p>
+  <p style="margin-top: 8px; font-size: 13px; color: #888;">
+     Founder & Developer <br>
+    <a href="https://rovermdashfaq.github.io/portfolio/" target="_blank" 
+       style="color: #ff5252; text-decoration: none; font-weight: 600; transition: color 0.3s;"
+       onmouseover="this.style.color='#ffd700'"
+       onmouseout="this.style.color='#ff5252'">
+      Md. Ashfaqur Rahman Tanim
+    </a>
+  </p>
+</div>
     </footer>
   </div>
 
@@ -2456,32 +2599,49 @@ function updateLiveLocation() {
     
 
     function renderAboutPage() {
-      const main = document.getElementById('mainContent');
-      main.innerHTML = `
-        <div style="max-width: 800px; margin: 0 auto;">
-          <h1 style="margin-bottom: 24px;">About Blood Donor BD</h1>
-          <div style="background: white; padding: 32px; border-radius: 12px;">
-            <p style="margin-bottom: 16px;">Blood Donor BD is a platform connecting blood donors with those in need across Bangladesh.</p>
-            <p style="margin-bottom: 16px;"><strong>Our Mission:</strong> To ensure no one dies due to lack of blood by creating a reliable network of voluntary blood donors.</p>
-            <p><strong>How It Works:</strong></p>
-            <ul style="margin-top: 12px; padding-left: 20px;">
-              <li>Donors register and get verified by our admin team</li>
-              <li>Patients can search for donors or post blood requests</li>
-              <li>Requests stay active for 24 hours</li>
-              <li>Verified donors receive official certificates</li>
-            </ul>
+  const main = document.getElementById('mainContent');
+  main.innerHTML = `
+    <div style="max-width: 800px; margin: 0 auto;">
+      <h1 style="margin-bottom: 24px; text-align: center;">About Blood Donor BD</h1>
+      <div style="background: white; padding: 32px; border-radius: 12px;">
+        <p style="margin-bottom: 16px;">Blood Donor BD is a platform connecting blood donors with those in need across Bangladesh.</p>
+        <p style="margin-bottom: 16px;"><strong>Our Mission:</strong> To ensure no one dies due to lack of blood by creating a reliable network of voluntary blood donors.</p>
+        <p><strong>How It Works:</strong></p>
+        <ul style="margin-top: 12px; padding-left: 20px;">
+          <li>Donors register and get verified by our admin team</li>
+          <li>Patients can search for donors or post blood requests</li>
+          <li>Requests stay active for 24 hours</li>
+          <li>Verified donors receive official certificates</li>
+        </ul>
+
+        <!-- ✅ ADD THIS -->
+        <div style="margin-top: 32px; padding-top: 24px; border-top: 2px solid #f0f0f0; text-align: center;">
+          <p style="color: #999; font-size: 13px;">
+            <i class="fas fa-crown" style="color: #ffd700;"></i><br> 
+            <strong>Founder & Lead Developer</strong>
+          </p>
+          <p style="font-size: 18px; font-weight: 700; color: #b71c1c;">
+            Md. Ashfaqur Rahman Tanim
+          </p>
+          <div style="display: flex; gap: 16px; justify-content: center; margin-top: 8px;">
+            <a href="https://www.facebook.com/MD.Ashfaq01" target="_blank" style="color: #1877f2; font-size: 20px;">
+              <i class="fab fa-facebook"></i>
+            </a>
+
           </div>
         </div>
-      `;
-    }
+      </div>
+    </div>
+  `;
+}
 
     function renderContactPage() {
-      const main = document.getElementById('mainContent');
-      main.innerHTML = `
-        <div style="max-width: 800px; margin: 0 auto;">
-          <h1 style="margin-bottom: 24px;">Contact Us</h1>
-          <div style="background: white; padding: 32px; border-radius: 12px;">
-            <div style="display: grid; gap: 20px;">
+  const main = document.getElementById('mainContent');
+  main.innerHTML = `
+    <div style="max-width: 800px; margin: 0 auto;">
+      <h1 style="margin-bottom: 24px; text-align: center;">Contact Us</h1>
+      <div style="background: white; padding: 32px; border-radius: 12px;">
+       
               <div style="display: flex; align-items: center; gap: 16px;">
                 <i class="fas fa-phone" style="font-size: 24px; color: #b71c1c;"></i>
                 <div><h4>Emergency Blood Bank</h4><p>+8801612018221 (24/7 Hotline)</p></div>
@@ -2494,15 +2654,26 @@ function updateLiveLocation() {
                 <i class="fas fa-envelope" style="font-size: 24px; color: #b71c1c;"></i>
                 <div><h4>Email</h4><p>blooddonorbd025@gmail.com</p></div>
               </div>
-              <div style="display: flex; align-items: center; gap: 16px;">
-                <i class="fas fa-map-marker-alt" style="font-size: 24px; color: #b71c1c;"></i>
-                <div><h4>Address</h4><p>Online platform</p></div>
-              </div>
-            </div>
-          </div>
+        <div style="display: grid; gap: 20px;">
         </div>
-      `;
-    }
+
+        <!-- ✅ ADD THIS -->
+        <div style="margin-top: 32px; padding-top: 24px; border-top: 2px solid #f0f0f0; text-align: center;">
+          <p style="color: #999; font-size: 13px;">
+            <i class="fas fa-crown" style="color: #ffd700;"></i><br> 
+            <strong>Founder & Lead Developer</strong>
+          </p>
+          <p style="font-size: 16px; font-weight: 600; color: #b71c1c;">
+            Md. Ashfaqur Rahman Tanim
+          </p>
+          <a href="https://www.facebook.com/MD.Ashfaq01" target="_blank" style="color: #1877f2; font-size: 14px; text-decoration: none;">
+            <i class="fab fa-facebook"></i> facebook.com/MD.Ashfaq01
+          </a>
+        </div>
+      </div>
+    </div>
+  `;
+}
 
     function renderLoginPage() {
       const main = document.getElementById('mainContent');
@@ -5114,8 +5285,12 @@ function setupPrivateMessageListener() {
 
    // Initialize App
 auth.onAuthStateChanged(async (user) => {
+  // ✅ Minimum 2 seconds loading time
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
   document.getElementById('loadingOverlay').style.display = 'none';
   document.getElementById('appContainer').style.display = 'block';
+
   
   if (user) {
     currentUser = user;
