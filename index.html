@@ -2283,7 +2283,15 @@ function updateLiveLocation() {
     function renderHomePage() {
       const main = document.getElementById('mainContent');
       main.innerHTML = `
-        <div class="hero-section">
+        <div class="hero-section"><!-- হিরো সেকশনে ব্লাড ড্রপ অ্যানিমেশন -->
+<div style="display: flex; justify-content: center; margin-bottom: 15px;">
+  <dotlottie-wc 
+    src="https://lottie.host/cd3b1852-332d-4cdf-8de5-25c50315d386/aLmewcycu7.json" 
+    style="width: 200px; height: 200px;" 
+    autoplay 
+    loop>
+  </dotlottie-wc>
+</div>
           <h1 style="font-size: 48px; margin-bottom: 20px;">Donate Blood, Save Lives</h1>
           <p style="font-size: 20px; margin-bottom: 32px;">Join the community of life-savers. Every drop counts.</p>
           ${!currentUser ?
@@ -2323,16 +2331,6 @@ function updateLiveLocation() {
             <h3>DM Donors</h3>
             <p>Chat directly with donors and seekers</p>
           </div>
-          <div style="text-align: center;  display: flex; flex-direction: column; align-items: center; justify-content: center;"><h3 style="margin-top: 8px; color: #b71c1c;">Donate Blood, Save Lives</h3>
-  <p style="color: #666; font-size: 14px;">Every drop counts. Be a hero today!</p>
-  <dotlottie-wc 
-    src="https://lottie.host/cd3b1852-332d-4cdf-8de5-25c50315d386/aLmewcycu7.json" 
-    style="width: 130px; height: 130px;" 
-    autoplay 
-    loop>
-  </dotlottie-wc>
-
-</div>
         </div>
 
 
