@@ -9,7 +9,8 @@
 <!-- Lottie Animation Library -->
 <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.9.14/dist/dotlottie-wc.js" type="module"></script>
 <link rel="manifest" href="manifest.json">
-  <meta name="viewport" content="width=1200, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<meta name="mobile-web-app-capable" content="yes">
   <meta property="og:image" content="https://i.ibb.co/JRNPVP6S/1000018718.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1540" />
@@ -67,6 +68,39 @@
       line-height: 1.6;
       min-height: 100vh;
     }
+    
+    /* In your CSS */
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html {
+    font-size: 16px;
+}
+
+img, video {
+    max-width: auto;
+    height: auto;
+}
+
+/* Use rem/em units, avoid fixed px widths */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    padding: 0 clamp(1rem, 4vw, 2rem);
+    margin: 0 auto;
+}
+
+/* Responsive text */
+h1 { font-size: clamp(1.5rem, 5vw, 3rem); }
+p { font-size: clamp(1rem, 2vw, 1.125rem); }
+
+/* Touch-friendly targets */
+button, a, input {
+    min-height: 44px;
+    min-width: 44px;
+}
     
     /* Private DM Styles */
   .dm-container {
