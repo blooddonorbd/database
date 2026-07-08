@@ -98,7 +98,7 @@ p { font-size: clamp(1rem, 2vw, 1.125rem); }
 
 /* Touch-friendly targets */
 button, a, input {
-    min-height: 44px;
+    min-height: 20px;
     min-width: 44px;
 }
     
@@ -5432,18 +5432,27 @@ if (currentUser) {
     <li><a href="#" data-page="profile" onclick="router.navigate('profile');return false;"><i class="fas fa-user"></i> Profile</a></li>
   `;
   
-  // ✅ Show profile picture in navigation
-  const profilePicUrl = userProfile?.profilePic || null;
-  const avatarHtml = profilePicUrl ? 
-    `<img src="${profilePicUrl}" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #b71c1c;">` :
-    `<span class="user-avatar">${userProfile?.fullName?.charAt(0) || 'U'}</span>`;
-  
-  let roleSymbol = getRoleSymbol(userProfile?.role);
-  userInfo.innerHTML = `
-    <span style="display: flex; align-items: center; gap: 8px;">
-      ${avatarHtml}
-    </span>
-  `;
+// ✅ Show profile picture in navigation
+const profilePicUrl = userProfile?.profilePic || null;
+
+// প্রোফাইল পিকচার বা অ্যাভাটার HTML তৈরি করুন
+let avatarHtml;
+if (profilePicUrl) {
+  avatarHtml = `<a href="#profile" style="display: inline-block;">
+    <img src="${profilePicUrl}" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #b71c1c; cursor: pointer;">
+  </a>`;
+} else {
+  avatarHtml = `<a href="#profile" style="text-decoration: none;">
+    <span class="user-avatar" style="cursor: pointer;">${userProfile?.fullName?.charAt(0) || 'U'}</span>
+  </a>`;
+}
+
+let roleSymbol = getRoleSymbol(userProfile?.role);
+userInfo.innerHTML = `
+  <span style="display: flex; align-items: center; gap: 8px;">
+    ${avatarHtml}
+  </span>
+`;
   logoutBtn.style.display = 'block';
   
     
