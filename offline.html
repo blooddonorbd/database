@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline - Blood Donor BD</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #fff5f5, #ffffff);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .offline-container {
+      max-width: 500px;
+      text-align: center;
+      padding: 40px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      animation: fadeInUp 0.5s ease;
+    }
+    .offline-icon {
+      font-size: 80px;
+      color: #b71c1c;
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #b71c1c;
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+    p {
+      color: #666;
+      font-size: 16px;
+      line-height: 1.8;
+      margin-bottom: 20px;
+    }
+    .status-dots {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin: 20px 0;
+    }
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      animation: pulse-dot 1.5s infinite;
+    }
+    .dot:nth-child(1) { background: #b71c1c; animation-delay: 0s; }
+    .dot:nth-child(2) { background: #b71c1c; animation-delay: 0.3s; }
+    .dot:nth-child(3) { background: #b71c1c; animation-delay: 0.6s; }
+    .btn {
+      display: inline-block;
+      padding: 14px 40px;
+      background: #b71c1c;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      margin-top: 10px;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(183, 28, 28, 0.3);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid #b71c1c;
+      color: #b71c1c;
+    }
+    .btn-outline:hover {
+      background: #b71c1c;
+      color: white;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse-dot {
+      0%, 100% { transform: scale(1); opacity: 0.5; }
+      50% { transform: scale(1.5); opacity: 1; }
+    }
+    .cached-info {
+      margin-top: 20px;
+      padding: 16px;
+      background: #f5f5f5;
+      border-radius: 12px;
+      font-size: 13px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="offline-container">
+    <div class="offline-icon">
+      <i class="fas fa-wifi"></i>
+    </div>
+    
+    <h1>📡 You're Offline</h1>
+    <p>
+      Don't worry! You can still browse your cached data.
+      We'll sync everything when you're back online.
+    </p>
+    
+    <div class="status-dots">
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    </div>
+    
+    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+      <button onclick="checkConnection()" class="btn">
+        <i class="fas fa-sync"></i> Check Connection
+      </button>
+      <button onclick="window.location.href='/'">Go Home</button>
+    </div>
+    
+    <div class="cached-info">
+      <i class="fas fa-database"></i> 
+      <span id="cacheSize">Cached: 0 MB</span>
+      <br>
+      <span id="lastSync">Last sync: Just now</span>
+    </div>
+  </div>
+
+  <script>
+    async function checkConnection() {
+      const btn = document.querySelector('.btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+      
+      try {
+        const response = await fetch('/');
+        if (response.ok) {
+          window.location.reload();
+        }
+      } catch {
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML = '🔄 Check Connection';
+          Toast.show('Still offline. Please check your internet.', 'warning');
+        }, 2000);
+      }
+    }
+
+    // Show cache size
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => {
+          caches.open(name).then(cache => {
+            cache.keys().then(keys => {
+              let size = 0;
+              keys.forEach(key => {
+                size += key.size || 0;
+              });
+              document.getElementById('cacheSize').textContent = 
+                `Cached: ${(size / 1024 / 1024).toFixed(2)} MB`;
+            });
+          });
+        });
+      });
+    }
+  </script>
+</body>
+</html>
