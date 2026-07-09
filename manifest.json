@@ -29,7 +29,7 @@
       "name": "Find Donors",
       "short_name": "Find",
       "description": "Search for blood donors",
-      "url": "/#find-donors",
+      "url": "/database/#find-donors",
       "icons": [
         {
           "src": "https://i.ibb.co/fd3zk65t/1000018685.jpg",
@@ -41,7 +41,19 @@
       "name": "Request Blood",
       "short_name": "Request",
       "description": "Post a blood request",
-      "url": "/#request-blood",
+      "url": "/database/#request-blood",
+      "icons": [
+        {
+          "src": "https://i.ibb.co/fd3zk65t/1000018685.jpg",
+          "sizes": "96x96"
+        }
+      ]
+    },
+        {
+      "name": "Administrator",
+      "short_name": "Admin",
+      "description": "Post a blood request",
+      "url": "/database/admin.html",
       "icons": [
         {
           "src": "https://i.ibb.co/fd3zk65t/1000018685.jpg",
@@ -53,7 +65,7 @@
       "name": "Dashboard",
       "short_name": "Dashboard",
       "description": "Your donor dashboard",
-      "url": "/#dashboard",
+      "url": "/database/#dashboard",
       "icons": [
         {
           "src": "https://i.ibb.co/fd3zk65t/1000018685.jpg",
