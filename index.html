@@ -32,6 +32,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+<!-- ADD THESE TWO LINES -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="https://i.ibb.co/fd3zk65t/1000018685.jpg">
   
   <style>
     /* ============================================
@@ -1704,15 +1707,17 @@ function findNearbyHospitals() {
     datalist.innerHTML = bangladeshDistricts.map(d => `<option value="${d}">`).join('');
     document.body.appendChild(datalist);
 
+
     // Firebase Configuration
-    const firebaseConfig = {
-      apiKey: "AIzaSyCnky8bzx3KuFoujU5DSlLRYSZgiAF8840",
-      authDomain: "blood-donor-bd-2025.firebaseapp.com",
-      projectId: "blood-donor-bd-2025",
-      storageBucket: "blood-donor-bd-2025.firebasestorage.app",
-      messagingSenderId: "271945142840",
-      appId: "1:271945142840:web:b0edefddb55cac5f604ccd"
-    };
+const firebaseConfig = {
+  apiKey: "AIzaSyCnky8bzx3KuFoujU5DSlLRYSZgiAF8840",
+  authDomain: "blood-donor-bd-2025.firebaseapp.com",
+  projectId: "blood-donor-bd-2025",
+  storageBucket: "blood-donor-bd-2025.firebasestorage.app",
+  messagingSenderId: "271945142840",
+  appId: "1:271945142840:web:b0edefddb55cac5f604ccd",
+  measurementId: "G-28KGSJREBR"
+};
     
     // After Firebase initialization
 const IMGBB_API_KEY = '54ffbc26529e5d05fa5cffad23712429';
@@ -8175,15 +8180,35 @@ function closeLastDonationModal(modalElement) {
 // ============================================
 
 // Register Service Worker
+// Register Service Workers (Both for Web Push and FCM)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    // 1. Register main service worker for Web Push
     navigator.serviceWorker.register('/sw.js')
       .then(registration => {
-        console.log('✅ Service Worker registered:', registration);
-        checkForUpdates(registration);
+        console.log('✅ Main Service Worker registered:', registration);
+        
+        // Check for updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              showUpdateNotification();
+            }
+          });
+        });
       })
       .catch(err => {
-        console.log('❌ Service Worker registration failed:', err);
+        console.log('⚠️ Main Service Worker registration failed:', err);
+      });
+    
+    // 2. Register FCM service worker
+    navigator.serviceWorker.register('/firebase-messaging-sw.js')
+      .then(registration => {
+        console.log('✅ FCM Service Worker registered:', registration);
+      })
+      .catch(err => {
+        console.log('⚠️ FCM Service Worker registration failed:', err);
       });
   });
 }
@@ -8636,386 +8661,7 @@ window.clearOfflineCache = () => offlineManager.clearCache();
 const VAPID_PUBLIC_KEY = "BHMKtlvzLGDuNh6eat6tR8uBQjYrN4otniIbhY2nNkBCPGU5I4L8B9JNSXHNNUB34Wv47YqZjirTmYex3sg9UTk";
 
 class PushNotificationManager {
-  constructor() {
-    this.messaging = null;
-    this.isSupported = false;
-    this.token = null;
-    this.notificationPermission = Notification.permission;
-    this.subscribed = false;
-    this.vapidKey = VAPID_PUBLIC_KEY;
-    
-    this.init();
-  }
-
-  init() {
-    // Check if browser supports notifications
-    if (!('Notification' in window)) {
-      console.warn('❌ Notifications not supported in this browser');
-      return;
-    }
-
-    // Check if Firebase Messaging is available
-    if (typeof firebase !== 'undefined' && firebase.messaging) {
-      try {
-        this.messaging = firebase.messaging();
-        this.isSupported = true;
-        this.requestPermission();
-        console.log('✅ Push notifications initialized with Firebase');
-        return;
-      } catch (error) {
-        console.warn('Firebase Messaging failed, falling back to Web Push:', error);
-      }
-    }
-
-    // Fallback: Web Push API
-    this.setupWebPush();
-  }
-
-  async setupWebPush() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      console.warn('❌ Web Push not supported');
-      return;
-    }
-
-    try {
-      const registration = await navigator.serviceWorker.ready;
-      
-      // Check if already subscribed
-      const existingSubscription = await registration.pushManager.getSubscription();
-      if (existingSubscription) {
-        this.subscribed = true;
-        this.token = existingSubscription.endpoint;
-        console.log('✅ Already subscribed to Web Push');
-        return;
-      }
-
-      // Subscribe with your VAPID key
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: this.urlBase64ToUint8Array(this.vapidKey)
-      });
-
-      console.log('✅ Web Push subscription successful!');
-      console.log('📱 Endpoint:', subscription.endpoint);
-      
-      this.subscribed = true;
-      this.token = subscription.endpoint;
-      
-      // Save subscription to Firestore
-      await this.saveSubscriptionToFirestore(subscription);
-      
-      Toast.show('🔔 Notifications enabled!', 'success');
-      
-    } catch (error) {
-      console.error('❌ Web Push subscription failed:', error);
-      if (error.message.includes('permission')) {
-        Toast.show('Please allow notifications in your browser settings', 'warning');
-      }
-    }
-  }
-
-  async requestPermission() {
-    try {
-      // Use the Notification API directly
-      if (Notification.permission === 'default') {
-        const permission = await Notification.requestPermission();
-        this.notificationPermission = permission;
-        
-        if (permission === 'granted') {
-          console.log('✅ Notification permission granted');
-          // Try Firebase first, then fallback to Web Push
-          if (this.messaging) {
-            try {
-              await this.subscribeToFCM();
-            } catch (error) {
-              console.warn('FCM failed, using Web Push:', error);
-              await this.setupWebPush();
-            }
-          } else {
-            await this.setupWebPush();
-          }
-        } else {
-          console.warn('❌ Notification permission denied');
-          Toast.show('Notifications disabled. Enable from browser settings.', 'warning');
-        }
-      } else if (Notification.permission === 'granted') {
-        if (this.messaging) {
-          try {
-            await this.subscribeToFCM();
-          } catch (error) {
-            await this.setupWebPush();
-          }
-        } else {
-          await this.setupWebPush();
-        }
-      }
-    } catch (error) {
-      console.error('Permission request error:', error);
-    }
-  }
-
-  async subscribeToFCM() {
-    if (!this.messaging) return;
-    
-    try {
-      this.token = await this.messaging.getToken();
-      console.log('📱 FCM Token:', this.token);
-      this.subscribed = true;
-      
-      // Save token to Firestore
-      await this.saveTokenToFirestore(this.token);
-      
-      // Listen for foreground messages
-      this.messaging.onMessage((payload) => {
-        console.log('📨 Foreground message:', payload);
-        this.showInAppNotification(payload);
-      });
-      
-      Toast.show('🔔 Firebase notifications enabled!', 'success');
-      
-    } catch (error) {
-      console.error('❌ Failed to get FCM token:', error);
-      throw error;
-    }
-  }
-
-  async saveTokenToFirestore(token) {
-    if (!currentUser) return;
-    
-    try {
-      await db.collection('users').doc(currentUser.uid).update({
-        fcmToken: token,
-        pushEnabled: true,
-        pushUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    } catch (error) {
-      console.error('❌ Failed to save FCM token:', error);
-    }
-  }
-
-  async saveSubscriptionToFirestore(subscription) {
-    if (!currentUser) return;
-    
-    try {
-      await db.collection('users').doc(currentUser.uid).update({
-        pushSubscription: {
-          endpoint: subscription.endpoint,
-          keys: {
-            p256dh: subscription.toJSON().keys.p256dh,
-            auth: subscription.toJSON().keys.auth
-          }
-        },
-        pushEnabled: true,
-        pushUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    } catch (error) {
-      console.error('❌ Failed to save push subscription:', error);
-    }
-  }
-
-  // Helper: Convert base64 to Uint8Array
-  urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-      .replace(/\-/g, '+')
-      .replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-  }
-
-  showInAppNotification(payload) {
-    const title = payload.data?.title || payload.notification?.title || 'New Notification';
-    const body = payload.data?.body || payload.notification?.body || '';
-    const url = payload.data?.url || '/';
-    
-    const notificationEl = document.createElement('div');
-    notificationEl.style.cssText = `
-      position: fixed;
-      top: 80px;
-      right: 20px;
-      background: white;
-      padding: 16px 20px;
-      border-radius: 12px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-      z-index: 10002;
-      max-width: 380px;
-      animation: slideIn 0.3s ease;
-      border-left: 4px solid #b71c1c;
-      cursor: pointer;
-    `;
-    notificationEl.innerHTML = `
-      <div style="display: flex; align-items: start; gap: 12px;">
-        <i class="fas fa-bell" style="color: #b71c1c; font-size: 20px; margin-top: 2px;"></i>
-        <div>
-          <strong style="color: #333;">${title}</strong>
-          <p style="margin: 4px 0 0; color: #666; font-size: 14px;">${body}</p>
-        </div>
-        <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: #999; cursor: pointer; font-size: 16px;">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-    `;
-    
-    notificationEl.addEventListener('click', () => {
-      if (url && !url.startsWith('/#') && !url.startsWith('#')) {
-        window.location.href = url;
-      } else if (url) {
-        router.navigate(url.replace('/#', '').replace('#', ''));
-      }
-      notificationEl.remove();
-    });
-    
-    document.body.appendChild(notificationEl);
-    
-    setTimeout(() => {
-      if (notificationEl.parentElement) {
-        notificationEl.remove();
-      }
-    }, 8000);
-  }
-
-  // Send notification to a user
-  async sendNotificationToUser(userId, title, body, data = {}) {
-    try {
-      const userDoc = await db.collection('users').doc(userId).get();
-      const user = userDoc.data();
-      
-      if (!user || !user.pushEnabled) {
-        console.warn('User has notifications disabled');
-        return;
-      }
-      
-      // Store notification in Firestore
-      await db.collection('notifications').add({
-        userId: userId,
-        title: title,
-        body: body,
-        data: data,
-        read: false,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      
-      // For FCM
-      if (user.fcmToken) {
-        // Call your cloud function
-        await this.sendFCMNotification(user.fcmToken, title, body, data);
-        return;
-      }
-      
-      // For Web Push
-      if (user.pushSubscription) {
-        await this.sendWebPushNotification(user.pushSubscription, title, body, data);
-        return;
-      }
-      
-      console.warn('No push method available for user');
-      
-    } catch (error) {
-      console.error('❌ Failed to send notification:', error);
-    }
-  }
-
-  async sendFCMNotification(token, title, body, data = {}) {
-    try {
-      // You'll need to implement this via Cloud Function
-      // For now, we'll just log it
-      console.log('📤 FCM Notification:', { token, title, body, data });
-      
-      // Store in a collection for cloud function to process
-      await db.collection('pushQueue').add({
-        token: token,
-        title: title,
-        body: body,
-        data: data,
-        type: 'fcm',
-        status: 'pending',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      
-      return { success: true };
-    } catch (error) {
-      console.error('FCM send error:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  async sendWebPushNotification(subscription, title, body, data = {}) {
-    try {
-      // You'll need a server-side endpoint for Web Push
-      // For now, store in queue
-      await db.collection('pushQueue').add({
-        subscription: subscription,
-        title: title,
-        body: body,
-        data: data,
-        type: 'webpush',
-        status: 'pending',
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      
-      console.log('📤 Web Push queued:', { title, body });
-      return { success: true };
-    } catch (error) {
-      console.error('Web Push send error:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  async toggleNotifications(enabled) {
-    if (enabled) {
-      await this.requestPermission();
-    } else {
-      // Unsubscribe
-      if (this.messaging) {
-        try {
-          await this.messaging.deleteToken();
-        } catch (error) {
-          console.error('Unsubscribe error:', error);
-        }
-      }
-      
-      // Unsubscribe from Web Push
-      if ('serviceWorker' in navigator) {
-        try {
-          const registration = await navigator.serviceWorker.ready;
-          const subscription = await registration.pushManager.getSubscription();
-          if (subscription) {
-            await subscription.unsubscribe();
-          }
-        } catch (error) {
-          console.error('Web Push unsubscribe error:', error);
-        }
-      }
-      
-      this.subscribed = false;
-      this.token = null;
-      
-      // Update Firestore
-      if (currentUser) {
-        await db.collection('users').doc(currentUser.uid).update({
-          pushEnabled: false,
-          fcmToken: null,
-          pushSubscription: null
-        });
-      }
-      
-      Toast.show('🔕 Notifications disabled', 'info');
-    }
-  }
-
-  getSettings() {
-    return {
-      supported: this.isSupported || ('PushManager' in window),
-      permission: this.notificationPermission,
-      subscribed: this.subscribed,
-      token: this.token,
-      vapidKey: this.vapidKey ? this.vapidKey.substring(0, 20) + '...' : null
-    };
-  }
+  // ... ALL THE CODE INSIDE THIS CLASS ...
 }
 
 // Initialize push manager
@@ -9026,68 +8672,11 @@ const pushManager = new PushNotificationManager();
 // ============================================
 
 function addNotificationButton() {
-  const button = document.createElement('button');
-  button.id = 'notificationBtn';
-  button.style.cssText = `
-    position: fixed;
-    bottom: 100px;
-    right: 20px;
-    z-index: 999;
-    background: #b71c1c;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 56px;
-    height: 56px;
-    font-size: 24px;
-    cursor: pointer;
-    box-shadow: 0 4px 20px rgba(183, 28, 28, 0.4);
-    transition: all 0.3s ease;
-    display: none;
-  `;
-  button.innerHTML = '<i class="fas fa-bell"></i>';
-  button.title = 'Enable Notifications';
-  
-  button.addEventListener('mouseenter', () => {
-    button.style.transform = 'scale(1.1)';
-  });
-  button.addEventListener('mouseleave', () => {
-    button.style.transform = 'scale(1)';
-  });
-  
-  button.addEventListener('click', async () => {
-    if (Notification.permission === 'granted') {
-      Toast.show('Notifications already enabled!', 'success');
-      return;
-    }
-    await pushManager.requestPermission();
-    
-    if (Notification.permission === 'granted') {
-      button.style.display = 'none';
-    }
-  });
-  
-  document.body.appendChild(button);
-  
-  // Show button if notifications aren't enabled
-  setTimeout(() => {
-    if (Notification.permission !== 'granted' && currentUser) {
-      button.style.display = 'flex';
-      button.style.alignItems = 'center';
-      button.style.justifyContent = 'center';
-      
-      // Auto-hide after 10 seconds
-      setTimeout(() => {
-        button.style.display = 'none';
-      }, 10000);
-    }
-  }, 3000);
+  // ... ALL THE CODE INSIDE THIS FUNCTION ...
 }
 
 // Add notification button on load
 document.addEventListener('DOMContentLoaded', addNotificationButton);
-
-
 
     // Export to global scope
     window.router = router;
