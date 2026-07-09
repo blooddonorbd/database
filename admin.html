@@ -663,6 +663,18 @@
     .log-container .log-highlight { color: #facc15; }
     .log-container .log-info { color: #60a5fa; }
 
+    /* Donation Proof Preview */
+    .proof-preview {
+      max-width: 100px;
+      max-height: 100px;
+      border-radius: 8px;
+      object-fit: cover;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      transition: transform 0.2s;
+    }
+    .proof-preview:hover { transform: scale(1.05); }
+
     /* ============================================
        RESPONSIVE
        ============================================ */
@@ -719,6 +731,25 @@
     </div>
   </div>
 
+  <!-- Donation Proof Modal -->
+  <div id="proofModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+      <div style="display:flex; justify-content:space-between; align-items:start;">
+        <h2><i class="fas fa-image"></i> Donation Proof</h2>
+        <button onclick="closeProofModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-secondary);">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div id="proofModalContent" style="text-align:center;">
+        <img id="proofModalImage" src="" alt="Donation Proof" style="max-width:100%; max-height:400px; border-radius:12px; margin-bottom:16px;">
+        <p id="proofModalCode" style="color:var(--text-secondary);"></p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeProofModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- App Container -->
   <div class="app-container" id="appContainer" style="display: none;">
     <!-- Sidebar -->
@@ -731,6 +762,7 @@
       <ul class="nav-menu" id="navMenu">
         <li class="nav-item active" data-tab="dashboard"><i class="fas fa-chart-pie"></i> Dashboard</li>
         <li class="nav-item" data-tab="pending"><i class="fas fa-clock"></i> Pending <span class="badge" id="pendingBadge">0</span></li>
+        <li class="nav-item" data-tab="donation-proofs"><i class="fas fa-image"></i> Donation Proofs <span class="badge" id="donationProofBadge" style="background:#8b5cf6;">0</span></li>
         <li class="nav-item" data-tab="users"><i class="fas fa-users"></i> All Users</li>
         <li class="nav-item" data-tab="donors"><i class="fas fa-heart"></i> Donors <span class="badge green" id="donorsBadge">0</span></li>
         <li class="nav-item" data-tab="requests"><i class="fas fa-bell"></i> Blood Requests <span class="badge amber" id="requestsBadge">0</span></li>
@@ -768,8 +800,14 @@
 
   <script>
     function closeUserModal() { document.getElementById('userModal').style.display = 'none'; }
-    document.addEventListener('click', function(e) { if (e.target === document.getElementById('userModal')) closeUserModal(); });
-    document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && document.getElementById('userModal').style.display === 'flex') closeUserModal(); });
+    function closeProofModal() { document.getElementById('proofModal').style.display = 'none'; }
+    document.addEventListener('click', function(e) { 
+      if (e.target === document.getElementById('userModal')) closeUserModal();
+      if (e.target === document.getElementById('proofModal')) closeProofModal();
+    });
+    document.addEventListener('keydown', function(e) { 
+      if (e.key === 'Escape') { closeUserModal(); closeProofModal(); }
+    });
   </script>
 
   <script>
@@ -818,15 +856,14 @@
         const map = { 'approved': '<span class="status-badge" style="background:#10b981;"><i class="fas fa-check-circle"></i> Approved</span>', 'pending': '<span class="status-badge" style="background:#f59e0b;"><i class="fas fa-clock"></i> Pending</span>', 'rejected': '<span class="status-badge" style="background:#ef4444;"><i class="fas fa-times-circle"></i> Rejected</span>' };
         return map[status] || `<span class="status-badge" style="background:#64748b;">${status}</span>`;
       }
+      function getDonationApprovalBadge(status) {
+        const map = { 'approved': '<span class="status-badge" style="background:#10b981;">✅ Approved</span>', 'pending': '<span class="status-badge" style="background:#f59e0b;">⏳ Pending</span>', 'rejected': '<span class="status-badge" style="background:#ef4444;">❌ Rejected</span>' };
+        return map[status] || `<span class="status-badge" style="background:#64748b;">${status}</span>`;
+      }
       function formatDate(date) { if (!date) return '—'; if (date.toDate) date = date.toDate(); return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
       function formatTime(date) { if (!date) return '—'; if (date.toDate) date = date.toDate(); return new Date(date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }
       function generateCertificateId() { return 'BDC-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase(); }
       function generateDonorId() { return 'DNR-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase(); }
-      function generateRandomPassword() {
-        const words = ["red","donor","save","life","blood","hero","care","hope","plus","vital","brave","kind","pure","gift","beat","warm","gold","true","rise","safe"];
-        const shuffled = [...words].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, 5).join('-');
-      }
 
       const geoDict = { "mymensingh": { lat: 24.7471, lng: 90.4203 }, "dhaka": { lat: 23.8103, lng: 90.4125 }, "kishoreganj": { lat: 24.4414, lng: 90.7766 }, "gazipur": { lat: 23.9999, lng: 90.4203 }, "chattogram": { lat: 22.3569, lng: 91.7832 }, "sylhet": { lat: 24.8949, lng: 91.8687 }, "rajshahi": { lat: 24.3745, lng: 88.6042 } };
       async function getLatLng(district, upazila) {
@@ -837,8 +874,8 @@
 
       function hasPermission(action) {
         if (currentRole === 'main_admin') return true;
-        if (currentRole === 'admin') { const adminActions = ['view','manage_users','manage_donors','manage_requests','manage_certificates','manage_roles','bulk_email','bulk_register','view_logs','approve_users','manage_pending']; return adminActions.includes(action); }
-        if (currentRole === 'moderator') { const modActions = ['view','manage_requests','view_users','approve_users','manage_pending']; return modActions.includes(action); }
+        if (currentRole === 'admin') { const adminActions = ['view','manage_users','manage_donors','manage_requests','manage_certificates','manage_roles','bulk_email','bulk_register','view_logs','approve_users','manage_pending','manage_donation_proofs']; return adminActions.includes(action); }
+        if (currentRole === 'moderator') { const modActions = ['view','manage_requests','view_users','approve_users','manage_pending','manage_donation_proofs']; return modActions.includes(action); }
         return false;
       }
       function canDelete() { return currentRole === 'main_admin' || currentRole === 'admin'; }
@@ -849,6 +886,7 @@
       function canViewContactRevealLogs() { return currentRole === 'main_admin' || currentRole === 'admin'; }
       function canApprovePending() { return currentRole === 'main_admin' || currentRole === 'admin' || currentRole === 'moderator'; }
       function canManageNotices() { return currentRole && ['main_admin', 'admin', 'moderator'].includes(currentRole); }
+      function canManageDonationProofs() { return currentRole && ['main_admin', 'admin', 'moderator'].includes(currentRole); }
 
       async function autoIssueCertificate(userId, userData) {
         try {
@@ -867,20 +905,23 @@
           const pendingSnap = await db.collection('users').where('approvalStatus', '==', 'pending').get();
           const donorsSnap = await db.collection('users').where('isDonor', '==', true).where('approvalStatus', '==', 'approved').get();
           const requestsSnap = await db.collection('bloodRequests').where('status', '==', 'active').get();
+          const donationProofsSnap = await db.collection('users').where('lastDonationApprovalStatus', '==', 'pending').get();
           document.getElementById('pendingBadge').textContent = pendingSnap.size;
           document.getElementById('donorsBadge').textContent = donorsSnap.size;
           document.getElementById('requestsBadge').textContent = requestsSnap.size;
-          return { pending: pendingSnap.size, donors: donorsSnap.size, requests: requestsSnap.size };
-        } catch (e) { console.error('Badge refresh error:', e); return { pending: 0, donors: 0, requests: 0 }; }
+          document.getElementById('donationProofBadge').textContent = donationProofsSnap.size;
+          return { pending: pendingSnap.size, donors: donorsSnap.size, requests: requestsSnap.size, proofs: donationProofsSnap.size };
+        } catch (e) { console.error('Badge refresh error:', e); return { pending: 0, donors: 0, requests: 0, proofs: 0 }; }
       }
 
       // ============================================
-      // LOAD TAB FUNCTION - UPDATED WITH NOTICES
+      // LOAD TAB FUNCTION - UPDATED
       // ============================================
       function loadTab(tab) {
         switch (tab) {
           case 'dashboard': loadDashboard(); break;
           case 'pending': loadPending(); break;
+          case 'donation-proofs': loadDonationProofs(); break;
           case 'users': loadUsers(); break;
           case 'donors': loadDonors(); break;
           case 'requests': loadRequests(); break;
@@ -920,7 +961,7 @@
           await refreshBadges();
           setupNavigation();
           const hash = window.location.hash.substring(1);
-          const validTabs = ['dashboard','pending','users','donors','requests','contact-reveal-logs','certificates','notices','bulk-email','roles'];
+          const validTabs = ['dashboard','pending','donation-proofs','users','donors','requests','contact-reveal-logs','certificates','notices','bulk-email','roles'];
           const defaultTab = validTabs.includes(hash) ? hash : 'dashboard';
           loadTab(defaultTab);
 
@@ -938,14 +979,14 @@
             if (!tab) return;
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             item.classList.add('active');
-            const titleMap = { 'dashboard':'Dashboard','pending':'Pending Approvals','users':'All Users','donors':'Donors','requests':'Blood Requests','contact-reveal-logs':'Contact Reveals','certificates':'Certificates','notices':'Notices Management','bulk-email':'Bulk Email','roles':'Roles Management' };
+            const titleMap = { 'dashboard':'Dashboard','pending':'Pending Approvals','donation-proofs':'Donation Proofs','users':'All Users','donors':'Donors','requests':'Blood Requests','contact-reveal-logs':'Contact Reveals','certificates':'Certificates','notices':'Notices Management','bulk-email':'Bulk Email','roles':'Roles Management' };
             document.getElementById('pageTitle').textContent = titleMap[tab] || tab;
             loadTab(tab);
             if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
             window.location.hash = tab;
           });
         });
-        document.getElementById('logoutBtn').addEventListener('click', () => { adminCredentials = null; auth.signOut().then(() => window.location.href = 'index.html'); });
+        document.getElementById('logoutBtn').addEventListener('click', () => { auth.signOut().then(() => window.location.href = 'index.html'); });
       }
 
       // ============================================
@@ -955,9 +996,13 @@
         const area = document.getElementById('contentArea');
         area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading dashboard...</p>';
         try {
-          const [usersSnap, donorsSnap, requestsSnap, certsSnap, logsSnap] = await Promise.all([
-            db.collection('users').get(), db.collection('users').where('isDonor','==',true).where('approvalStatus','==','approved').get(),
-            db.collection('bloodRequests').where('status','==','active').get(), db.collection('certificates').get(), db.collection('contactRevealLogs').get()
+          const [usersSnap, donorsSnap, requestsSnap, certsSnap, logsSnap, proofsSnap] = await Promise.all([
+            db.collection('users').get(), 
+            db.collection('users').where('isDonor','==',true).where('approvalStatus','==','approved').get(),
+            db.collection('bloodRequests').where('status','==','active').get(), 
+            db.collection('certificates').get(), 
+            db.collection('contactRevealLogs').get(),
+            db.collection('users').where('lastDonationApprovalStatus','==','pending').get()
           ]);
           area.innerHTML = `
             <div class="stats-grid">
@@ -966,17 +1011,18 @@
               <div class="stat-card"><div class="stat-icon amber"><i class="fas fa-bell"></i></div><div><small>Active Requests</small><h3>${requestsSnap.size}</h3></div></div>
               <div class="stat-card"><div class="stat-icon purple"><i class="fas fa-certificate"></i></div><div><small>Certificates</small><h3>${certsSnap.size}</h3></div></div>
               <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-phone-alt"></i></div><div><small>Contact Reveals</small><h3>${logsSnap.size}</h3></div></div>
+              <div class="stat-card"><div class="stat-icon" style="background:#ede9fe;color:#7c3aed;"><i class="fas fa-image"></i></div><div><small>Pending Proofs</small><h3>${proofsSnap.size}</h3></div></div>
             </div>
             <div class="grid-2">
               <div class="table-card"><div class="card-header"><h3><i class="fas fa-clock"></i> Recent Contact Reveals</h3></div><div style="padding:16px;" id="dashboardRecentLogs">Loading...</div></div>
-              <div class="table-card"><div class="card-header"><h3><i class="fas fa-chart-bar"></i> Quick Overview</h3></div><div style="padding:20px;"><p>Total Users: <strong>${usersSnap.size}</strong></p><p>Pending Approvals: <strong id="dashPendingCount">-</strong></p><p>Today's Reveals: <strong id="dashTodayReveals">-</strong></p></div></div>
+              <div class="table-card"><div class="card-header"><h3><i class="fas fa-chart-bar"></i> Quick Overview</h3></div><div style="padding:20px;"><p>Total Users: <strong>${usersSnap.size}</strong></p><p>Pending Approvals: <strong id="dashPendingCount">-</strong></p><p>Pending Donation Proofs: <strong id="dashProofCount">${proofsSnap.size}</strong></p></div></div>
             </div>
             <div class="table-card"><div class="card-header"><h3><i class="fas fa-tint"></i> Blood Group Distribution</h3></div><div style="padding:20px;"><canvas id="bloodGroupChart" height="250"></canvas></div></div>
           `;
           loadRecentLogs(); 
           const pendingCount = await refreshBadges(); 
           const dashPending = document.getElementById('dashPendingCount'); if(dashPending) dashPending.textContent = pendingCount.pending;
-          loadTodayReveals(); loadBloodGroupChart();
+          loadBloodGroupChart();
         } catch (e) { area.innerHTML = `<p style="color:var(--danger);">Error loading dashboard: ${e.message}</p>`; }
       }
 
@@ -996,8 +1042,6 @@
         } catch (e) { container.innerHTML = '<p style="color:var(--text-secondary);">Error loading logs.</p>'; }
       }
 
-      async function loadTodayReveals() { const el = document.getElementById('dashTodayReveals'); if(!el) return; try { const today = new Date(); today.setHours(0,0,0,0); const snap = await db.collection('contactRevealLogs').where('revealedAt','>=',today).get(); el.textContent = snap.size; } catch(e) { el.textContent = 'Error'; } }
-
       async function loadBloodGroupChart() {
         const canvas = document.getElementById('bloodGroupChart'); if(!canvas) return;
         try {
@@ -1006,6 +1050,265 @@
           new Chart(canvas, { type:'bar', data:{ labels:Object.keys(groups), datasets:[{ label:'Donors', data:Object.values(groups), backgroundColor:'#dc2626', borderRadius:6 }] }, options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ stepSize:1 } } } } });
         } catch(e) { console.error('Chart error:', e); }
       }
+
+      // ============================================
+// DONATION PROOFS MANAGEMENT (FIXED - No Index Required)
+// ============================================
+async function loadDonationProofs() {
+  if (!canManageDonationProofs()) {
+    document.getElementById('contentArea').innerHTML = '<p style="color:var(--danger);">Access denied. Only administrators and moderators can manage donation proofs.</p>';
+    return;
+  }
+
+  const area = document.getElementById('contentArea');
+  area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading donation proofs...</p>';
+
+  try {
+    // 🔥 FIX: Remove orderBy to avoid index requirement
+    // First get all users (or limit to recent ones)
+    const snap = await db.collection('users')
+      .where('lastDonationApprovalStatus', 'in', ['pending', 'approved', 'rejected'])
+      .get();
+
+    const proofs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // 🔥 Sort in JavaScript instead of Firestore
+    proofs.sort((a, b) => {
+      const dateA = a.lastDonationSubmittedAt?.toDate?.() || new Date(0);
+      const dateB = b.lastDonationSubmittedAt?.toDate?.() || new Date(0);
+      return dateB - dateA;
+    });
+
+    // Filter: only users who have submitted donation proof
+    const pendingProofs = proofs.filter(u => u.lastDonationApprovalStatus === 'pending');
+    const approvedProofs = proofs.filter(u => u.lastDonationApprovalStatus === 'approved');
+    const rejectedProofs = proofs.filter(u => u.lastDonationApprovalStatus === 'rejected');
+
+    let html = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+        <h2 style="margin: 0;"><i class="fas fa-image"></i> Donation Proofs Management</h2>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <span style="background:#f59e0b; color:white; padding:4px 14px; border-radius:20px; font-size:13px; font-weight:600;">⏳ Pending: ${pendingProofs.length}</span>
+          <span style="background:#10b981; color:white; padding:4px 14px; border-radius:20px; font-size:13px; font-weight:600;">✅ Approved: ${approvedProofs.length}</span>
+          <span style="background:#ef4444; color:white; padding:4px 14px; border-radius:20px; font-size:13px; font-weight:600;">❌ Rejected: ${rejectedProofs.length}</span>
+        </div>
+      </div>
+    `;
+
+    if (proofs.length === 0) {
+      html += `
+        <div class="table-card" style="padding:40px; text-align:center;">
+          <i class="fas fa-image" style="font-size:48px; color:#ccc;"></i>
+          <h3 style="margin-top:16px;">No Donation Proofs Submitted</h3>
+          <p style="color:var(--text-secondary);">Donors haven't submitted any donation proofs yet.</p>
+        </div>
+      `;
+      area.innerHTML = html;
+      return;
+    }
+
+    html += `
+      <div class="table-card">
+        <div class="card-header">
+          <h3>All Donation Submissions (${proofs.length})</h3>
+          <div style="display:flex; gap:8px;">
+            <select id="proofFilter" class="form-select" style="padding:6px 12px; font-size:13px;" onchange="window._filterProofs()">
+              <option value="all">All</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+        </div>
+        <table class="table" id="proofsTable">
+          <thead>
+            <tr>
+              <th>Donor</th>
+              <th>Blood</th>
+              <th>Donation Date</th>
+              <th>Units</th>
+              <th>Proof</th>
+              <th>Status</th>
+              <th>Submitted</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="proofsTableBody">
+        ${proofs.map(u => {
+          const proofImg = u.lastDonationProof || null;
+          const code = u.lastDonationCode || null;
+          const status = u.lastDonationApprovalStatus || 'pending';
+          
+          let proofDisplay = '—';
+          if (proofImg) {
+            proofDisplay = `<img src="${proofImg}" alt="Proof" class="proof-preview" onclick="window._viewProof('${proofImg}', '${code || ''}')" style="cursor:pointer;">`;
+          } else if (code) {
+            proofDisplay = `<span style="background:#f1f5f9; padding:4px 12px; border-radius:20px; font-family:monospace; cursor:pointer;" onclick="window._viewProof('', '${code}')">🔑 ${code}</span>`;
+          }
+
+          const statusColors = {
+            'pending': '#f59e0b',
+            'approved': '#10b981',
+            'rejected': '#ef4444'
+          };
+
+          return `
+            <tr data-status="${status}">
+              <td><strong>${u.fullName || 'Unknown'}</strong><br><small style="color:var(--text-secondary);">${u.email || ''}</small></td>
+              <td><span class="blood-badge">${u.bloodGroup || 'N/A'}</span></td>
+              <td>${u.lastDonationDate ? new Date(u.lastDonationDate).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}) : '—'}</td>
+              <td>${u.lastDonationUnits || 1}</td>
+              <td>${proofDisplay}</td>
+              <td><span class="status-badge" style="background:${statusColors[status] || '#64748b'};">${status.toUpperCase()}</span></td>
+              <td><small>${u.lastDonationSubmittedAt ? formatTime(u.lastDonationSubmittedAt) + ' ' + formatDate(u.lastDonationSubmittedAt) : '—'}</small></td>
+              <td>
+                ${status === 'pending' ? `
+                  <button class="btn-icon success" onclick="window._approveDonationProof('${u.id}')" title="Approve"><i class="fas fa-check"></i></button>
+                  <button class="btn-icon danger" onclick="window._rejectDonationProof('${u.id}')" title="Reject"><i class="fas fa-times"></i></button>
+                ` : `
+                  <button class="btn-icon" onclick="window._resetDonationProof('${u.id}')" title="Reset to Pending"><i class="fas fa-undo"></i></button>
+                `}
+              </td>
+            </tr>
+          `;
+        }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    area.innerHTML = html;
+
+    // Filter function
+    window._filterProofs = function() {
+      const filter = document.getElementById('proofFilter')?.value || 'all';
+      const rows = document.querySelectorAll('#proofsTableBody tr');
+      rows.forEach(row => {
+        const status = row.dataset.status || 'pending';
+        if (filter === 'all' || status === filter) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    };
+
+    // View proof in modal
+    window._viewProof = function(imgUrl, code) {
+      const modal = document.getElementById('proofModal');
+      const imgEl = document.getElementById('proofModalImage');
+      const codeEl = document.getElementById('proofModalCode');
+      
+      if (imgUrl) {
+        imgEl.src = imgUrl;
+        imgEl.style.display = 'block';
+      } else {
+        imgEl.style.display = 'none';
+      }
+      
+      if (code) {
+        codeEl.innerHTML = `<strong>Verification Code:</strong> <code style="background:#f1f5f9; padding:4px 12px; border-radius:8px; font-size:18px;">${code}</code>`;
+      } else {
+        codeEl.textContent = '';
+      }
+      
+      modal.style.display = 'flex';
+    };
+
+    // Approve Donation Proof
+    window._approveDonationProof = async (userId) => {
+      if (!canManageDonationProofs()) {
+        showToast('You do not have permission to approve proofs', 'error');
+        return;
+      }
+      
+      if (!confirm('Approve this donation proof? This will update the donor\'s eligibility status.')) return;
+      
+      try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        const userData = userDoc.data();
+        
+        // Update approval status to approved
+        await db.collection('users').doc(userId).update({
+          lastDonationApprovalStatus: 'approved',
+          lastDonationApprovedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          lastDonationApprovedBy: currentUser.uid,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        // Also update total donations count if it's a new donation
+        if (!userData.lastDonationApprovalStatus || userData.lastDonationApprovalStatus !== 'approved') {
+          const updates = {};
+          if (!userData.totalDonations) {
+            updates.totalDonations = 1;
+            updates.totalUnitsDonated = userData.lastDonationUnits || 1;
+          } else {
+            updates.totalDonations = (userData.totalDonations || 0) + 1;
+            updates.totalUnitsDonated = (userData.totalUnitsDonated || 0) + (userData.lastDonationUnits || 1);
+          }
+          await db.collection('users').doc(userId).update(updates);
+        }
+        
+        showToast('Donation proof approved successfully!', 'success');
+        refreshBadges();
+        loadDonationProofs();
+      } catch (error) {
+        showToast('Error approving proof: ' + error.message, 'error');
+      }
+    };
+
+    // Reject Donation Proof
+    window._rejectDonationProof = async (userId) => {
+      if (!canManageDonationProofs()) {
+        showToast('You do not have permission to reject proofs', 'error');
+        return;
+      }
+      
+      if (!confirm('Reject this donation proof? The donor will be notified.')) return;
+      
+      try {
+        await db.collection('users').doc(userId).update({
+          lastDonationApprovalStatus: 'rejected',
+          lastDonationRejectedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          lastDonationRejectedBy: currentUser.uid,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        showToast('Donation proof rejected', 'warning');
+        refreshBadges();
+        loadDonationProofs();
+      } catch (error) {
+        showToast('Error rejecting proof: ' + error.message, 'error');
+      }
+    };
+
+    // Reset to Pending
+    window._resetDonationProof = async (userId) => {
+      if (!canManageDonationProofs()) {
+        showToast('You do not have permission to reset proofs', 'error');
+        return;
+      }
+      
+      if (!confirm('Reset this donation proof status to Pending?')) return;
+      
+      try {
+        await db.collection('users').doc(userId).update({
+          lastDonationApprovalStatus: 'pending',
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        showToast('Proof status reset to Pending', 'info');
+        refreshBadges();
+        loadDonationProofs();
+      } catch (error) {
+        showToast('Error resetting proof: ' + error.message, 'error');
+      }
+    };
+
+  } catch (error) {
+    area.innerHTML = `<p style="color:var(--danger);">Error loading donation proofs: ${error.message}</p>`;
+  }
+}
 
       // ============================================
       // PENDING APPROVALS
@@ -1092,7 +1395,7 @@
       window._updateBatchActions = function() { const batchActions = document.getElementById('batchActions'); const selectedCount = document.getElementById('selectedCount'); const batchDeleteBtn = document.getElementById('batchDeleteBtn'); if(!batchActions || !selectedCount) return; const count = selectedUsers.size; if(count > 0) { batchActions.classList.remove('hidden'); selectedCount.textContent = `${count} user${count !== 1 ? 's' : ''} selected`; if(batchDeleteBtn) { batchDeleteBtn.disabled = false; batchDeleteBtn.innerHTML = `<i class="fas fa-trash"></i> Delete ${count} Selected`; } } else { batchActions.classList.add('hidden'); selectedCount.textContent = '0 selected'; if(batchDeleteBtn) { batchDeleteBtn.disabled = true; batchDeleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete Selected'; } } };
       window._clearSelection = function() { selectedUsers.clear(); window._renderUsersTable(displayedUsers); window._updateBatchActions(); };
       window._clearUserSearch = function() { ['userSearchInput','bloodGroupFilter','districtFilter','roleFilter'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; }); selectedUsers.clear(); window._filterUsers(); };
-      window._showUserDetails = async function(userId) { try { const doc = await db.collection('users').doc(userId).get(); if(!doc.exists) return showToast('User not found','error'); const data = doc.data(); const modal = document.getElementById('userModal'); const content = document.getElementById('userModalContent'); content.innerHTML = `<div style="display:grid; gap:8px;"><p><strong>Full Name:</strong> ${data.fullName || 'N/A'}</p><p><strong>Email:</strong> ${data.email || 'N/A'}</p><p><strong>Phone:</strong> ${data.phoneNumber || 'N/A'}</p><p><strong>Blood Group:</strong> ${data.bloodGroup || 'N/A'}</p><p><strong>District:</strong> ${data.district || 'N/A'}</p><p><strong>Upazila:</strong> ${data.upazila || 'N/A'}</p><p><strong>Address:</strong> ${data.address || 'N/A'}</p><p><strong>Status:</strong> ${data.approvalStatus || 'N/A'}</p><p><strong>Role:</strong> ${getRoleDisplayName(data.role)}</p><p><strong>User Type:</strong> ${data.isDonor ? 'Blood Donor' : 'Donor Seeker'}</p><p><strong>Donor ID:</strong> ${data.donorId || 'Not assigned'}</p><p><strong>Registered:</strong> ${formatDate(data.createdAt)}</p>${data.certificates && data.certificates.length > 0 ? `<p><strong>Certificates:</strong> ${data.certificates.length} certificate(s) issued</p>` : ''}</div>`; modal.style.display = 'flex'; } catch(e) { showToast('Error loading user details: '+e.message,'error'); } };
+      window._showUserDetails = async function(userId) { try { const doc = await db.collection('users').doc(userId).get(); if(!doc.exists) return showToast('User not found','error'); const data = doc.data(); const modal = document.getElementById('userModal'); const content = document.getElementById('userModalContent'); content.innerHTML = `<div style="display:grid; gap:8px;"><p><strong>Full Name:</strong> ${data.fullName || 'N/A'}</p><p><strong>Email:</strong> ${data.email || 'N/A'}</p><p><strong>Phone:</strong> ${data.phoneNumber || 'N/A'}</p><p><strong>Blood Group:</strong> ${data.bloodGroup || 'N/A'}</p><p><strong>District:</strong> ${data.district || 'N/A'}</p><p><strong>Upazila:</strong> ${data.upazila || 'N/A'}</p><p><strong>Address:</strong> ${data.address || 'N/A'}</p><p><strong>Status:</strong> ${data.approvalStatus || 'N/A'}</p><p><strong>Role:</strong> ${getRoleDisplayName(data.role)}</p><p><strong>User Type:</strong> ${data.isDonor ? 'Blood Donor' : 'Donor Seeker'}</p><p><strong>Donor ID:</strong> ${data.donorId || 'Not assigned'}</p><p><strong>Registered:</strong> ${formatDate(data.createdAt)}</p>${data.certificates && data.certificates.length > 0 ? `<p><strong>Certificates:</strong> ${data.certificates.length} certificate(s) issued</p>` : ''}${data.lastDonationDate ? `<p><strong>Last Donation:</strong> ${new Date(data.lastDonationDate).toLocaleDateString()}</p><p><strong>Donation Status:</strong> ${getDonationApprovalBadge(data.lastDonationApprovalStatus)}</p>` : ''}</div>`; modal.style.display = 'flex'; } catch(e) { showToast('Error loading user details: '+e.message,'error'); } };
       window._deleteUser = async function(userId) { if(!canDelete()) { showToast('You do not have permission to delete users','error'); return; } try { const doc = await db.collection('users').doc(userId).get(); if(!doc.exists) return showToast('User not found','error'); const data = doc.data(); if(SUPER_ADMINS.includes(data.email)) { showToast('Cannot delete super admin','error'); return; } if(data.email === currentUser?.email) { showToast('You cannot delete your own account','error'); return; } if(!confirm(`Are you sure you want to permanently delete user "${data.fullName || 'Unknown'}"?\n\nThis action cannot be undone.`)) return; await db.collection('users').doc(userId).delete(); selectedUsers.delete(userId); showToast('User deleted successfully','success'); refreshBadges(); loadUsers(); } catch(e) { showToast('Error deleting user: '+e.message,'error'); } };
       window._batchDeleteUsers = async function() { const ids = Array.from(selectedUsers); if(ids.length === 0) { showToast('No users selected','warning'); return; } const protectedUsers = []; for(const id of ids) { const doc = await db.collection('users').doc(id).get(); if(doc.exists) { const data = doc.data(); if(SUPER_ADMINS.includes(data.email) || data.email === currentUser?.email) protectedUsers.push(data.email); } } if(protectedUsers.length > 0) { showToast(`Cannot delete protected users: ${protectedUsers.join(', ')}`,'warning'); return; } if(!confirm(`⚠️ Are you sure you want to permanently delete ${ids.length} user${ids.length !== 1 ? 's' : ''}?\n\nThis action cannot be undone!`)) return; let success = 0, fail = 0; for(const id of ids) { try { await db.collection('users').doc(id).delete(); success++; } catch(e) { fail++; console.error('Delete error:', id, e); } } selectedUsers.clear(); showToast(`Deleted ${success} users${fail > 0 ? `, ${fail} failed` : ''}`, fail > 0 ? 'warning' : 'success'); refreshBadges(); loadUsers(); };
 
@@ -1104,10 +1407,10 @@
         try {
           const snap = await db.collection('users').where('isDonor','==',true).where('approvalStatus','==','approved').orderBy('createdAt','desc').get();
           if(snap.empty) { area.innerHTML = `<div class="table-card" style="padding:40px; text-align:center;"><i class="fas fa-heart" style="font-size:48px; color:#ccc;"></i><h3 style="margin-top:16px;">No Donors Found</h3><p style="color:var(--text-secondary);">Approved donors will appear here.</p></div>`; return; }
-          let html = `<div class="table-card"><div class="card-header"><h3><i class="fas fa-heart"></i> Registered Donors (${snap.size})</h3><button class="btn-secondary btn-sm" onclick="window._exportDonors()"><i class="fas fa-download"></i> Export</button></div><table class="table"><thead><tr><th>Name</th><th>Blood</th><th>Phone</th><th>Location</th><th>Donor ID</th><th>Certificate</th></tr></thead><tbody>`;
-          snap.docs.forEach(d => { const u = d.data(); const hasCert = u.certificates && u.certificates.length > 0; html += `<tr><td>${getRoleSymbol(u.role || 'user')} ${u.fullName || 'Unknown'}${hasCert ? '<i class="fas fa-certificate cert-badge" title="Certified Donor"></i>' : ''}</td><td><span class="blood-badge">${u.bloodGroup || 'N/A'}</span></td><td>${u.phoneNumber || 'N/A'}</td><td>${u.district || 'N/A'}, ${u.upazila || ''}</td><td><code style="background:#f1f5f9;padding:2px 8px;border-radius:4px;">${u.donorId || 'N/A'}</code></td><td>${canManageCertificates() ? `<button class="btn-icon" onclick="window._issueCertificate('${d.id}')" title="Issue Certificate"><i class="fas fa-certificate" style="color:#7c3aed;"></i></button>` : ''}${hasCert ? `<span style="font-size:12px;color:var(--success);">✓</span>` : ''}</td></tr>`; });
+          let html = `<div class="table-card"><div class="card-header"><h3><i class="fas fa-heart"></i> Registered Donors (${snap.size})</h3><button class="btn-secondary btn-sm" onclick="window._exportDonors()"><i class="fas fa-download"></i> Export</button></div><table class="table"><thead><tr><th>Name</th><th>Blood</th><th>Phone</th><th>Location</th><th>Donor ID</th><th>Last Donation</th><th>Certificate</th></tr></thead><tbody>`;
+          snap.docs.forEach(d => { const u = d.data(); const hasCert = u.certificates && u.certificates.length > 0; const donationStatus = u.lastDonationApprovalStatus || 'not_submitted'; const donationDate = u.lastDonationDate || '—'; html += `<tr><td>${getRoleSymbol(u.role || 'user')} ${u.fullName || 'Unknown'}${hasCert ? '<i class="fas fa-certificate cert-badge" title="Certified Donor"></i>' : ''}</td><td><span class="blood-badge">${u.bloodGroup || 'N/A'}</span></td><td>${u.phoneNumber || 'N/A'}</td><td>${u.district || 'N/A'}, ${u.upazila || ''}</td><td><code style="background:#f1f5f9;padding:2px 8px;border-radius:4px;">${u.donorId || 'N/A'}</code></td><td>${donationDate !== '—' ? new Date(donationDate).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}) : '—'} ${donationStatus !== 'not_submitted' ? getDonationApprovalBadge(donationStatus) : ''}</td><td>${canManageCertificates() ? `<button class="btn-icon" onclick="window._issueCertificate('${d.id}')" title="Issue Certificate"><i class="fas fa-certificate" style="color:#7c3aed;"></i></button>` : ''}${hasCert ? `<span style="font-size:12px;color:var(--success);">✓</span>` : ''}</td></tr>`; });
           html += `</tbody></table></div>`; area.innerHTML = html;
-          window._exportDonors = function() { const donors = snap.docs.map(d => d.data()); const headers = ['Name','Email','Phone','Blood Group','District','Upazila','Donor ID','Certificates']; const rows = donors.map(u => [u.fullName||'', u.email||'', u.phoneNumber||'', u.bloodGroup||'', u.district||'', u.upazila||'', u.donorId||'', (u.certificates||[]).length]); const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n'); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `donors_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url); showToast('Donors exported!','success'); };
+          window._exportDonors = function() { const donors = snap.docs.map(d => d.data()); const headers = ['Name','Email','Phone','Blood Group','District','Upazila','Donor ID','Certificates','Last Donation','Donation Status']; const rows = donors.map(u => [u.fullName||'', u.email||'', u.phoneNumber||'', u.bloodGroup||'', u.district||'', u.upazila||'', u.donorId||'', (u.certificates||[]).length, u.lastDonationDate || '', u.lastDonationApprovalStatus || '']); const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n'); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `donors_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url); showToast('Donors exported!','success'); };
         } catch(e) { area.innerHTML = `<p style="color:var(--danger);">Error loading donors: ${e.message}</p>`; }
       }
 
@@ -1646,11 +1949,11 @@
       // ============================================
       window.addEventListener('hashchange', () => {
         const hash = window.location.hash.substring(1);
-        const validTabs = ['dashboard','pending','users','donors','requests','contact-reveal-logs','certificates','notices','bulk-email','roles'];
+        const validTabs = ['dashboard','pending','donation-proofs','users','donors','requests','contact-reveal-logs','certificates','notices','bulk-email','roles'];
         if(validTabs.includes(hash)) { const navItem = document.querySelector(`[data-tab="${hash}"]`); if(navItem) navItem.click(); }
       });
 
-      console.log('🩸 Blood Donor BD Admin Panel loaded with Notices System.');
+      console.log('🩸 Blood Donor BD Admin Panel loaded with Donation Proofs System.');
     })();
   </script>
 </body>
