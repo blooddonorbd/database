@@ -1,6 +1,6 @@
 {
   "name": "Blood Donor BD - Save Lives",
-  "short_name": "BloodDonorBD",
+  "short_name": "Blood Donor BD",
   "description": "Connect with blood donors and save lives in Bangladesh",
   "start_url": "/database",
   "display": "standalone",
@@ -37,18 +37,6 @@
         }
       ]
     },
-    {
-      "name": "Request Blood",
-      "short_name": "Request",
-      "description": "Post a blood request",
-      "url": "/database/#request-blood",
-      "icons": [
-        {
-          "src": "https://i.ibb.co/fd3zk65t/1000018685.jpg",
-          "sizes": "96x96"
-        }
-      ]
-    },
         {
       "name": "Administrator",
       "short_name": "Admin",
@@ -56,7 +44,7 @@
       "url": "/database/admin.html",
       "icons": [
         {
-          "src": "https://i.ibb.co/jZxdM6LP/Picsart-26-07-10-00-45-14-268.png",
+          "src": "https://i.ibb.co/fd3zk65t/1000018685.jpg",
           "sizes": "96x96"
         }
       ]
