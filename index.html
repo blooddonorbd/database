@@ -3355,17 +3355,22 @@ setTimeout(() => {
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;">
           <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
             <h3 style="margin-bottom: 20px;">Quick Actions</h3>
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-              <button onclick="router.navigate('find-donors')" class="btn btn-outline"><i class="fas fa-search"></i> Find Donors</button>
-              <button onclick="router.navigate('request-blood')" class="btn btn-outline"><i class="fas fa-bell"></i> Request Blood</button>
-              <button onclick="router.navigate('all-requests')" class="btn btn-outline"><i class="fas fa-list"></i> All Blood Requests</button>
-              <button onclick="router.navigate('dm-donor')" class="btn btn-outline"><i class="fas fa-comments"></i> DM Donors</button>
-              ${userProfile?.isDonor ? `
-                <button onclick="router.navigate('certificates')" class="btn btn-outline"><i class="fas fa-certificate"></i> My Certificates</button>
-              ` : ''}
-              <button onclick="router.navigate('profile')" class="btn btn-outline"><i class="fas fa-user-edit"></i> Edit Profile</button>
-              ${hasAdminAccess() ? `<a href="admin.html" class="btn btn-primary"><i class="fas fa-shield-alt"></i> Admin Panel</a>` : ''}
-            </div>
+            
+<div style="display: flex; flex-direction: column; gap: 12px;">
+  <button onclick="router.navigate('find-donors')" class="btn btn-outline"><i class="fas fa-search"></i> Find Donors</button>
+  <button onclick="router.navigate('request-blood')" class="btn btn-outline"><i class="fas fa-bell"></i> Request Blood</button>
+  <button onclick="router.navigate('all-requests')" class="btn btn-outline"><i class="fas fa-list"></i> All Blood Requests</button>
+  <button onclick="router.navigate('dm-donor')" class="btn btn-outline"><i class="fas fa-comments"></i> DM Donors</button>
+  ${userProfile?.isDonor ? `
+    <button onclick="router.navigate('certificates')" class="btn btn-outline"><i class="fas fa-certificate"></i> My Certificates</button>
+    <!-- 🩸 NEW: Last Donation Date Button -->
+    <button onclick="openLastDonationModal()" class="btn btn-outline">
+      <i class="fas fa-calendar-check"></i> Last Donation Date
+    </button>
+  ` : ''}
+  <button onclick="router.navigate('profile')" class="btn btn-outline"><i class="fas fa-user-edit"></i> Edit Profile</button>
+  ${hasAdminAccess() ? `<a href="admin.html" class="btn btn-primary"><i class="fas fa-shield-alt"></i> Admin Panel</a>` : ''}
+</div>
           </div>
           
           <div style="background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
@@ -3431,6 +3436,38 @@ setTimeout(() => {
       </div>
     `}
   </div>
+  <!-- Add this inside the Profile Information section, right after the profile picture -->
+<div style="margin-top: 12px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+
+  <!-- Last Donation Date Display -->
+  <div style="background: #f5f5f5; padding: 8px 16px; border-radius: 25px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #333; margin-bottom: 10px;">
+    <i class="fas fa-calendar-check" style="color: #b71c1c;"></i>
+    <span>Last Donation: <strong>
+      ${userProfile?.lastDonationDate ? new Date(userProfile.lastDonationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Not recorded'}
+    </strong></span>
+  </div>
+
+  <!-- Update Button (opens the Last Donation Modal) -->
+  <button onclick="openLastDonationModal()" style="
+    background: #b71c1c;
+    color: white;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 25px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(183, 28, 28, 0.3);
+  " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(183, 28, 28, 0.5)'" 
+     onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 8px rgba(183, 28, 28, 0.3)'">
+    <i class="fas fa-pen"></i> Update Donation
+  </button>
+</div>
   
   <div style="display: flex; flex-direction: column; gap: 12px; text-align: center;">
     <p><strong>Name:</strong> ${roleSymbol}${userProfile?.fullName || '-'}</p>
@@ -4122,6 +4159,67 @@ async function searchDonors(page = 1) {
   }
 }
 
+
+// 🔥 ডোনারের এলিজিবিলিটি চেক করার ফাংশন (APPROVAL STATUS সহ)
+function getDonorEligibilityStatus(donor) {
+    // যদি ডোনারের কাছে lastDonationDate না থাকে, তাহলে Eligible
+    if (!donor.lastDonationDate) {
+        return { status: 'eligible', label: '✅ Eligible', color: '#2e7d32', bg: '#e8f5e9' };
+    }
+    
+    // চেক করুন approval status
+    const approvalStatus = donor.lastDonationApprovalStatus || 'pending';
+    
+    // যদি pending বা rejected হয়, তাহলে Not Eligible দেখান
+    if (approvalStatus === 'pending') {
+        return { 
+            status: 'pending', 
+            label: '⏳Donation Pending ', 
+            color: '#f57c00', 
+            bg: '#fff3e0'
+        };
+    }
+    
+    if (approvalStatus === 'rejected') {
+        return { 
+            status: 'rejected', 
+            label: '❌ Needs Verification', 
+            color: '#d32f2f', 
+            bg: '#ffebee'
+        };
+    }
+    
+    // APPROVED - তাহলে দিন গণনা করুন
+    const lastDate = new Date(donor.lastDonationDate);
+    const today = new Date();
+    const diffTime = today - lastDate;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    const waitDays = donor.gender === 'female' ? 120 : 90;
+    
+    if (diffDays >= waitDays) {
+        return { 
+            status: 'eligible', 
+            label: '✅ Eligible', 
+            color: '#2e7d32', 
+            bg: '#e8f5e9',
+            daysSince: diffDays,
+            waitDays: waitDays
+        };
+    } else {
+        const remainingDays = waitDays - diffDays;
+        return { 
+            status: 'not-eligible', 
+            label: `⏳ ${remainingDays} days left`, 
+            color: '#f57c00', 
+            bg: '#fff3e0',
+            daysSince: diffDays,
+            waitDays: waitDays,
+            remainingDays: remainingDays
+        };
+    }
+}
+
 function renderDonorPage(page) {
   const results = document.getElementById('donorResults');
   if (!results) return;
@@ -4145,7 +4243,28 @@ function renderDonorPage(page) {
   pageDonors.forEach(donor => {
     const roleSymbol = getRoleSymbol(donor.role);
     
-    // Get profile picture URL or use default avatar
+    // এলিজিবিলিটি চেক করুন
+const eligibility = getDonorEligibilityStatus(donor);
+
+// এলিজিবিলিটি ব্যাজ - উপরে ডান কর্ণারে (স্ট্যাটাস অনুযায়ী)
+let badgeStyle = '';
+let badgeText = '';
+
+if (eligibility.status === 'eligible') {
+  badgeStyle = 'background: #e8f5e9; color: #2e7d32; border: 1px solid #2e7d32;';
+  badgeText = '✅ Eligible';
+} else if (eligibility.status === 'pending') {
+  badgeStyle = 'background: #fff3e0; color: #f57c00; border: 1px solid #f57c00;';
+  badgeText = '⏳ Donation Pending';
+} else if (eligibility.status === 'rejected') {
+  badgeStyle = 'background: #ffebee; color: #d32f2f; border: 1px solid #d32f2f;';
+  badgeText = '❌ Needs Verification';
+} else {
+  badgeStyle = 'background: #fff3e0; color: #f57c00; border: 1px solid #f57c00;';
+  badgeText = `⏳ ${eligibility.remainingDays || 0} days left`;
+}
+    
+    // প্রোফাইল পিকচার বা ডিফল্ট অ্যাভাটার
     const profilePicUrl = donor.profilePic || null;
     const avatarHtml = profilePicUrl ? 
       `<img src="${profilePicUrl}" alt="${donor.fullName}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #b71c1c; box-shadow: 0 2px 8px rgba(183, 28, 28, 0.2);">` :
@@ -4165,9 +4284,10 @@ function renderDonorPage(page) {
       align-items: center;
       text-align: center;
       height: 100%;
+      position: relative;
     `;
     
-    // Add hover effect
+    // হোভার ইফেক্ট
     card.addEventListener('mouseenter', function() {
       this.style.transform = 'translateY(-5px)';
       this.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
@@ -4177,18 +4297,47 @@ function renderDonorPage(page) {
       this.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
     });
     
+    // ✅ এলিজিবিলিটি ব্যাজ - উপরে ডান কর্ণারে
+    const eligibilityBadge = eligibility.status === 'eligible' 
+      ? `<span style="background: #e8f5e9; color: #2e7d32; border: 1px solid #2e7d32;">✅ Eligible</span>`
+      : `<span style="background: #fff3e0; color: #f57c00; border: 1px solid #f57c00;">⏳ ${eligibility.remainingDays || 0} days left</span>`;
+    
     card.innerHTML = `
-      <!-- Profile Picture - Centered -->
-      <div style="margin-bottom: 12px;">
+      <!-- এলিজিবিলিটি ব্যাজ - উপরে ডান কর্ণারে -->
+<div style="
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  z-index: 2;
+  ${badgeStyle}
+">
+  ${badgeText}
+</div>
+      
+      <!-- প্রোফাইল পিকচার - সেন্টার -->
+      <div style="margin-bottom: 12px; position: relative;">
         ${avatarHtml}
+        ${eligibility.status === 'eligible' ? 
+          `<div style="position: absolute; bottom: -2px; right: -2px; background: #2e7d32; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white;">
+            <i class="fas fa-check"></i>
+          </div>` : 
+          `<div style="position: absolute; bottom: -2px; right: -2px; background: #f57c00; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white;">
+            <i class="fas fa-clock"></i>
+          </div>`
+        }
       </div>
       
-      <!-- Donor Name - Centered -->
+      <!-- ডোনারের নাম - সেন্টার -->
       <h3 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600; color: #333;">
         ${roleSymbol}${donor.fullName}
       </h3>
       
-      <!-- Blood Group - Left Aligned -->
+      <!-- ব্লাড গ্রুপ - বাম দিকে -->
       <div style="width: 100%; text-align: left; margin: 8px 0 12px 0;">
         <span style="background: #b71c1c; color: white; padding: 4px 16px; border-radius: 20px; font-weight: 700; font-size: 16px; display: inline-block;">
           ${donor.bloodGroup}
@@ -4198,7 +4347,7 @@ function renderDonorPage(page) {
         </span>
       </div>
       
-      <!-- Donor Details - Left Aligned -->
+      <!-- ডোনার ডিটেইলস - বাম দিকে -->
       <div style="width: 100%; text-align: left; display: flex; flex-direction: column; gap: 8px; margin: 4px 0 16px 0; border-top: 1px solid #f0f0f0; padding-top: 12px;">
         <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: #555;">
           <i class="fas fa-map-marker-alt" style="width: 18px; color: #b71c1c;"></i>
@@ -4208,9 +4357,20 @@ function renderDonorPage(page) {
           <i class="fas fa-phone" style="width: 18px; color: #b71c1c;"></i>
           <span>${donor.phoneNumber ? donor.phoneNumber.slice(0,8)+'***' : 'N/A'}</span>
         </div>
+        ${donor.lastDonationDate ? `
+          <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: #888; border-top: 1px solid #f5f5f5; padding-top: 8px; margin-top: 4px;">
+            <i class="fas fa-calendar-alt" style="width: 18px; color: #999;"></i>
+            <span>Last Donation: ${new Date(donor.lastDonationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+          </div>
+        ` : `
+          <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: #888; border-top: 1px solid #f5f5f5; padding-top: 8px; margin-top: 4px;">
+            <i class="fas fa-gift" style="width: 18px; color: #2e7d32;"></i>
+            <span style="color: #2e7d32; font-weight: 500;">First-time donor at Blood Donor BD</span>
+          </div>
+        `}
       </div>
       
-      <!-- Action Buttons -->
+      <!-- অ্যাকশন বাটন -->
       <div style="width: 100%; display: flex; gap: 10px; margin-top: auto; border-top: 1px solid #f0f0f0; padding-top: 16px;">
         ${currentUser ? `
           <button onclick="revealContact('${donor.id}', '${donor.phoneNumber}', '${donor.fullName}')" class="btn btn-primary" style="flex: 1; padding: 10px; font-size: 13px; border-radius: 8px;">
@@ -4230,24 +4390,22 @@ function renderDonorPage(page) {
     donorList.appendChild(card);
   });
 
-  // Make responsive
+  // রেস্পন্সিভ
   if (window.innerWidth < 480) {
     donorList.style.gridTemplateColumns = '1fr';
   } else if (window.innerWidth < 768) {
     donorList.style.gridTemplateColumns = 'repeat(2, 1fr)';
   }
   
-  // Pagination controls
+  // পেজিনেশন কন্ট্রোল
   const paginationControls = document.getElementById('paginationControls');
   if (totalPages > 1) {
     let paginationHTML = '';
     
-    // Previous button
     if (page > 1) {
       paginationHTML += `<button onclick="searchDonors(${page - 1})" class="btn btn-outline" style="padding: 8px 16px; border-radius: 8px;">‹</button>`;
     }
     
-    // Page numbers
     let startPage = Math.max(1, page - 2);
     let endPage = Math.min(totalPages, page + 2);
     
@@ -4266,7 +4424,6 @@ function renderDonorPage(page) {
       paginationHTML += `<button onclick="searchDonors(${totalPages})" class="btn btn-outline" style="padding: 8px 16px; border-radius: 8px;">${totalPages}</button>`;
     }
     
-    // Next button
     if (page < totalPages) {
       paginationHTML += `<button onclick="searchDonors(${page + 1})" class="btn btn-outline" style="padding: 8px 16px; border-radius: 8px;">›</button>`;
     }
@@ -7533,6 +7690,486 @@ function updateLiveLocation() {
     });
 }
 
+// ============================================
+// LAST DONATION DATE - WITH PROOF (IMAGE OR CODE)
+// ============================================
+
+// Open Last Donation Modal
+function openLastDonationModal() {
+  if (!currentUser || !userProfile) {
+    Toast.show('Please login first', 'warning');
+    return;
+  }
+
+  // Check if user is a donor
+  if (!userProfile.isDonor) {
+    Toast.show('This feature is for blood donors only', 'warning');
+    return;
+  }
+
+  // Remove any existing modal to prevent duplicates
+  const existingModal = document.querySelector('.last-donation-modal-overlay');
+  if (existingModal) {
+    existingModal.remove();
+  }
+
+  const modal = document.createElement('div');
+  modal.className = 'last-donation-modal-overlay';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+  `;
+
+  // Close modal when clicking outside
+  modal.addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeLastDonationModal(this);
+    }
+  });
+
+  // Get last donation date from userProfile
+  const lastDonation = userProfile.lastDonationDate || '';
+  const formattedLastDonation = lastDonation ? 
+    new Date(lastDonation).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }) : 'Not recorded yet';
+
+  // Get approval status
+  const approvalStatus = userProfile.lastDonationApprovalStatus || 'pending';
+  const approvalStatusText = approvalStatus === 'approved' ? '✅ Approved' : 
+                             approvalStatus === 'rejected' ? '❌ Rejected' : '⏳ Donation Pending ';
+
+  // Calculate days since last donation
+  let daysSince = 'N/A';
+  let isEligible = false;
+  let nextEligibleDate = '';
+
+  if (lastDonation && approvalStatus === 'approved') {
+    const lastDate = new Date(lastDonation);
+    const today = new Date();
+    const diffTime = today - lastDate;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    daysSince = diffDays;
+
+    const waitDays = userProfile.gender === 'female' ? 120 : 90;
+    isEligible = diffDays >= waitDays;
+
+    const nextDate = new Date(lastDate);
+    nextDate.setDate(nextDate.getDate() + waitDays);
+    nextEligibleDate = nextDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
+  modal.innerHTML = `
+    <div style="
+      background: white;
+      border-radius: 16px;
+      max-width: 520px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 32px;
+      animation: scaleIn 0.3s ease;
+      position: relative;
+    ">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0; color: #b71c1c;">
+          <i class="fas fa-calendar-check"></i> Last Donation
+        </h2>
+        <button onclick="closeLastDonationModal(this.closest('.last-donation-modal-overlay'))" style="
+          background: none;
+          border: none;
+          font-size: 28px;
+          cursor: pointer;
+          color: #999;
+          transition: color 0.3s;
+          padding: 4px 8px;
+          line-height: 1;
+          border-radius: 4px;
+        " onmouseover="this.style.color='#333'; this.style.background='#f0f0f0'" 
+           onmouseout="this.style.color='#999'; this.style.background='transparent'">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Current Status -->
+      <div style="
+        background: #f5f5f5;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        text-align: center;
+      ">
+        <div style="font-size: 48px; margin-bottom: 8px;">
+          ${lastDonation && approvalStatus === 'approved' ? (isEligible ? '✅' : '⏳') : '📝'}
+        </div>
+        <div style="font-size: 14px; color: #666;">Last Donation Date</div>
+        <div style="font-size: 20px; font-weight: 700; color: #333;">${formattedLastDonation}</div>
+        
+        <!-- Approval Status Badge -->
+        <div style="margin-top: 8px;">
+          <span style="
+            background: ${approvalStatus === 'approved' ? '#e8f5e9' : approvalStatus === 'rejected' ? '#ffebee' : '#fff3e0'};
+            color: ${approvalStatus === 'approved' ? '#2e7d32' : approvalStatus === 'rejected' ? '#d32f2f' : '#f57c00'};
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+          ">
+            ${approvalStatusText}
+          </span>
+        </div>
+        
+        ${lastDonation && approvalStatus === 'approved' ? `
+          <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e0e0e0;">
+            <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <div style="font-size: 12px; color: #666;">Days Since</div>
+                <div style="font-size: 24px; font-weight: 700; color: #b71c1c;">${daysSince}</div>
+              </div>
+              <div>
+                <div style="font-size: 12px; color: #666;">Status</div>
+                <div style="font-size: 18px; font-weight: 700; color: ${isEligible ? '#2e7d32' : '#f57c00'};">
+                  ${isEligible ? '🟢 Eligible' : '🟡 Waiting'}
+                </div>
+              </div>
+              <div>
+                <div style="font-size: 12px; color: #666;">Next Eligible</div>
+                <div style="font-size: 16px; font-weight: 600; color: #1565c0;">${nextEligibleDate}</div>
+              </div>
+            </div>
+          </div>
+        ` : ''}
+        
+        ${approvalStatus === 'pending' ? `
+          <div style="margin-top: 12px; padding: 12px; background: #fff3e0; border-radius: 8px; border-left: 4px solid #f57c00;">
+            <p style="font-size: 13px; color: #666; margin: 0;">
+              <i class="fas fa-clock"></i> Your donation proof is pending admin approval.
+            </p>
+          </div>
+        ` : ''}
+        
+        ${approvalStatus === 'rejected' ? `
+          <div style="margin-top: 12px; padding: 12px; background: #ffebee; border-radius: 8px; border-left: 4px solid #d32f2f;">
+            <p style="font-size: 13px; color: #d32f2f; margin: 0;">
+              <i class="fas fa-exclamation-circle"></i> Your donation proof was rejected. Please submit a valid proof.
+            </p>
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Update Form -->
+      <form id="lastDonationForm">
+        <div class="form-group">
+          <label for="donationDateInput">
+            <i class="fas fa-calendar-alt"></i> Donation Date *
+          </label>
+          <input 
+            type="date" 
+            id="donationDateInput" 
+            class="form-control"
+            value="${lastDonation || ''}"
+            max="${new Date().toISOString().split('T')[0]}"
+            style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px;"
+            required
+          >
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label for="donationGenderSelect">Gender</label>
+            <select id="donationGenderSelect" style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px;">
+              <option value="male" ${userProfile.gender === 'female' ? '' : 'selected'}>Male (90 days wait)</option>
+              <option value="female" ${userProfile.gender === 'female' ? 'selected' : ''}>Female (120 days wait)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="donationUnitsInput">Units Donated *</label>
+            <input 
+              type="number" 
+              id="donationUnitsInput" 
+              min="1" 
+              max="10" 
+              value="${userProfile.lastDonationUnits || 1}"
+              style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px;"
+              required
+            >
+          </div>
+        </div>
+
+        <!-- ===== PROOF UPLOAD SECTION ===== -->
+        <div style="
+          border: 2px dashed #e0e0e0;
+          border-radius: 12px;
+          padding: 20px;
+          text-align: center;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          background: #fafafa;
+          margin-bottom: 16px;
+        " 
+        id="donationProofUploadArea"
+        onmouseenter="this.style.borderColor='#b71c1c'; this.style.background='#fff5f5';"
+        onmouseleave="if(!this.dataset.hasImage){this.style.borderColor='#e0e0e0'; this.style.background='#fafafa';}">
+          
+          <div id="donationProofPreview" style="display: none; margin-bottom: 10px;">
+            <img id="donationProofPreviewImg" src="" alt="Donation Proof" style="
+              width: 120px;
+              height: 120px;
+              border-radius: 8px;
+              object-fit: cover;
+              border: 3px solid #2e7d32;
+              box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            ">
+          </div>
+          
+          <div id="donationProofPlaceholder">
+            <i class="fas fa-camera" style="font-size: 36px; color: #b71c1c; opacity: 0.5;"></i>
+            <p style="margin-top: 8px; color: #666; font-size: 14px;">
+              <strong>Upload Donation Proof</strong><br>
+              <span style="font-size: 12px;">Photo of donation certificate or blood bank receipt</span>
+            </p>
+          </div>
+          
+          <input type="file" id="donationProofInput" accept="image/*" style="display: none;">
+        </div>
+
+        <!-- OR Divider -->
+        <div style="display: flex; align-items: center; gap: 12px; margin: 12px 0;">
+          <div style="flex: 1; height: 1px; background: #e0e0e0;"></div>
+          <span style="color: #999; font-size: 13px; font-weight: 600;">OR</span>
+          <div style="flex: 1; height: 1px; background: #e0e0e0;"></div>
+        </div>
+
+        <!-- Code Input -->
+        <div class="form-group" style="margin-bottom: 8px;">
+          <label for="donationCodeInput">
+            <i class="fas fa-key"></i> Enter Verification Code
+          </label>
+          <div style="display: flex; gap: 10px;">
+            <input 
+              type="text" 
+              id="donationCodeInput" 
+              placeholder="Enter code from WhatsApp"
+              style="flex: 1; padding: 14px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 16px;"
+            >
+            <a href="https://wa.me/8801612018221?text=Hello%2C%20I%20need%20a%20donation%20verification%20code" 
+               target="_blank" 
+               class="btn btn-primary"
+               style="padding: 14px 20px; font-size: 14px; white-space: nowrap; text-decoration: none;">
+              <i class="fab fa-whatsapp"></i> Get Code
+            </a>
+          </div>
+          <small style="color: #666; display: block; margin-top: 6px;">
+            <i class="fas fa-info-circle"></i> Contact us on WhatsApp to get a verification code if you don't have a photo.
+          </small>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 8px;" id="donationSubmitBtn">
+          <i class="fas fa-save"></i> Submit for Approval
+        </button>
+      </form>
+
+      <!-- Quick Stats -->
+      <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #e0e0e0;">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center;">
+          <div>
+            <div style="font-size: 11px; color: #999;">Total Donations</div>
+            <div style="font-size: 20px; font-weight: 700; color: #b71c1c;">${userProfile.totalDonations || 0}</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: #999;">Total Units</div>
+            <div style="font-size: 20px; font-weight: 700; color: #1565c0;">${userProfile.totalUnitsDonated || 0}</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: #999;">Lives Saved</div>
+            <div style="font-size: 20px; font-weight: 700; color: #2e7d32;">${(userProfile.totalUnitsDonated || 0) * 3}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  // ===== PROOF UPLOAD HANDLER =====
+  const uploadArea = document.getElementById('donationProofUploadArea');
+  const fileInput = document.getElementById('donationProofInput');
+  const previewContainer = document.getElementById('donationProofPreview');
+  const previewImg = document.getElementById('donationProofPreviewImg');
+  const placeholder = document.getElementById('donationProofPlaceholder');
+  let uploadedProofUrl = null;
+
+  // Click to upload
+  uploadArea.addEventListener('click', () => fileInput.click());
+
+  // Drag and drop
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.style.borderColor = '#b71c1c';
+    uploadArea.style.background = '#fff5f5';
+  });
+
+  uploadArea.addEventListener('dragleave', () => {
+    uploadArea.style.borderColor = '#e0e0e0';
+    uploadArea.style.background = '#fafafa';
+  });
+
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.style.borderColor = '#e0e0e0';
+    uploadArea.style.background = '#fafafa';
+    if (e.dataTransfer.files.length) {
+      fileInput.files = e.dataTransfer.files;
+      handleDonationProofSelect();
+    }
+  });
+
+  fileInput.addEventListener('change', handleDonationProofSelect);
+
+  async function handleDonationProofSelect() {
+    if (fileInput.files && fileInput.files[0]) {
+      const file = fileInput.files[0];
+      
+      if (!file.type.match('image.*')) {
+        Toast.show('Please select an image file', 'error');
+        return;
+      }
+      
+      if (file.size > 10 * 1024 * 1024) {
+        Toast.show('Image must be less than 10MB', 'error');
+        return;
+      }
+      
+      // Open cropper for donation proof
+      openImageCropper(file, async (croppedBlob) => {
+        // Show preview
+        previewImg.src = URL.createObjectURL(croppedBlob);
+        previewContainer.style.display = 'block';
+        placeholder.style.display = 'none';
+        uploadArea.dataset.hasImage = 'true';
+        uploadArea.style.borderColor = '#2e7d32';
+        uploadArea.style.background = '#e8f5e9';
+
+        // Upload to ImgBB
+        try {
+          Toast.show('Uploading proof...', 'info');
+          const formData = new FormData();
+          formData.append('image', croppedBlob, 'donation_proof.jpg');
+          
+          const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+            method: 'POST',
+            body: formData
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            uploadedProofUrl = data.data.url;
+            Toast.show('Proof uploaded successfully!', 'success');
+          } else {
+            throw new Error(data.error?.message || 'Upload failed');
+          }
+        } catch (error) {
+          console.error('Upload error:', error);
+          Toast.show('Failed to upload proof. Try again or use code.', 'error');
+          uploadedProofUrl = null;
+        }
+      });
+    }
+  }
+
+  // ===== FORM SUBMIT HANDLER =====
+  document.getElementById('lastDonationForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const donationDate = document.getElementById('donationDateInput').value;
+    const gender = document.getElementById('donationGenderSelect').value;
+    const units = parseInt(document.getElementById('donationUnitsInput').value) || 1;
+    const code = document.getElementById('donationCodeInput').value.trim();
+
+    if (!donationDate) {
+      Toast.show('Please select a donation date', 'warning');
+      return;
+    }
+
+    // Validate date is not in the future
+    const selectedDate = new Date(donationDate);
+    const today = new Date();
+    if (selectedDate > today) {
+      Toast.show('Date cannot be in the future', 'error');
+      return;
+    }
+
+    // Check if user provided either image OR code
+    if (!uploadedProofUrl && !code) {
+      Toast.show('Please upload a photo OR enter a verification code', 'warning');
+      return;
+    }
+
+    try {
+      const submitBtn = document.getElementById('donationSubmitBtn');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+      const updates = {
+        lastDonationDate: donationDate,
+        gender: gender,
+        lastDonationUnits: units,
+        lastDonationApprovalStatus: 'pending',
+        lastDonationProof: uploadedProofUrl || null,
+        lastDonationCode: code || null,
+        lastDonationSubmittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      await db.collection('users').doc(currentUser.uid).update(updates);
+      
+      // Reload user profile
+      await authSystem.loadUserProfile(currentUser.uid);
+      
+      Toast.show('Donation record submitted for approval! 🎉', 'success');
+      closeLastDonationModal(modal);
+      
+      // Refresh dashboard
+      router.navigate('dashboard');
+    } catch (error) {
+      console.error('Error submitting donation:', error);
+      Toast.show('Failed to submit donation record', 'error');
+    } finally {
+      const submitBtn = document.getElementById('donationSubmitBtn');
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="fas fa-save"></i> Submit for Approval';
+    }
+  });
+}
+
+// Close Last Donation Modal
+function closeLastDonationModal(modalElement) {
+  if (!modalElement) {
+    modalElement = document.querySelector('.last-donation-modal-overlay');
+  }
+  if (modalElement) {
+    modalElement.style.opacity = '0';
+    modalElement.style.transition = 'opacity 0.3s ease';
+    setTimeout(() => {
+      modalElement.remove();
+    }, 300);
+  }
+}
+
 
 
 
@@ -7550,6 +8187,9 @@ function updateLiveLocation() {
     window.toggleBloodGroupField = toggleBloodGroupField;
     window.switchUserType = switchUserType;
     window.goToPrivateDM = goToPrivateDM;
+    window.openLastDonationModal = openLastDonationModal;
+window.closeLastDonationModal = closeLastDonationModal;
+window.calculateNextEligibility = calculateNextEligibility;
   </script>
   <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" id="scrollTopBtn" style="
   position: fixed; 
