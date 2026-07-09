@@ -7535,6 +7535,8 @@ function updateLiveLocation() {
 
 
 
+
+
     // Export to global scope
     window.router = router;
     window.authSystem = authSystem;
@@ -7576,6 +7578,29 @@ window.addEventListener('scroll', function() {
   const btn = document.getElementById('scrollTopBtn');
   if (btn) btn.style.display = window.scrollY > 500 ? 'flex' : 'none';
 });
+</script>
+<script>
+  // Website Load হলে স্বয়ংক্রিয়ভাবে ভয়েস প্লে করবে
+  window.addEventListener('load', function() {
+    // মেসেজ তৈরি করা
+    const message = "Welcome to Blood Donor BD";
+    
+    // ব্রাউজারের Speech Synthesis API ব্যবহার
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(message);
+      
+      // বাংলা অ্যাকসেন্টে বলার জন্য (ঐচ্ছিক)
+      utterance.lang = 'en-US'; // বা 'bn-BD' (বাংলা সাপোর্ট সব ব্রাউজারে নাও থাকতে পারে)
+      utterance.rate = 1.0;     // স্পীড (0.5-2.0)
+      utterance.pitch = 1.0;    // পিচ (0.5-2.0)
+      utterance.volume = 1.0;   // ভলিউম (0-1)
+      
+      // ভয়েস প্লে করা
+      speechSynthesis.speak(utterance);
+    } else {
+      console.log('Speech synthesis not supported in this browser');
+    }
+  });
 </script>
 </body>
 </html>
