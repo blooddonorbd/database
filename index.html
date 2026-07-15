@@ -8723,6 +8723,559 @@ window.addEventListener('scroll', function() {
   if (btn) btn.style.display = window.scrollY > 500 ? 'flex' : 'none';
 });
 </script>
+<!-- ============================================ -->
+<!-- PUSH NOTIFICATION SYSTEM - CLIENT INTEGRATION -->
+<!-- ============================================ -->
+<script>
+// ============================================
+// PUSH NOTIFICATION MANAGER - COMPLETE CLIENT
+// ============================================
+
+class PushNotificationManager {
+    constructor() {
+        this.messaging = null;
+        this.isSupported = false;
+        this.currentToken = null;
+        this.vapidKey = 'BHMKtlvzLGDuNh6eat6tR8uBQjYrN4otniIbhY2nNkBCPGU5I4L8B9JNSXHNNUB34Wv47YqZjirTmYex3sg9UTk';
+        this.initialized = false;
+        
+        this.init();
+    }
+
+    init() {
+        // Check if browser supports notifications
+        if (!('Notification' in window)) {
+            console.warn('This browser does not support notifications');
+            return;
+        }
+
+        // Check if Firebase Messaging is available
+        if (typeof firebase === 'undefined' || !firebase.messaging) {
+            console.warn('Firebase Messaging not available');
+            return;
+        }
+
+        try {
+            this.messaging = firebase.messaging();
+            this.isSupported = true;
+            
+            // Check if notifications are enabled in settings
+            this.notificationsEnabled = localStorage.getItem('notificationsEnabled') !== 'false';
+            
+            // Setup auth listener
+            this.setupAuthListener();
+            
+            // Setup message listener for foreground
+            this.setupMessageListener();
+            
+            this.initialized = true;
+            console.log('🔔 Push Notification Manager initialized');
+            
+            // Update UI
+            this.updateNotificationUI();
+            
+        } catch (error) {
+            console.warn('Firebase Messaging initialization error:', error);
+        }
+    }
+
+    setupAuthListener() {
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                // User logged in - check permissions
+                this.handleUserLogin();
+            } else {
+                // User logged out - remove token
+                this.handleUserLogout();
+            }
+        });
+    }
+
+    async handleUserLogin() {
+        // Check if notifications are enabled
+        if (this.notificationsEnabled) {
+            await this.requestPermission();
+        } else {
+            console.log('🔕 Notifications disabled by user');
+        }
+    }
+
+    async handleUserLogout() {
+        try {
+            await this.removeToken();
+        } catch (error) {
+            console.error('Error removing token on logout:', error);
+        }
+    }
+
+    async requestPermission() {
+        if (!this.isSupported) {
+            console.warn('Push notifications not supported');
+            return false;
+        }
+
+        try {
+            // Check current permission state
+            if (Notification.permission === 'granted') {
+                await this.getToken();
+                return true;
+            }
+
+            if (Notification.permission === 'denied') {
+                console.warn('Notification permission denied by user');
+                this.showPermissionDeniedUI();
+                return false;
+            }
+
+            // Request permission with user interaction
+            const permission = await Notification.requestPermission();
+            
+            if (permission === 'granted') {
+                console.log('✅ Notification permission granted');
+                await this.getToken();
+                this.notificationsEnabled = true;
+                localStorage.setItem('notificationsEnabled', 'true');
+                this.updateNotificationUI();
+                Toast.show('🔔 Notifications enabled!', 'success');
+                return true;
+            } else {
+                console.warn('❌ Notification permission denied');
+                this.notificationsEnabled = false;
+                localStorage.setItem('notificationsEnabled', 'false');
+                this.updateNotificationUI();
+                return false;
+            }
+        } catch (error) {
+            console.error('Error requesting notification permission:', error);
+            return false;
+        }
+    }
+
+    async getToken() {
+        if (!this.isSupported || !this.messaging) return null;
+
+        try {
+            // Check if we already have a token
+            const savedToken = localStorage.getItem('fcmToken');
+            if (savedToken) {
+                this.currentToken = savedToken;
+                return savedToken;
+            }
+
+            // Get new token from Firebase
+            const token = await this.messaging.getToken({
+                vapidKey: this.vapidKey,
+            });
+
+            if (token) {
+                this.currentToken = token;
+                localStorage.setItem('fcmToken', token);
+                console.log('✅ FCM Token obtained:', token);
+                
+                // Save token to server
+                await this.saveTokenToServer(token);
+                
+                return token;
+            } else {
+                console.warn('⚠️ No FCM token received');
+                return null;
+            }
+        } catch (error) {
+            console.error('❌ Error getting FCM token:', error);
+            
+            // Handle specific errors
+            if (error.code === 'messaging/permission-default') {
+                console.warn('Permission not granted for push notifications');
+                this.showPermissionDeniedUI();
+            } else if (error.code === 'messaging/unsupported-browser') {
+                console.warn('Browser does not support push notifications');
+            } else if (error.code === 'messaging/notifications-blocked') {
+                console.warn('Notifications blocked by browser');
+                this.showPermissionDeniedUI();
+            }
+            
+            return null;
+        }
+    }
+
+    async saveTokenToServer(token) {
+        try {
+            // Try using the Cloud Function first
+            if (typeof saveFcmToken === 'function') {
+                const result = await saveFcmToken(token);
+                if (result && result.success) {
+                    console.log('✅ FCM token saved via Cloud Function');
+                    return;
+                }
+            }
+            
+            // Fallback: Save directly to Firestore
+            const user = firebase.auth().currentUser;
+            if (user) {
+                await firebase.firestore().collection('users').doc(user.uid).set({
+                    fcmToken: token,
+                    fcmPlatform: 'web',
+                    fcmUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                console.log('✅ FCM token saved directly to Firestore');
+            }
+        } catch (error) {
+            console.error('❌ Error saving FCM token:', error);
+        }
+    }
+
+    async removeToken() {
+        if (!this.isSupported || !this.messaging) return;
+
+        try {
+            const token = this.currentToken || localStorage.getItem('fcmToken');
+            if (token) {
+                await this.messaging.deleteToken(token);
+                console.log('✅ FCM token removed');
+            }
+            
+            localStorage.removeItem('fcmToken');
+            this.currentToken = null;
+            
+            // Remove from Firestore
+            const user = firebase.auth().currentUser;
+            if (user) {
+                await firebase.firestore().collection('users').doc(user.uid).update({
+                    fcmToken: firebase.firestore.FieldValue.delete()
+                });
+            }
+            
+        } catch (error) {
+            console.error('❌ Error removing FCM token:', error);
+        }
+    }
+
+    setupMessageListener() {
+        if (!this.isSupported || !this.messaging) return;
+
+        this.messaging.onMessage((payload) => {
+            console.log('📨 Foreground message received:', payload);
+            this.showForegroundNotification(payload);
+        });
+    }
+
+    showForegroundNotification(payload) {
+        const title = payload.notification?.title || 'Blood Donor BD';
+        const body = payload.notification?.body || 'You have a new notification';
+        const icon = payload.notification?.icon || 'https://i.ibb.co/fd3zk65t/1000018685.jpg';
+        const data = payload.data || {};
+
+        // Show using browser Notification API
+        if (Notification.permission === 'granted') {
+            const notification = new Notification(title, {
+                body: body,
+                icon: icon,
+                badge: icon,
+                vibrate: [200, 100, 200],
+                data: data,
+                requireInteraction: true,
+                actions: [
+                    { action: 'open', title: 'Open' },
+                    { action: 'dismiss', title: 'Dismiss' }
+                ]
+            });
+
+            notification.onclick = function(event) {
+                event.preventDefault();
+                notification.close();
+                
+                let url = 'https://blooddonorbd.github.io/database/';
+                if (data.type === 'blood_request') {
+                    url += '#all-requests';
+                } else if (data.type === 'private_message') {
+                    url += '#dm-donor';
+                } else if (data.type === 'admin_notice') {
+                    url += '#dashboard';
+                }
+                
+                window.focus();
+                window.open(url, '_blank');
+            };
+
+            notification.onclose = function() {
+                console.log('Notification closed');
+            };
+        }
+    }
+
+    showPermissionDeniedUI() {
+        // Show a small banner or tooltip
+        const existingBanner = document.getElementById('notificationBanner');
+        if (existingBanner) return;
+
+        const banner = document.createElement('div');
+        banner.id = 'notificationBanner';
+        banner.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            animation: fadeInUp 0.5s ease;
+            max-width: 90%;
+        `;
+        banner.innerHTML = `
+            <i class="fas fa-bell-slash" style="color: #f57c00; font-size: 20px;"></i>
+            <div>
+                <strong>Notifications are blocked</strong>
+                <p style="font-size: 13px; margin: 0; opacity: 0.8;">Enable in browser settings to get alerts</p>
+            </div>
+            <button onclick="this.parentElement.remove()" style="background: none; border: none; color: white; cursor: pointer; font-size: 18px;">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        document.body.appendChild(banner);
+
+        // Auto-remove after 10 seconds
+        setTimeout(() => {
+            if (banner.parentElement) {
+                banner.remove();
+            }
+        }, 10000);
+    }
+
+    updateNotificationUI() {
+        const badge = document.getElementById('notifBadge');
+        const btn = document.getElementById('notificationToggle');
+        if (!badge || !btn) return;
+
+        const isEnabled = this.notificationsEnabled && Notification.permission === 'granted';
+        const isBlocked = Notification.permission === 'denied';
+
+        // Update badge
+        if (isEnabled) {
+            badge.style.display = 'inline';
+            badge.textContent = '✓';
+            badge.style.background = '#2e7d32';
+            btn.style.color = '#2e7d32';
+        } else if (isBlocked) {
+            badge.style.display = 'inline';
+            badge.textContent = '✕';
+            badge.style.background = '#d32f2f';
+            btn.style.color = '#d32f2f';
+        } else {
+            badge.style.display = 'inline';
+            badge.textContent = '?';
+            badge.style.background = '#f57c00';
+            btn.style.color = '#f57c00';
+        }
+    }
+
+    async toggleNotifications() {
+        if (Notification.permission === 'denied') {
+            Toast.show('🔕 Notifications blocked. Please enable in browser settings.', 'warning');
+            this.showPermissionDeniedUI();
+            return;
+        }
+
+        if (Notification.permission === 'granted') {
+            // Toggle on/off
+            this.notificationsEnabled = !this.notificationsEnabled;
+            localStorage.setItem('notificationsEnabled', String(this.notificationsEnabled));
+            
+            if (this.notificationsEnabled) {
+                Toast.show('🔔 Notifications enabled', 'success');
+                await this.getToken();
+            } else {
+                Toast.show('🔕 Notifications disabled', 'info');
+                await this.removeToken();
+            }
+            
+            this.updateNotificationUI();
+        } else {
+            // Request permission
+            await this.requestPermission();
+        }
+    }
+}
+
+// ============================================
+// ADD NOTIFICATION BUTTON TO NAVBAR
+// ============================================
+
+function addNotificationButton() {
+    const userInfo = document.getElementById('userInfo');
+    if (!userInfo) {
+        setTimeout(addNotificationButton, 500);
+        return;
+    }
+
+    if (document.getElementById('notificationToggle')) return;
+
+    const btn = document.createElement('button');
+    btn.id = 'notificationToggle';
+    btn.className = 'btn';
+    btn.setAttribute('aria-label', 'Toggle notifications');
+    btn.style.cssText = `
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        position: relative;
+        padding: 4px 10px;
+        color: #666;
+        transition: all 0.3s ease;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    btn.innerHTML = `
+        <i class="fas fa-bell"></i>
+        <span id="notifBadge" style="
+            display: none;
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            background: #d32f2f;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 50%;
+            font-weight: 700;
+            min-width: 18px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        ">0</span>
+    `;
+
+    btn.addEventListener('click', async () => {
+        if (window.pushManager) {
+            await window.pushManager.toggleNotifications();
+        }
+    });
+
+    // Add tooltip
+    btn.title = 'Toggle Notifications';
+
+    // Insert before the user info
+    const userInfoParent = userInfo.parentNode;
+    if (userInfoParent) {
+        userInfoParent.insertBefore(btn, userInfo);
+    }
+
+    // Update UI if push manager exists
+    if (window.pushManager) {
+        setTimeout(() => {
+            window.pushManager.updateNotificationUI();
+        }, 100);
+    }
+}
+
+// ============================================
+// SEND TEST NOTIFICATION (For debugging)
+// ============================================
+
+function sendTestNotification() {
+    if (!firebase.auth().currentUser) {
+        Toast.show('Please login first', 'warning');
+        return;
+    }
+
+    const userId = firebase.auth().currentUser.uid;
+    sendNotificationToUser(
+        userId,
+        '🔔 Test Notification',
+        'Your push notification system is working!',
+        'test'
+    ).then(result => {
+        if (result && result.success) {
+            Toast.show('✅ Test notification sent!', 'success');
+        } else {
+            Toast.show('❌ Failed to send test notification', 'error');
+        }
+    }).catch(error => {
+        Toast.show('❌ Error: ' + error.message, 'error');
+    });
+}
+
+// ============================================
+// TEST BROADCAST (Admin only - for testing)
+// ============================================
+
+function testBroadcast() {
+    if (!firebase.auth().currentUser) {
+        Toast.show('Please login first', 'warning');
+        return;
+    }
+
+    if (!confirm('Send test broadcast to all donors?')) return;
+
+    broadcastToDonors(
+        'A+',
+        'Dhaka',
+        'Test Patient',
+        'Test Hospital',
+        '+880123456789'
+    ).then(result => {
+        if (result && result.success) {
+            Toast.show(`✅ Test broadcast sent to ${result.sentCount} donors!`, 'success');
+        } else {
+            Toast.show('❌ Broadcast failed', 'error');
+        }
+    }).catch(error => {
+        Toast.show('❌ Error: ' + error.message, 'error');
+    });
+}
+
+// ============================================
+// INITIALIZE ON PAGE LOAD
+// ============================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize push manager
+    try {
+        window.pushManager = new PushNotificationManager();
+        console.log('🔔 Push Notification Manager initialized');
+    } catch (error) {
+        console.error('Error initializing Push Notification Manager:', error);
+    }
+
+    // Add notification button
+    setTimeout(addNotificationButton, 1000);
+
+    // Add keyboard shortcut for notifications (Ctrl+Shift+N)
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.shiftKey && e.key === 'N') {
+            e.preventDefault();
+            if (window.pushManager) {
+                window.pushManager.toggleNotifications();
+            }
+        }
+    });
+});
+
+// Show notification status in console
+console.log('🔔 Push Notification System');
+console.log('📌 Commands:');
+console.log('  - sendTestNotification() - Send test notification to yourself');
+console.log('  - testBroadcast() - Send test broadcast to all donors');
+console.log('  - Ctrl+Shift+N - Toggle notifications');
+
+// ============================================
+// EXPOSE FUNCTIONS GLOBALLY
+// ============================================
+
+window.sendTestNotification = sendTestNotification;
+window.testBroadcast = testBroadcast;
+window.PushNotificationManager = PushNotificationManager;
+</script>
 <script>
   // Website Load হলে স্বয়ংক্রিয়ভাবে ভয়েস প্লে করবে
   window.addEventListener('load', function() {
