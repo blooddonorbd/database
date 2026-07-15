@@ -1,396 +1,412 @@
-// functions/index.js - Cloud Functions for Push Notifications
-
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
-const webpush = require('web-push');
+const cors = require('cors')({ origin: true });
 
 // Initialize Firebase Admin
 admin.initializeApp({
-  credential: admin.credential.applicationDefault()
+  credential: admin.credential.cert(require('./service-account.json')),
 });
 
 const db = admin.firestore();
 
 // ============================================
-// VAPID KEYS - Use the same as in your client
+// SEND PUSH NOTIFICATION (Single User)
 // ============================================
-const VAPID_PUBLIC_KEY = "BHMKtlvzLGDuNh6eat6tR8uBQjYrN4otniIbhY2nNkBCPGU5I4L8B9JNSXHNNUB34Wv47YqZjirTmYex3sg9UTk";
-const VAPID_PRIVATE_KEY = "YOUR_VAPID_PRIVATE_KEY"; // ⚠️ IMPORTANT: Replace with your actual private key
-
-// Set VAPID details for web-push
-webpush.setVapidDetails(
-  'mailto:blooddonorbd025@gmail.com',
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY
-);
-
-// ============================================
-// 1. PROCESS PUSH QUEUE - Firestore Trigger
-// ============================================
-exports.processPushQueue = functions.firestore
-  .document('pushQueue/{queueId}')
-  .onCreate(async (snap, context) => {
-    const data = snap.data();
-    const queueId = context.params.queueId;
-    
-    console.log(`📤 Processing push queue item: ${queueId}`);
-    console.log(`📋 Data:`, JSON.stringify(data, null, 2));
-    
-    // Don't process if already sent or has too many retries
-    if (data.status === 'sent') {
-      console.log('⏩ Already sent, skipping');
-      return;
-    }
-    
-    if (data.retries >= 5) {
-      console.log('❌ Max retries reached, marking as failed');
-      await snap.ref.update({ 
-        status: 'failed',
-        error: 'Max retries reached'
-      });
-      return;
-    }
-
-    try {
-      let sent = false;
-      
-      // Try FCM first
-      if (data.fcmToken) {
-        console.log('📱 Sending via FCM...');
-        try {
-          await sendFCMNotification(data.fcmToken, data.title, data.body, data.data);
-          sent = true;
-          console.log('✅ FCM sent successfully');
-        } catch (fcmError) {
-          console.warn('⚠️ FCM failed, trying WebPush:', fcmError.message);
-        }
-      }
-      
-      // If FCM failed or not available, try WebPush
-      if (!sent && data.pushSubscription) {
-        console.log('🌐 Sending via WebPush...');
-        try {
-          await sendWebPushNotification(
-            data.pushSubscription,
-            data.title,
-            data.body,
-            data.data
-          );
-          sent = true;
-          console.log('✅ WebPush sent successfully');
-        } catch (webPushError) {
-          console.warn('⚠️ WebPush failed:', webPushError.message);
-        }
-      }
-      
-      // Update status
-      if (sent) {
-        await snap.ref.update({
-          status: 'sent',
-          sentAt: admin.firestore.FieldValue.serverTimestamp()
-        });
-        console.log(`✅ Push notification sent for queue: ${queueId}`);
-      } else {
-        // Increment retries
-        await snap.ref.update({
-          retries: admin.firestore.FieldValue.increment(1),
-          lastError: 'No delivery method available',
-          status: 'retry'
-        });
-        console.log(`🔄 Retry scheduled (${data.retries + 1}/5) for queue: ${queueId}`);
-      }
-      
-    } catch (error) {
-      console.error(`❌ Error processing queue ${queueId}:`, error);
-      
-      // Increment retries on error
-      await snap.ref.update({
-        retries: admin.firestore.FieldValue.increment(1),
-        lastError: error.message || 'Unknown error',
-        status: 'retry'
-      });
-    }
-  });
-
-// ============================================
-// 2. SEND FCM NOTIFICATION
-// ============================================
-async function sendFCMNotification(token, title, body, data = {}) {
-  const payload = {
-    notification: {
-      title: title,
-      body: body,
-      sound: 'default',
-      badge: '1',
-      click_action: 'https://blooddonorbd.com'
-    },
-    data: {
-      ...data,
-      title: title,
-      body: body,
-      click_action: 'https://blooddonorbd.com'
-    },
-    token: token
-  };
-  
-  try {
-    const response = await admin.messaging().send(payload);
-    console.log('✅ FCM Response:', response);
-    return response;
-  } catch (error) {
-    console.error('❌ FCM Error:', error);
-    
-    // Handle specific FCM errors
-    if (error.code === 'messaging/invalid-registration-token' ||
-        error.code === 'messaging/registration-token-not-registered') {
-      // Token is invalid, remove it from user document
-      await removeInvalidToken(token);
-    }
-    
-    throw error;
-  }
-}
-
-// ============================================
-// 3. SEND WEB PUSH NOTIFICATION
-// ============================================
-async function sendWebPushNotification(subscription, title, body, data = {}) {
-  const payload = JSON.stringify({
-    title: title,
-    body: body,
-    url: data.url || '/',
-    icon: data.icon || 'https://i.ibb.co/fd3zk65t/1000018685.jpg',
-    badge: data.badge || 'https://i.ibb.co/fd3zk65t/1000018685.jpg',
-    ...data
-  });
-  
-  const options = {
-    TTL: 86400, // 24 hours
-    urgency: 'normal',
-    vapidDetails: {
-      subject: 'mailto:blooddonorbd025@gmail.com',
-      publicKey: VAPID_PUBLIC_KEY,
-      privateKey: VAPID_PRIVATE_KEY
-    }
-  };
-  
-  try {
-    const response = await webpush.sendNotification(
-      subscription,
-      payload,
-      options
-    );
-    console.log('✅ WebPush Response:', response);
-    return response;
-  } catch (error) {
-    console.error('❌ WebPush Error:', error);
-    
-    // If subscription is invalid, remove it
-    if (error.statusCode === 410 || error.statusCode === 404) {
-      await removeInvalidSubscription(subscription);
-    }
-    
-    throw error;
-  }
-}
-
-// ============================================
-// 4. HELPER FUNCTIONS - Remove Invalid Tokens
-// ============================================
-async function removeInvalidToken(token) {
-  try {
-    // Find user with this token and remove it
-    const usersSnapshot = await db.collection('users')
-      .where('fcmToken', '==', token)
-      .get();
-    
-    const batch = db.batch();
-    usersSnapshot.forEach(doc => {
-      batch.update(doc.ref, {
-        fcmToken: null,
-        pushEnabled: false
-      });
-    });
-    
-    await batch.commit();
-    console.log('🧹 Removed invalid FCM token from user(s)');
-  } catch (error) {
-    console.error('Error removing invalid token:', error);
-  }
-}
-
-async function removeInvalidSubscription(subscription) {
-  try {
-    // Find user with this subscription and remove it
-    const usersSnapshot = await db.collection('users')
-      .where('pushSubscription.endpoint', '==', subscription.endpoint)
-      .get();
-    
-    const batch = db.batch();
-    usersSnapshot.forEach(doc => {
-      batch.update(doc.ref, {
-        pushSubscription: null,
-        pushEnabled: false
-      });
-    });
-    
-    await batch.commit();
-    console.log('🧹 Removed invalid WebPush subscription from user(s)');
-  } catch (error) {
-    console.error('Error removing invalid subscription:', error);
-  }
-}
-
-// ============================================
-// 5. SCHEDULED JOB - Clean old notifications
-// ============================================
-exports.cleanOldNotifications = functions.pubsub
-  .schedule('0 0 * * *') // Runs at midnight every day
-  .onRun(async (context) => {
-    console.log('🧹 Starting old notifications cleanup...');
-    
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    try {
-      // Get notifications older than 30 days
-      const snapshot = await db.collection('notifications')
-        .where('createdAt', '<', thirtyDaysAgo)
-        .get();
-      
-      if (snapshot.empty) {
-        console.log('ℹ️ No old notifications to clean up');
-        return;
-      }
-      
-      // Delete in batches
-      const batch = db.batch();
-      let count = 0;
-      
-      snapshot.forEach(doc => {
-        batch.delete(doc.ref);
-        count++;
-        
-        // Commit in batches of 500
-        if (count >= 500) {
-          batch.commit();
-          count = 0;
-        }
-      });
-      
-      if (count > 0) {
-        await batch.commit();
-      }
-      
-      console.log(`🧹 Cleaned up ${snapshot.size} old notifications`);
-    } catch (error) {
-      console.error('❌ Cleanup error:', error);
-    }
-  });
-
-// ============================================
-// 6. SEND BULK NOTIFICATIONS
-// ============================================
-exports.sendBulkNotifications = functions.https.onCall(async (data, context) => {
-  // Check authentication
+exports.sendPushNotification = functions.https.onCall(async (data, context) => {
+  // Check if user is authenticated
   if (!context.auth) {
-    throw new functions.https.HttpsError(
-      'unauthenticated',
-      'User must be authenticated'
-    );
+    throw new functions.https.HttpsError('unauthenticated', 'You must be logged in');
   }
-  
-  // Check admin role
-  const userDoc = await db.collection('users').doc(context.auth.uid).get();
-  const user = userDoc.data();
-  
-  if (!user || (user.role !== 'admin' && user.role !== 'main_admin')) {
-    throw new functions.https.HttpsError(
-      'permission-denied',
-      'Admin access required'
-    );
-  }
-  
-  const { title, body, targetUsers, data: extraData } = data;
-  
-  if (!title || !body) {
-    throw new functions.https.HttpsError(
-      'invalid-argument',
-      'Title and body are required'
-    );
-  }
-  
+
+  const { userId, title, body, type, bloodGroup, requestId } = data;
+
   try {
-    let userList = [];
-    
-    // If specific users provided, send to them
-    if (targetUsers && targetUsers.length > 0) {
-      const userPromises = targetUsers.map(uid => 
-        db.collection('users').doc(uid).get()
-      );
-      const userDocs = await Promise.all(userPromises);
-      userList = userDocs
-        .filter(doc => doc.exists)
-        .map(doc => ({ id: doc.id, ...doc.data() }));
-    } else {
-      // Send to all users
-      const snapshot = await db.collection('users')
-        .where('pushEnabled', '==', true)
-        .get();
-      userList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Get user's FCM token
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      throw new Error('User not found');
     }
-    
-    console.log(`📤 Sending bulk notification to ${userList.length} users`);
-    
-    // Queue notifications for each user
-    const batch = db.batch();
-    const notificationData = {
-      title: title,
-      body: body,
-      data: extraData || {},
-      read: false,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    };
-    
-    for (const user of userList) {
-      // Create notification document
-      const notifRef = db.collection('notifications').doc();
-      batch.set(notifRef, {
-        userId: user.id,
-        ...notificationData
-      });
-      
-      // Queue push notification
-      const queueRef = db.collection('pushQueue').doc();
-      batch.set(queueRef, {
-        userId: user.id,
-        notificationId: notifRef.id,
-        title: title,
-        body: body,
-        data: extraData || {},
-        fcmToken: user.fcmToken || null,
-        pushSubscription: user.pushSubscription || null,
-        status: 'pending',
-        type: user.pushType || 'fcm',
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        retries: 0
-      });
+
+    const userData = userDoc.data();
+    const fcmToken = userData.fcmToken;
+
+    if (!fcmToken) {
+      console.log('No FCM token for user:', userId);
+      return { success: false, message: 'User has no device token' };
     }
-    
-    await batch.commit();
-    
-    return {
-      success: true,
-      message: `Queued notifications for ${userList.length} users`
+
+    // Build notification payload
+    const payload = {
+      notification: {
+        title: title || 'Blood Donor BD',
+        body: body || 'You have a new notification',
+        icon: 'https://i.ibb.co/fd3zk65t/1000018685.jpg',
+        badge: 'https://i.ibb.co/fd3zk65t/1000018685.jpg',
+        sound: 'default',
+        vibrate: [200, 100, 200],
+      },
+      data: {
+        type: type || 'general',
+        bloodGroup: bloodGroup || '',
+        requestId: requestId || '',
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+      },
+      webpush: {
+        headers: {
+          TTL: '86400',
+        },
+        notification: {
+          requireInteraction: true,
+          actions: [
+            { action: 'open', title: 'Open App' },
+            { action: 'dismiss', title: 'Dismiss' },
+          ],
+        },
+        fcmOptions: {
+          link: 'https://blooddonorbd.com',
+        },
+      },
     };
-    
+
+    // Send notification
+    const response = await admin.messaging().send({
+      token: fcmToken,
+      ...payload,
+    });
+
+    console.log('Push notification sent:', response);
+    return { success: true, messageId: response };
+
   } catch (error) {
-    console.error('❌ Bulk notification error:', error);
-    throw new functions.https.HttpsError(
-      'internal',
-      'Failed to send bulk notifications'
-    );
+    console.error('Error sending push notification:', error);
+    throw new functions.https.HttpsError('internal', error.message);
   }
 });
 
-console.log('🚀 Cloud Functions for Push Notifications loaded');
+// ============================================
+// SEND NOTIFICATION TO ALL DONORS (Blood Request Alert)
+// ============================================
+exports.notifyAllDonors = functions.https.onCall(async (data, context) => {
+  // Check if user is authenticated
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'You must be logged in');
+  }
+
+  const { bloodGroup, district, patientName, hospitalName, contactNumber } = data;
+
+  try {
+    // Get all approved donors who have FCM tokens
+    const donorsSnapshot = await db.collection('users')
+      .where('isDonor', '==', true)
+      .where('approvalStatus', '==', 'approved')
+      .where('fcmToken', '!=', null)
+      .get();
+
+    if (donorsSnapshot.empty) {
+      return { success: false, message: 'No eligible donors found' };
+    }
+
+    // Filter by blood group if specified
+    let tokens = [];
+    donorsSnapshot.forEach(doc => {
+      const donor = doc.data();
+      // Only send to matching blood group if specified
+      if (bloodGroup && donor.bloodGroup !== bloodGroup) return;
+      
+      // Only send to same district if specified
+      if (district && donor.district !== district) return;
+      
+      if (donor.fcmToken) {
+        tokens.push(donor.fcmToken);
+      }
+    });
+
+    if (tokens.length === 0) {
+      return { success: false, message: 'No eligible donors found in this area' };
+    }
+
+    // Build notification payload
+    const payload = {
+      notification: {
+        title: `🩸 Urgent Blood Request: ${bloodGroup || 'Blood'} Needed!`,
+        body: `Patient: ${patientName || 'Unknown'} at ${hospitalName || 'Unknown Hospital'}\nContact: ${contactNumber || 'N/A'}`,
+        icon: 'https://i.ibb.co/fd3zk65t/1000018685.jpg',
+        badge: 'https://i.ibb.co/fd3zk65t/1000018685.jpg',
+        sound: 'default',
+        vibrate: [300, 100, 300, 100, 300],
+      },
+      data: {
+        type: 'blood_request',
+        bloodGroup: bloodGroup || '',
+        requestId: data.requestId || '',
+        district: district || '',
+        patientName: patientName || '',
+        hospitalName: hospitalName || '',
+        contactNumber: contactNumber || '',
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+      },
+      webpush: {
+        headers: {
+          TTL: '86400',
+        },
+        notification: {
+          requireInteraction: true,
+          actions: [
+            { action: 'open', title: 'View Request' },
+            { action: 'dismiss', title: 'Dismiss' },
+          ],
+        },
+        fcmOptions: {
+          link: 'https://blooddonorbd.com/#all-requests',
+        },
+      },
+    };
+
+    // Send to all tokens (max 500 per batch)
+    let sentCount = 0;
+    const batchSize = 500;
+    for (let i = 0; i < tokens.length; i += batchSize) {
+      const batch = tokens.slice(i, i + batchSize);
+      try {
+        const response = await admin.messaging().sendEachForMulticast({
+          tokens: batch,
+          ...payload,
+        });
+        sentCount += response.successCount;
+        console.log(`Sent ${response.successCount} notifications (${i + batch.length}/${tokens.length})`);
+      } catch (error) {
+        console.error('Batch send error:', error);
+      }
+    }
+
+    // Log the notification
+    await db.collection('notificationLogs').add({
+      type: 'blood_request_broadcast',
+      bloodGroup: bloodGroup || 'any',
+      district: district || 'any',
+      recipientCount: sentCount,
+      requestId: data.requestId || '',
+      sentBy: context.auth.uid,
+      sentAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return { 
+      success: true, 
+      message: `Notification sent to ${sentCount} donors`,
+      totalDonors: tokens.length,
+      sentCount: sentCount
+    };
+
+  } catch (error) {
+    console.error('Error broadcasting notification:', error);
+    throw new functions.https.HttpsError('internal', error.message);
+  }
+});
+
+// ============================================
+// SAVE FCM TOKEN (Called from client)
+// ============================================
+exports.saveFcmToken = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'You must be logged in');
+  }
+
+  const { fcmToken, platform } = data;
+
+  if (!fcmToken) {
+    throw new functions.https.HttpsError('invalid-argument', 'FCM token is required');
+  }
+
+  try {
+    await db.collection('users').doc(context.auth.uid).update({
+      fcmToken: fcmToken,
+      fcmPlatform: platform || 'web',
+      fcmUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log('FCM token saved for user:', context.auth.uid);
+    return { success: true };
+
+  } catch (error) {
+    console.error('Error saving FCM token:', error);
+    throw new functions.https.HttpsError('internal', error.message);
+  }
+});
+
+// ============================================
+// NOTIFY ON NEW BLOOD REQUEST (Auto-trigger)
+// ============================================
+exports.notifyDonorsOnNewRequest = functions.firestore
+  .document('bloodRequests/{requestId}')
+  .onCreate(async (snap, context) => {
+    const request = snap.data();
+    const requestId = context.params.requestId;
+
+    try {
+      // Get all approved donors with matching blood group
+      const donorsSnapshot = await db.collection('users')
+        .where('isDonor', '==', true)
+        .where('approvalStatus', '==', 'approved')
+        .where('bloodGroup', '==', request.bloodGroup)
+        .where('district', '==', request.district || '')
+        .where('fcmToken', '!=', null)
+        .get();
+
+      if (donorsSnapshot.empty) {
+        console.log('No donors found for blood group:', request.bloodGroup);
+        return;
+      }
+
+      const tokens = [];
+      donorsSnapshot.forEach(doc => {
+        const donor = doc.data();
+        if (donor.fcmToken) {
+          tokens.push(donor.fcmToken);
+        }
+      });
+
+      if (tokens.length === 0) {
+        console.log('No FCM tokens found for donors');
+        return;
+      }
+
+      // Build notification payload
+      const payload = {
+        notification: {
+          title: `🩸 ${request.bloodGroup} Blood Needed!`,
+          body: `Patient: ${request.patientName}\nHospital: ${request.hospitalName}\nContact: ${request.contactNumber}`,
+          icon: 'https://i.ibb.co/fd3zk65t/1000018685.jpg',
+          badge: 'https://i.ibb.co/fd3zk65t/1000018685.jpg',
+          sound: 'default',
+          vibrate: [300, 100, 300, 100, 300],
+        },
+        data: {
+          type: 'blood_request',
+          bloodGroup: request.bloodGroup,
+          requestId: requestId,
+          district: request.district || '',
+          patientName: request.patientName || '',
+          hospitalName: request.hospitalName || '',
+          contactNumber: request.contactNumber || '',
+          click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        },
+        webpush: {
+          headers: { TTL: '86400' },
+          notification: {
+            requireInteraction: true,
+            actions: [
+              { action: 'open', title: 'View Request' },
+              { action: 'dismiss', title: 'Dismiss' },
+            ],
+          },
+          fcmOptions: {
+            link: 'https://blooddonorbd.com/#all-requests',
+          },
+        },
+      };
+
+      // Send in batches
+      let sentCount = 0;
+      const batchSize = 500;
+      for (let i = 0; i < tokens.length; i += batchSize) {
+        const batch = tokens.slice(i, i + batchSize);
+        try {
+          const response = await admin.messaging().sendEachForMulticast({
+            tokens: batch,
+            ...payload,
+          });
+          sentCount += response.successCount;
+        } catch (error) {
+          console.error('Batch send error:', error);
+        }
+      }
+
+      console.log(`Auto-notified ${sentCount} donors for request ${requestId}`);
+
+      // Log notification
+      await db.collection('notificationLogs').add({
+        type: 'auto_blood_request',
+        requestId: requestId,
+        bloodGroup: request.bloodGroup,
+        recipientCount: sentCount,
+        triggeredBy: request.requesterUid || 'system',
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+    } catch (error) {
+      console.error('Error auto-notifying donors:', error);
+    }
+  });
+
+// ============================================
+// NOTIFY ON NEW PRIVATE MESSAGE
+// ============================================
+exports.notifyOnPrivateMessage = functions.firestore
+  .document('privateMessages/{conversationId}/messages/{messageId}')
+  .onCreate(async (snap, context) => {
+    const message = snap.data();
+    const conversationId = context.params.conversationId;
+
+    // Only send notification if message is not from the receiver
+    if (!message.receiverId) return;
+
+    try {
+      // Get receiver's FCM token
+      const userDoc = await db.collection('users').doc(message.receiverId).get();
+      if (!userDoc.exists) return;
+
+      const userData = userDoc.data();
+      const fcmToken = userData.fcmToken;
+
+      if (!fcmToken) return;
+
+      // Get sender's name
+      const senderDoc = await db.collection('users').doc(message.senderId).get();
+      const senderName = senderDoc.exists ? senderDoc.data().fullName : 'Someone';
+
+      // Get conversation for unread count
+      const convDoc = await db.collection('privateMessages').doc(conversationId).get();
+      const unreadCount = convDoc.exists ? (convDoc.data().unread?.[message.receiverId] || 0) : 0;
+
+      const payload = {
+        notification: {
+          title: `💬 New message from ${senderName}`,
+          body: message.message || 'You have a new message',
+          icon: 'https://i.ibb.co/fd3zk65t/1000018685.jpg',
+          badge: 'https://i.ibb.co/fd3zk65t/1000018685.jpg',
+          sound: 'default',
+        },
+        data: {
+          type: 'private_message',
+          conversationId: conversationId,
+          senderId: message.senderId,
+          messageId: context.params.messageId,
+          unreadCount: String(unreadCount),
+          click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        },
+        webpush: {
+          headers: { TTL: '86400' },
+          notification: {
+            requireInteraction: true,
+            actions: [
+              { action: 'open', title: 'Reply' },
+              { action: 'dismiss', title: 'Dismiss' },
+            ],
+          },
+          fcmOptions: {
+            link: 'https://blooddonorbd.com/#dm-donor',
+          },
+        },
+      };
+
+      await admin.messaging().send({
+        token: fcmToken,
+        ...payload,
+      });
+
+      console.log('Private message notification sent to:', message.receiverId);
+
+    } catch (error) {
+      console.error('Error sending private message notification:', error);
+    }
+  });
