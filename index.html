@@ -738,7 +738,7 @@ button, a, input {
     .form-group input,
     .form-group select,
     .form-group textarea {
-      width: 100%;
+      width: 85%;
       padding: 14px;
       border: 2px solid #e0e0e0;
       border-radius: var(--radius);
@@ -1528,7 +1528,7 @@ window.addEventListener('scroll', () => {
     <nav id="navbar" class="navbar">
       <div class="nav-container">
         <div class="nav-brand">
-          <img src="https://i.ibb.co/S4NpN5F5/1000010374.png" alt="Logo" style="width: 55px; height: 55px; border-radius: 50%; margin-right: 8px;">
+          <img src="https://i.ibb.co/RTdtn0RG/1000018751.png" alt="Logo" style="width: 55px; height: 55px; border-radius: 50%; margin-right: 8px;">
           <span>Blood Donor BD</span>
         </div>
         
@@ -2700,43 +2700,63 @@ function updateLiveLocation() {
 </div>
       `;
 
-      setTimeout(async () => {
-          const mapContainer = document.getElementById('homeMap');
-          if(!mapContainer) return;
-          
-          const map = L.map('homeMap').setView([23.6850, 90.3563], 6);
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      // Home Map - renderHomePage ফাংশনের ভিতরে
+setTimeout(async () => {
+    const mapContainer = document.getElementById('homeMap');
+    if(!mapContainer) return;
+    
+    const map = L.map('homeMap').setView([23.6850, 90.3563], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-          try {
-              const snapshot = await db.collection('users')
-                  .where('isDonor', '==', true)
-                  .where('approvalStatus', '==', 'approved')
-                  .get();
+    try {
+        const snapshot = await db.collection('users')
+            .where('isDonor', '==', true)
+            .where('approvalStatus', '==', 'approved')
+            .get();
 
-              snapshot.forEach(doc => {
-                  const donor = doc.data();
-                  if (donor.lat && donor.lng) {
-                      const marker = L.marker([donor.lat, donor.lng]).addTo(map);
-                      
-                      const callAction = currentUser ? 
-                          `<a href="tel:${donor.phoneNumber}" class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; color: white; margin-top: 8px; display: inline-block;"><i class="fas fa-phone"></i> Call Donor</a>` : 
-                          `<button onclick="promptRegistration()" class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; color: white; margin-top: 8px; border: none; cursor: pointer;"><i class="fas fa-phone"></i> Call Donor</button>`;
+        snapshot.forEach(doc => {
+            const donor = doc.data();
+            if (donor.lat && donor.lng) {
+                const marker = L.marker([donor.lat, donor.lng]).addTo(map);
+                
+                // ✅ অ্যাভাটার URL নির্ধারণ
+                const profilePic = donor.profilePic || null;
+                const avatarUrl = profilePic ? 
+                    profilePic : 
+                    (donor.gender === 'female' 
+                        ? 'https://i.ibb.co/KxVgKwMH/1000020299.png' 
+                        : 'https://i.ibb.co/PzD3Nbd7/1000020297.png');
+                
+                const callAction = currentUser ? 
+                    `<a href="tel:${donor.phoneNumber}" class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; color: white; margin-top: 8px; display: inline-block;"><i class="fas fa-phone"></i> Call Donor</a>` : 
+                    `<button onclick="promptRegistration()" class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; color: white; margin-top: 8px; border: none; cursor: pointer;"><i class="fas fa-phone"></i> Call Donor</button>`;
 
-                      marker.bindPopup(`
-                          <div style="text-align: center; padding: 5px;">
-                              <strong>${donor.fullName}</strong><br>
-                              <span style="background: var(--primary); color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; display: inline-block; margin: 4px 0;">${donor.bloodGroup}</span><br>
-                              <i class="fas fa-map-marker-alt"></i> ${donor.district}, ${donor.upazila}<br>
-                              ${callAction}
-                          </div>
-                      `);
-                  }
-              });
-          } catch (err) {
-              console.error("Home map donor load error:", err);
-          }
-      }, 100);
+                marker.bindPopup(`
+                    <div style="text-align: center; padding: 8px; max-width: 200px;">
+                        <img src="${avatarUrl}" alt="${donor.fullName}" style="
+                            width: 60px; 
+                            height: 60px; 
+                            border-radius: 50%; 
+                            object-fit: cover; 
+                            border: 3px solid #b71c1c;
+                            margin-bottom: 8px;
+                            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                        ">
+                        <div style="font-weight: 700; font-size: 15px;">${donor.fullName}</div>
+                        <span style="background: var(--primary); color: white; padding: 2px 12px; border-radius: 10px; font-size: 13px; font-weight: bold; display: inline-block; margin: 4px 0;">${donor.bloodGroup}</span>
+                        <div style="font-size: 12px; color: #666; margin: 4px 0;">
+                            <i class="fas fa-map-marker-alt"></i> ${donor.district}, ${donor.upazila}
+                        </div>
+                        ${callAction}
+                    </div>
+                `);
+            }
+        });
+    } catch (err) {
+        console.error("Home map donor load error:", err);
     }
+}, 100);
+}
     
 
     function renderAboutPage() {
@@ -3439,48 +3459,77 @@ setTimeout(() => {
     </a>
   </div>
   
-  <!-- Add Profile Picture Display -->
+  <!-- ✅ Add Profile Picture Display with Gender-based fallback -->
   <div style="text-align: center; margin-bottom: 16px;">
-    ${userProfile?.profilePic ? `
-      <img src="${userProfile.profilePic}" alt="Profile" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #b71c1c;">
-    ` : `
-      <div style="width: 80px; height: 80px; border-radius: 50%; background: #b71c1c; display: flex; align-items: center; justify-content: center; margin: 0 auto; font-size: 32px; color: white; font-weight: 700;">
-        ${userProfile?.fullName?.charAt(0) || 'U'}
-      </div>
-    `}
+    ${(() => {
+      const profilePic = userProfile?.profilePic || null;
+      const gender = userProfile?.gender || 'male';
+      
+      let avatarUrl;
+      if (profilePic) {
+        avatarUrl = profilePic;
+      } else {
+        avatarUrl = gender === 'female' 
+          ? 'https://i.ibb.co/KxVgKwMH/1000020299.png' 
+          : 'https://i.ibb.co/PzD3Nbd7/1000020297.png';
+      }
+      
+      const imgStyle = `
+        width: 80px; 
+        height: 80px; 
+        border-radius: 50%; 
+        object-fit: cover; 
+        border: 3px solid #b71c1c; 
+        box-shadow: 0 4px 15px rgba(183, 28, 28, 0.2);
+        transition: all 0.3s ease;
+        cursor: pointer;
+      `;
+      
+      return `
+        <img 
+          src="${avatarUrl}" 
+          alt="Profile" 
+          style="${imgStyle}"
+          onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 25px rgba(183, 28, 28, 0.4)';"
+          onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(183, 28, 28, 0.2)';"
+          onclick="router.navigate('profile')"
+        >
+      `;
+    })()}
   </div>
+  
   <!-- Add this inside the Profile Information section, right after the profile picture -->
-<div style="margin-top: 12px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+  <div style="margin-top: 12px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
 
-  <!-- Last Donation Date Display -->
-  <div style="background: #f5f5f5; padding: 8px 16px; border-radius: 25px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #333; margin-bottom: 10px;">
-    <i class="fas fa-calendar-check" style="color: #b71c1c;"></i>
-    <span>Last Donation: <strong>
-      ${userProfile?.lastDonationDate ? new Date(userProfile.lastDonationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Not recorded'}
-    </strong></span>
+    <!-- Last Donation Date Display -->
+    <div style="background: #f5f5f5; padding: 8px 16px; border-radius: 25px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #333; margin-bottom: 10px;">
+      <i class="fas fa-calendar-check" style="color: #b71c1c;"></i>
+      <span>Last Donation: <strong>
+        ${userProfile?.lastDonationDate ? new Date(userProfile.lastDonationDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Not recorded'}
+      </strong></span>
+    </div>
+
+    <!-- Update Button (opens the Last Donation Modal) -->
+    <button onclick="openLastDonationModal()" style="
+      background: #b71c1c;
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 25px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(183, 28, 28, 0.3);
+    " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(183, 28, 28, 0.5)'" 
+       onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 8px rgba(183, 28, 28, 0.3)'">
+      <i class="fas fa-pen"></i> Update Donation
+    </button>
   </div>
-
-  <!-- Update Button (opens the Last Donation Modal) -->
-  <button onclick="openLastDonationModal()" style="
-    background: #b71c1c;
-    color: white;
-    border: none;
-    padding: 8px 18px;
-    border-radius: 25px;
-    margin-bottom: 10px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(183, 28, 28, 0.3);
-  " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(183, 28, 28, 0.5)'" 
-     onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 8px rgba(183, 28, 28, 0.3)'">
-    <i class="fas fa-pen"></i> Update Donation
-  </button>
-</div>
   
   <div style="display: flex; flex-direction: column; gap: 12px; text-align: center;">
     <p><strong>Name:</strong> ${roleSymbol}${userProfile?.fullName || '-'}</p>
@@ -3549,51 +3598,68 @@ setTimeout(() => {
 }, 100);
 
       // Trigger Load of Requests and Leaflet Map
-      setTimeout(async () => {
-        loadDashboardEmergencyRequests();
-        const map = L.map('dashboardMap', { 
-            zoomControl: false, 
-            dragging: false,
-            scrollWheelZoom: false,
-            doubleClickZoom: false 
-        }).setView([23.6850, 90.3563], 6);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        map.on('click', () => router.navigate('live-map'));
-        
-        // Fetch and display donors on mini map
-        try {
-            const snapshot = await db.collection('users')
-                .where('isDonor', '==', true)
-                .where('approvalStatus', '==', 'approved')
-                .get();
-            snapshot.forEach(doc => {
-                const donor = doc.data();
-                if (donor.lat && donor.lng) {
-                    const marker = L.marker([donor.lat, donor.lng], {
-                        icon: L.divIcon({
-                            className: 'custom-marker',
-                            html: `<div style="background: #b71c1c; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3);"></div>`,
-                            iconSize: [12, 12],
-                            iconAnchor: [6, 6]
-                        })
-                    }).addTo(map);
-                    
-                    marker.bindPopup(`
-                        <div style="text-align: center;">
-                            <strong>${donor.fullName}</strong><br>
-                            <span style="color: #b71c1c; font-weight: bold;">${donor.bloodGroup}</span><br>
-                            ${donor.district}, ${donor.upazila}
-                            
-                            <a href="tel:${donor.phoneNumber}" class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; color: white; margin-top: 8px; margin-left: 5px; display: inline-block;"><i class="fas fa-phone"></i></a>
-                        </div>
-                    `);
-                }
-            });
-        } catch (err) {
-            console.error("Mini map donor load error:", err);
-        }
-      }, 100);
+      // Dashboard Mini Map - renderDashboard ফাংশনের ভিতরে
+setTimeout(async () => {
+    loadDashboardEmergencyRequests();
+    const map = L.map('dashboardMap', { 
+        zoomControl: false, 
+        dragging: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false 
+    }).setView([23.6850, 90.3563], 6);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    map.on('click', () => router.navigate('live-map'));
+    
+    // Fetch and display donors on mini map
+    try {
+        const snapshot = await db.collection('users')
+            .where('isDonor', '==', true)
+            .where('approvalStatus', '==', 'approved')
+            .get();
+        snapshot.forEach(doc => {
+            const donor = doc.data();
+            if (donor.lat && donor.lng) {
+                // ✅ অ্যাভাটার URL নির্ধারণ
+                const profilePic = donor.profilePic || null;
+                const avatarUrl = profilePic ? 
+                    profilePic : 
+                    (donor.gender === 'female' 
+                        ? 'https://i.ibb.co/KxVgKwMH/1000020299.png' 
+                        : 'https://i.ibb.co/PzD3Nbd7/1000020297.png');
+                
+                const marker = L.marker([donor.lat, donor.lng], {
+                    icon: L.divIcon({
+                        className: 'custom-marker',
+                        html: `<div style="background: #b71c1c; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.3);"></div>`,
+                        iconSize: [12, 12],
+                        iconAnchor: [6, 6]
+                    })
+                }).addTo(map);
+                
+                marker.bindPopup(`
+                    <div style="text-align: center; padding: 8px; max-width: 180px;">
+                        <img src="${avatarUrl}" alt="${donor.fullName}" style="
+                            width: 45px; 
+                            height: 45px; 
+                            border-radius: 50%; 
+                            object-fit: cover; 
+                            border: 3px solid #b71c1c;
+                            margin-bottom: 6px;
+                            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+                        ">
+                        <div style="font-weight: 700; font-size: 14px;">${donor.fullName}</div>
+                        <span style="color: #b71c1c; font-weight: bold; font-size: 14px;">${donor.bloodGroup}</span>
+                        <div style="font-size: 11px; color: #666;">${donor.district}, ${donor.upazila}</div>
+                        <a href="tel:${donor.phoneNumber}" class="btn btn-primary" style="padding: 4px 10px; font-size: 11px; color: white; margin-top: 6px; display: inline-block;"><i class="fas fa-phone"></i> Call</a>
+                    </div>
+                `);
+            }
+        });
+    } catch (err) {
+        console.error("Mini map donor load error:", err);
+    }
+}, 100);
       // Load notices after dashboard is rendered
 setTimeout(() => {
   if (document.getElementById('noticeContainer')) {
@@ -3735,50 +3801,73 @@ setTimeout(() => {
 
     // Live Map Component Page (Feature 5 & 6)
     function renderLiveMapPage() {
-        const main = document.getElementById('mainContent');
-        main.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h1 style="margin: 0;"><i class="fas fa-map-marker-alt"></i> Live Blood Donors Map</h1>
-                <button onclick="router.navigate('dashboard')" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
-            </div>
-            <div id="fullLiveMap" style="height: 75vh; border-radius: 12px; z-index: 1; box-shadow: var(--shadow-lg); border: 2px solid #ddd;"></div>
-        `;
+    const main = document.getElementById('mainContent');
+    main.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <h1 style="margin: 0;"><i class="fas fa-map-marker-alt"></i> Live Blood Donors Map</h1>
+            <button onclick="router.navigate('dashboard')" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Back to Dashboard</button>
+        </div>
+        <div id="fullLiveMap" style="height: 75vh; border-radius: 12px; z-index: 1; box-shadow: var(--shadow-lg); border: 2px solid #ddd;"></div>
+    `;
+    
+    setTimeout(async () => {
+        const map = L.map('fullLiveMap').setView([23.6850, 90.3563], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
         
-        setTimeout(async () => {
-            const map = L.map('fullLiveMap').setView([23.6850, 90.3563], 7);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
+        try {
+            const snapshot = await db.collection('users')
+                .where('isDonor', '==', true)
+                .where('approvalStatus', '==', 'approved')
+                .get();
             
-            try {
-                const snapshot = await db.collection('users').where('isDonor', '==', true).where('approvalStatus', '==', 'approved').get();
-                let donorCount = 0;
-                snapshot.forEach(doc => {
-                    const donor = doc.data();
-                    if(donor.lat && donor.lng) {
-                        donorCount++;
-                        const marker = L.marker([donor.lat, donor.lng]).addTo(map);
-                        
-                        const callAction = currentUser ? 
-                            `<a href="tel:${donor.phoneNumber}" class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; color: white; margin-top: 8px; display: inline-block;"><i class="fas fa-phone"></i> Call Donor</a>` : 
-                            `<button onclick="promptRegistration()" class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; color: white; margin-top: 8px; border: none; cursor: pointer;"><i class="fas fa-phone"></i> Call Donor</button>`;
+            let donorCount = 0;
+            snapshot.forEach(doc => {
+                const donor = doc.data();
+                if(donor.lat && donor.lng) {
+                    donorCount++;
+                    const marker = L.marker([donor.lat, donor.lng]).addTo(map);
+                    
+                    // ✅ অ্যাভাটার URL নির্ধারণ
+                    const profilePic = donor.profilePic || null;
+                    const avatarUrl = profilePic ? 
+                        profilePic : 
+                        (donor.gender === 'female' 
+                            ? 'https://i.ibb.co/KxVgKwMH/1000020299.png' 
+                            : 'https://i.ibb.co/PzD3Nbd7/1000020297.png');
+                    
+                    const callAction = currentUser ? 
+                        `<a href="tel:${donor.phoneNumber}" class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; color: white; margin-top: 8px; display: inline-block;"><i class="fas fa-phone"></i> Call Donor</a>` : 
+                        `<button onclick="promptRegistration()" class="btn btn-primary" style="padding: 4px 10px; font-size: 12px; color: white; margin-top: 8px; border: none; cursor: pointer;"><i class="fas fa-phone"></i> Call Donor</button>`;
 
-                        marker.bindPopup(`
-                            <div style="text-align: center; padding: 5px;">
-                                <strong>${donor.fullName}</strong><br/>
-                                <span style="background: var(--primary); color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; display: inline-block; margin: 4px 0;">${donor.bloodGroup}</span><br/>
-                                <i class="fas fa-map-marker-alt"></i> ${donor.district}, ${donor.upazila}<br/>
-                                ${callAction}
+                    marker.bindPopup(`
+                        <div style="text-align: center; padding: 8px; max-width: 200px;">
+                            <img src="${avatarUrl}" alt="${donor.fullName}" style="
+                                width: 60px; 
+                                height: 60px; 
+                                border-radius: 50%; 
+                                object-fit: cover; 
+                                border: 3px solid #b71c1c;
+                                margin-bottom: 8px;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                            ">
+                            <div style="font-weight: 700; font-size: 15px;">${donor.fullName}</div>
+                            <span style="background: var(--primary); color: white; padding: 2px 12px; border-radius: 10px; font-size: 13px; font-weight: bold; display: inline-block; margin: 4px 0;">${donor.bloodGroup}</span>
+                            <div style="font-size: 12px; color: #666; margin: 4px 0;">
+                                <i class="fas fa-map-marker-alt"></i> ${donor.district}, ${donor.upazila}
                             </div>
-                        `);
-                    }
-                });
-                if(donorCount > 0) Toast.show(`Loaded ${donorCount} live donors on the map!`, 'success');
-            } catch (err) {
-                console.error("Failed to load map data", err);
-            }
-        }, 200);
-    }
+                            ${callAction}
+                        </div>
+                    `);
+                }
+            });
+            if(donorCount > 0) Toast.show(`Loaded ${donorCount} live donors on the map!`, 'success');
+        } catch (err) {
+            console.error("Failed to load map data", err);
+        }
+    }, 200);
+}
 
     function renderProfilePage() {
   if (!currentUser) { router.navigate('login'); return; }
@@ -3789,11 +3878,19 @@ setTimeout(() => {
   
   // Get profile picture URL
   const profilePicUrl = userProfile?.profilePic || null;
+  const gender = userProfile?.gender || 'male';
   
-  // Create avatar HTML with profile picture
+  // ✅ প্রোফাইল পিকচার বা জেন্ডার-ভিত্তিক অ্যাভাটার
+  const avatarUrl = profilePicUrl ? 
+    profilePicUrl : 
+    (gender === 'female' 
+      ? 'https://i.ibb.co/KxVgKwMH/1000020299.png' 
+      : 'https://i.ibb.co/PzD3Nbd7/1000020297.png');
+  
+  // Create avatar HTML with profile picture or gender-based avatar
   const avatarHtml = profilePicUrl ?
-    `<img src="${profilePicUrl}" alt="Profile" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #b71c1c;">` :
-    `<div class="profile-avatar">${roleSymbol}${userProfile?.fullName?.charAt(0) || 'U'}</div>`;
+    `<img src="${profilePicUrl}" alt="Profile" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #b71c1c; box-shadow: 0 4px 15px rgba(183, 28, 28, 0.2);">` :
+    `<img src="${avatarUrl}" alt="Profile" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #b71c1c; box-shadow: 0 4px 15px rgba(183, 28, 28, 0.2);">`;
 
   main.innerHTML = `
     <div class="profile-container">
@@ -3890,7 +3987,7 @@ ${userProfile?.isDonor ?
 </div>
             <div class="form-group"><label>Upazila</label><input type="text" id="profileUpazila" value="${userProfile?.upazila || ''}"></div>
             <div class="form-group"><label>Address</label><textarea id="profileAddress" rows="3">${userProfile?.address || ''}</textarea></div>
-            <button type="submit" class="btn btn-primary">Update Profile</button>
+            <button type="submit" class="btn btn-primary" style=" width: 85%;">Update Profile</button>
           </form>
         </div>
       `;
@@ -4277,11 +4374,11 @@ if (eligibility.status === 'eligible') {
   badgeText = `⏳ ${eligibility.remainingDays || 0} days left`;
 }
     
-    // প্রোফাইল পিকচার বা ডিফল্ট অ্যাভাটার
-    const profilePicUrl = donor.profilePic || null;
-    const avatarHtml = profilePicUrl ? 
-      `<img src="${profilePicUrl}" alt="${donor.fullName}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #b71c1c; box-shadow: 0 2px 8px rgba(183, 28, 28, 0.2);">` :
-      `<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #b71c1c, #ff5252); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">${donor.fullName?.charAt(0) || 'U'}</div>`;
+    // প্রোফাইল পিকচার বা ডিফল্ট জেন্ডার-ভিত্তিক অ্যাভাটার
+const profilePicUrl = donor.profilePic || null;
+const avatarHtml = profilePicUrl ? 
+  `<img src="${profilePicUrl}" alt="${donor.fullName}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #b71c1c; box-shadow: 0 2px 8px rgba(183, 28, 28, 0.2);">` :
+  `<img src="${donor.gender === 'female' ? 'https://i.ibb.co/KxVgKwMH/1000020299.png' : 'https://i.ibb.co/PzD3Nbd7/1000020297.png'}" alt="${donor.fullName}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #b71c1c; box-shadow: 0 2px 8px rgba(183, 28, 28, 0.2);">`;
     
     const card = document.createElement('div');
     card.className = 'request-card';
@@ -4368,7 +4465,7 @@ if (eligibility.status === 'eligible') {
         </div>
         <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: #555;">
           <i class="fas fa-phone" style="width: 18px; color: #b71c1c;"></i>
-          <span>${donor.phoneNumber ? donor.phoneNumber.slice(0,8)+'***' : 'N/A'}</span>
+          <span>${donor.phoneNumber ? donor.phoneNumber.slice(0,6)+'*****' : 'N/A'}</span>
         </div>
         ${donor.lastDonationDate ? `
           <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: #888; border-top: 1px solid #f5f5f5; padding-top: 8px; margin-top: 4px;">
@@ -5010,9 +5107,16 @@ async function loadPrivateConversations() {
 function createDMUserItem(user, conversation) {
   const roleSymbol = getRoleSymbol(user.role);
   const isDonor = user.isDonor;
-  const bgColor = isDonor ? '#b71c1c' : '#1565c0';
   const name = user.fullName || 'Unknown User';
   const initial = name.charAt(0).toUpperCase();
+  
+  // ✅ প্রোফাইল পিকচার বা জেন্ডার-ভিত্তিক অ্যাভাটার
+  const profilePic = user.profilePic || null;
+  const avatarUrl = profilePic ? 
+    profilePic : 
+    (user.gender === 'female' 
+      ? 'https://i.ibb.co/KxVgKwMH/1000020299.png' 
+      : 'https://i.ibb.co/PzD3Nbd7/1000020297.png');
   
   let preview = 'Click to start chat';
   let time = '';
@@ -5067,8 +5171,8 @@ function createDMUserItem(user, conversation) {
     <div class="dm-user-item ${unread > 0 ? 'dm-unread-priority' : ''} ${isActive ? 'active' : ''}" 
          onclick="selectDMUser('${user.uid}')"
          style="${itemStyle} display: flex; align-items: center; gap: 12px; padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f5f5f5; transition: all 0.2s;">
-      <div class="dm-user-avatar" style="width: 40px; height: 40px; border-radius: 50%; background: ${bgColor}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; flex-shrink: 0;">
-        ${isDonor ? '🩸' : initial}
+      <div class="dm-user-avatar" style="width: 40px; height: 40px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: #f0f0f0;">
+        <img src="${avatarUrl}" alt="${name}" style="width: 100%; height: 100%; object-fit: cover;">
       </div>
       <div class="dm-user-info" style="flex: 1; min-width: 0;">
         <div class="dm-user-name" style="font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
@@ -5180,10 +5284,18 @@ async function loadPrivateChat(userId, conversationId) {
     const user = userDoc.data();
     const bgColor = user.isDonor ? '#b71c1c' : '#1565c0';
     
+    // ✅ প্রোফাইল পিকচার বা জেন্ডার-ভিত্তিক অ্যাভাটার (হেডারের জন্য)
+    const profilePic = user.profilePic || null;
+    const avatarUrl = profilePic ? 
+      profilePic : 
+      (user.gender === 'female' 
+        ? 'https://i.ibb.co/KxVgKwMH/1000020299.png' 
+        : 'https://i.ibb.co/PzD3Nbd7/1000020297.png');
+    
     header.innerHTML = `
       <div class="dm-chat-header-info">
-        <div class="dm-user-avatar" style="width: 36px; height: 36px; border-radius: 50%; background: ${bgColor}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 14px;">
-          ${user.isDonor ? '🩸' : user.fullName?.charAt(0).toUpperCase() || 'U'}
+        <div class="dm-user-avatar" style="width: 36px; height: 36px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: #f0f0f0;">
+          <img src="${avatarUrl}" alt="${user.fullName || 'User'}" style="width: 100%; height: 100%; object-fit: cover;">
         </div>
         <div>
           <h4 style="margin: 0;">${user.fullName || 'Unknown User'}</h4>
@@ -5680,41 +5792,56 @@ setTimeout(function() {
   const logoutBtn = document.getElementById('logoutBtn');
   if (!navMenu || !userInfo || !logoutBtn) return;
   
-  // In updateNavigation() function, replace this section:
-if (currentUser) {
-  navMenu.innerHTML = `
-  <li><a href="#" data-page="home" onclick="router.navigate('home');return false;"><i class="fas fa-home"></i> Home</a></li>
-  <li><a href="#" data-page="dashboard" onclick="router.navigate('dashboard');return false;">Dashboard</a></li>
-  <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors');return false;"><i class="fas fa-search"></i> Find</a></li>
-  <li><a href="#" data-page="request-blood" onclick="router.navigate('request-blood');return false;"><i class="fas fa-tint"></i> Request</a></li>
-  <li><a href="#" data-page="success-stories" onclick="router.navigate('success-stories');return false;"><i class="fas fa-heart"></i> Stories</a></li>
-  <li><a href="#" data-page="dm-donor" onclick="router.navigate('dm-donor');return false;"><i class="fas fa-comments"></i> DM</a></li>
-  <li><a href="#" data-page="profile" onclick="router.navigate('profile');return false;"><i class="fas fa-user"></i> Profile</a></li>
-`;
-  
-// ✅ Show profile picture in navigation
-const profilePicUrl = userProfile?.profilePic || null;
-
-// প্রোফাইল পিকচার বা অ্যাভাটার HTML তৈরি করুন
-let avatarHtml;
-if (profilePicUrl) {
-  avatarHtml = `<a href="#profile" style="display: inline-block;">
-    <img src="${profilePicUrl}" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #b71c1c; cursor: pointer;">
-  </a>`;
-} else {
-  avatarHtml = `<a href="#profile" style="text-decoration: none;">
-    <span class="user-avatar" style="cursor: pointer;">${userProfile?.fullName?.charAt(0) || 'U'}</span>
-  </a>`;
-}
-
-let roleSymbol = getRoleSymbol(userProfile?.role);
-userInfo.innerHTML = `
-  <span style="display: flex; align-items: center; gap: 8px;">
-    ${avatarHtml}
-  </span>
-`;
-  logoutBtn.style.display = 'block';
-  
+  if (currentUser) {
+    navMenu.innerHTML = `
+      <li><a href="#" data-page="home" onclick="router.navigate('home');return false;"><i class="fas fa-home"></i> Home</a></li>
+      <li><a href="#" data-page="dashboard" onclick="router.navigate('dashboard');return false;">Dashboard</a></li>
+      <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors');return false;"><i class="fas fa-search"></i> Find</a></li>
+      <li><a href="#" data-page="request-blood" onclick="router.navigate('request-blood');return false;"><i class="fas fa-tint"></i> Request</a></li>
+      <li><a href="#" data-page="success-stories" onclick="router.navigate('success-stories');return false;"><i class="fas fa-heart"></i> Stories</a></li>
+      <li><a href="#" data-page="dm-donor" onclick="router.navigate('dm-donor');return false;"><i class="fas fa-comments"></i> DM</a></li>
+      <li><a href="#" data-page="profile" onclick="router.navigate('profile');return false;"><i class="fas fa-user"></i> Profile</a></li>
+    `;
+    
+    // ✅ প্রোফাইল পিকচার বা জেন্ডার-ভিত্তিক অ্যাভাটার
+    const profilePicUrl = userProfile?.profilePic || null;
+    const gender = userProfile?.gender || 'male';
+    
+    // অ্যাভাটার URL নির্ধারণ
+    const avatarUrl = profilePicUrl ? 
+      profilePicUrl : 
+      (gender === 'female' 
+        ? 'https://i.ibb.co/KxVgKwMH/1000020299.png' 
+        : 'https://i.ibb.co/PzD3Nbd7/1000020297.png');
+    
+    // অ্যাভাটার HTML তৈরি
+    const avatarHtml = `
+      <a href="#profile" onclick="router.navigate('profile');return false;" style="display: inline-block; text-decoration: none;">
+        <img src="${avatarUrl}" alt="Profile" style="
+          width: 40px; 
+          height: 40px; 
+          border-radius: 50%; 
+          object-fit: cover; 
+          border: 2px solid #b71c1c; 
+          cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 2px 8px rgba(183, 28, 28, 0.2);
+        "
+        onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 12px rgba(183, 28, 28, 0.4)';"
+        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 8px rgba(183, 28, 28, 0.2)';"
+        >
+      </a>
+    `;
+    
+    let roleSymbol = getRoleSymbol(userProfile?.role);
+    userInfo.innerHTML = `
+      <span style="display: flex; align-items: center; gap: 8px;">
+        ${avatarHtml}
+        ${userProfile?.fullName ? `<span style="font-weight: 500; font-size: 14px; color: #333; display: none;">${userProfile.fullName.split(' ')[0]}</span>` : ''}
+      </span>
+    `;
+    
+    logoutBtn.style.display = 'block';
     
   } else {
     navMenu.innerHTML = `
@@ -5724,7 +5851,6 @@ userInfo.innerHTML = `
       <li><a href="#" data-page="contact" onclick="router.navigate('contact');return false;">Contact</a></li>
     `;
     
-    // ✅ লগআউট বাটন লুকানো, লগইন/রেজিস্টার বাটন দেখানো
     userInfo.innerHTML = `
       <button onclick="router.navigate('login')" class="btn btn-outline" style="font-size: 0.65rem;">Login</button>
       <button onclick="router.navigate('register')" class="btn btn-primary" style="font-size: 0.65rem;">Register</button>
