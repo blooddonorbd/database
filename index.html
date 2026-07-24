@@ -106,6 +106,56 @@ button, a, input {
     min-height: 20px;
     min-width: 44px;
 }
+
+/* 1. Force the widget to be visible (Overrides your previous hidden settings) */
+#google_translate_element, 
+#google_translate_element * {
+    display: block !important;
+}
+
+/* 2. Hide the annoying Google Translate top banner and empty space */
+body {
+    top: 0px !important; 
+}
+.goog-te-banner-frame.skiptranslate {
+    display: none !important;
+}
+
+/* 3. Style the Dropdown Menu */
+select.goog-te-combo {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #D1D5DB; /* Change to match your website border color */
+    background-color: #FFFFFF; /* Change to match your website background */
+    color: #374151; /* Text color */
+    font-family: inherit; /* Matches your website's font */
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* 4. Dropdown Hover/Focus Effect */
+select.goog-te-combo:hover,
+select.goog-te-combo:focus {
+    border-color: #3B82F6; /* Change this to your website's primary brand color */
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* 5. Hide the "Powered by Google" text and logo for a cleaner look */
+.goog-logo-link,
+.goog-logo-link:link,
+.goog-logo-link:visited,
+.goog-logo-link:hover,
+.goog-logo-link:active {
+    display: none !important;
+}
+.goog-te-gadget {
+    color: transparent !important;
+    font-size: 0px !important;
+}
     
     /* Private DM Styles */
   .dm-container {
@@ -1573,7 +1623,19 @@ window.addEventListener('scroll', () => {
 
     <footer class="footer">
       <div class="footer-content">
-        <div class="footer-section">
+        <div class="footer-section"><!-- Google Translate Element -->
+<div id="google_translate_element"></div>
+
+<!-- Google Translate Scripts -->
+<script type="text/javascript">
+function googleTranslateElementInit() {
+  new google.translate.TranslateElement({
+    pageLanguage: 'en',
+    layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+  }, 'google_translate_element');
+}
+</script>
+<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
           <button onclick="findNearbyHospitals()" style="
   background: #8b0000; 
   color: white; 
@@ -9299,5 +9361,7 @@ window.PushNotificationManager = PushNotificationManager;
     }
   });
 </script>
+
+
 </body>
 </html>
