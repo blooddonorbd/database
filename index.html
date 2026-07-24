@@ -1574,17 +1574,6 @@ window.addEventListener('scroll', () => {
     <footer class="footer">
       <div class="footer-content">
         <div class="footer-section">
-          <div style="display: flex; justify-content: center; width: 100%;">
-  <div id="google_translate_element"></div>
-</div>
-
-<script type="text/javascript">
-function googleTranslateElementInit() {
-  new google.translate.TranslateElement({pageLanguage: 'en'}, 'google_translate_element');
-}
-</script>
-
-<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
           <button onclick="findNearbyHospitals()" style="
   background: #8b0000; 
   color: white; 
@@ -1594,7 +1583,7 @@ function googleTranslateElementInit() {
   cursor: pointer; 
   font-weight: 600;
   width: 100%;
-  margin-top: 12px;
+  margin-top: px;
   margin-bottom: 12px;
 ">
   <i class="fas fa-hospital"></i> Find Nearby Hospitals
@@ -5685,14 +5674,16 @@ setTimeout(function() {
   
   // In updateNavigation() function, replace this section:
 if (currentUser) {
-  navMenu.innerHTML = `
-    <li><a href="#" data-page="home" onclick="router.navigate('home');return false;"><i class="fas fa-home"></i> Home</a></li>
-    <li><a href="#" data-page="dashboard" onclick="router.navigate('dashboard');return false;">Dashboard</a></li>
-    <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors');return false;"><i class="fas fa-search"></i> Find</a></li>
-    <li><a href="#" data-page="request-blood" onclick="router.navigate('request-blood');return false;"><i class="fas fa-tint"></i> Request</a></li>
-    <li><a href="#" data-page="success-stories" onclick="router.navigate('success-stories');return false;"><i class="fas fa-heart"></i> Stories</a></li>
-    <li><a href="#" data-page="dm-donor" onclick="router.navigate('dm-donor');return false;"><i class="fas fa-comments"></i> DM</a></li>
-    <li><a href="#" data-page="profile" onclick="router.navigate('profile');return false;"><i class="fas fa-user"></i> Profile</a></li>
+  // Logged in user menu
+navMenu.innerHTML = `
+  <li><a href="#" data-page="home" onclick="router.navigate('home');return false;"><i class="fas fa-home"></i> Home</a></li>
+  <li><a href="#" data-page="dashboard" onclick="router.navigate('dashboard');return false;">Dashboard</a></li>
+  <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors');return false;"><i class="fas fa-search"></i> Find</a></li>
+  <li><a href="#" data-page="request-blood" onclick="router.navigate('request-blood');return false;"><i class="fas fa-tint"></i> Request</a></li>
+  <li><a href="#" data-page="success-stories" onclick="router.navigate('success-stories');return false;"><i class="fas fa-heart"></i> Stories</a></li>
+  <li><a href="#" data-page="dm-donor" onclick="router.navigate('dm-donor');return false;"><i class="fas fa-comments"></i> DM</a></li>
+  <li><a href="#" data-page="profile" onclick="router.navigate('profile');return false;"><i class="fas fa-user"></i> Profile</a></li>
+  <li><a href="#" onclick="openLanguagePopup(); return false;"><i class="fas fa-language"></i> Language</a></li>  <!-- 👈 এই লাইনটি যোগ করুন -->
   `;
   
 // ✅ Show profile picture in navigation
@@ -9310,7 +9301,227 @@ window.PushNotificationManager = PushNotificationManager;
     }
   });
 </script>
+<!-- ============================================ -->
+<!-- CUSTOM LANGUAGE BUTTON WITH POPUP - ADD THIS -->
+<!-- ============================================ -->
 
+<!-- 1. প্রথমে নেভিগেশন মেনুতে ল্যাঙ্গুয়েজ বাটন যোগ করুন (navbar এর ভিতরে) -->
+<!-- আপনার navbar এর ভিতরে এই লাইনটি যোগ করুন -->
+<!-- <li><a href="#" onclick="openLanguagePopup(); return false;"><i class="fas fa-language"></i> Language</a></li> -->
+
+<!-- 2. ভাষা পপআপ মডাল HTML (পেজের যে কোনো জায়গায় যোগ করুন, body-এর শেষের দিকে ভালো) -->
+<div id="languageModal" style="
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+">
+  <div style="
+    background: white;
+    border-radius: 16px;
+    max-width: 550px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 32px;
+    animation: scaleIn 0.3s ease;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  ">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h2 style="margin: 0; color: #b71c1c;">
+        <i class="fas fa-language"></i> Select Language
+      </h2>
+      <button onclick="closeLanguagePopup()" style="
+        background: none;
+        border: none;
+        font-size: 28px;
+        cursor: pointer;
+        color: #999;
+        transition: color 0.3s;
+        padding: 4px 8px;
+        line-height: 1;
+        border-radius: 4px;
+      " onmouseover="this.style.color='#333'; this.style.background='#f0f0f0'" 
+         onmouseout="this.style.color='#999'; this.style.background='transparent'">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <p style="color: #666; margin-bottom: 20px;">
+      Choose your preferred language. The page will automatically translate.
+    </p>
+    
+    <!-- Google Translate Widget -->
+    <div id="google_translate_element" style="margin-bottom: 20px;"></div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-top: 12px;">
+      <button onclick="changeLanguage('en')" class="lang-btn" style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; background: white; cursor: pointer; font-weight: 600; transition: all 0.3s;">🇬🇧 English</button>
+      <button onclick="changeLanguage('bn')" class="lang-btn" style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; background: white; cursor: pointer; font-weight: 600; transition: all 0.3s;">🇧🇩 বাংলা</button>
+      <button onclick="changeLanguage('hi')" class="lang-btn" style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; background: white; cursor: pointer; font-weight: 600; transition: all 0.3s;">🇮🇳 हिन्दी</button>
+      <button onclick="changeLanguage('ur')" class="lang-btn" style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; background: white; cursor: pointer; font-weight: 600; transition: all 0.3s;">🇵🇰 اردو</button>
+      <button onclick="changeLanguage('ar')" class="lang-btn" style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; background: white; cursor: pointer; font-weight: 600; transition: all 0.3s;">🇸🇦 العربية</button>
+      <button onclick="changeLanguage('fr')" class="lang-btn" style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; background: white; cursor: pointer; font-weight: 600; transition: all 0.3s;">🇫🇷 Français</button>
+      <button onclick="changeLanguage('es')" class="lang-btn" style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; background: white; cursor: pointer; font-weight: 600; transition: all 0.3s;">🇪🇸 Español</button>
+      <button onclick="changeLanguage('zh-CN')" class="lang-btn" style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; background: white; cursor: pointer; font-weight: 600; transition: all 0.3s;">🇨🇳 中文</button>
+    </div>
+    
+    <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e0e0e0; text-align: center; font-size: 13px; color: #999;">
+      <i class="fas fa-info-circle"></i> Powered by Google Translate
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Language button hover effect */
+  .lang-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-color: #b71c1c !important;
+    background: #fff5f5 !important;
+  }
+  
+  /* Google Translate widget styling */
+  .goog-te-combo {
+    padding: 12px !important;
+    border: 2px solid #e0e0e0 !important;
+    border-radius: 8px !important;
+    font-size: 16px !important;
+    font-family: inherit !important;
+    width: 100% !important;
+    background: white !important;
+  }
+  
+  /* Hide Google Translate banner */
+  .goog-te-banner-frame {
+    display: none !important;
+  }
+  
+  body {
+    top: 0 !important;
+  }
+  
+  .goog-te-gadget {
+    font-family: inherit !important;
+  }
+  
+  /* Modal animations */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes scaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+</style>
+
+<script>
+// ============================================
+// LANGUAGE POPUP FUNCTIONS
+// ============================================
+
+// Open Language Popup
+function openLanguagePopup() {
+  const modal = document.getElementById('languageModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    // Re-initialize Google Translate if needed
+    if (typeof googleTranslateElementInit === 'function') {
+      // Make sure the translate element is visible
+      const translateEl = document.getElementById('google_translate_element');
+      if (translateEl && !translateEl.innerHTML.trim()) {
+        googleTranslateElementInit();
+      }
+    }
+  }
+}
+
+// Close Language Popup
+function closeLanguagePopup() {
+  const modal = document.getElementById('languageModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+// Change language directly using Google Translate API
+function changeLanguage(langCode) {
+  // Find the Google Translate dropdown and change its value
+  const select = document.querySelector('.goog-te-combo');
+  if (select) {
+    select.value = langCode;
+    select.dispatchEvent(new Event('change'));
+    // Close popup after selection
+    setTimeout(closeLanguagePopup, 500);
+  } else {
+    // If dropdown doesn't exist yet, initialize and try again
+    if (typeof googleTranslateElementInit === 'function') {
+      googleTranslateElementInit();
+      setTimeout(() => {
+        const select2 = document.querySelector('.goog-te-combo');
+        if (select2) {
+          select2.value = langCode;
+          select2.dispatchEvent(new Event('change'));
+          setTimeout(closeLanguagePopup, 500);
+        }
+      }, 1000);
+    }
+  }
+}
+
+// Initialize Google Translate
+function googleTranslateElementInit() {
+  const translateEl = document.getElementById('google_translate_element');
+  if (translateEl) {
+    // Clear previous content
+    translateEl.innerHTML = '';
+    new google.translate.TranslateElement({
+      pageLanguage: 'en',
+      includedLanguages: 'en,bn,hi,ur,ar,fr,es,zh-CN,de,it,ja,ko,ru,pt',
+      layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+    }, 'google_translate_element');
+  }
+}
+
+// Close popup when clicking outside
+document.addEventListener('click', function(e) {
+  const modal = document.getElementById('languageModal');
+  if (modal && modal.style.display === 'flex') {
+    if (e.target === modal) {
+      closeLanguagePopup();
+    }
+  }
+});
+
+// Close popup with Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeLanguagePopup();
+  }
+});
+
+// Make functions globally accessible
+window.openLanguagePopup = openLanguagePopup;
+window.closeLanguagePopup = closeLanguagePopup;
+window.changeLanguage = changeLanguage;
+window.googleTranslateElementInit = googleTranslateElementInit;
+
+console.log('🌐 Custom Language Button loaded!');
+</script>
+
+<!-- ============================================ -->
+<!-- Load Google Translate API -->
+<!-- ============================================ -->
+<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
 </body>
 </html>
