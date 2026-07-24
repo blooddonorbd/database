@@ -9302,14 +9302,10 @@ window.PushNotificationManager = PushNotificationManager;
   });
 </script>
 <!-- ============================================ -->
-<!-- CUSTOM LANGUAGE BUTTON WITH POPUP - ADD THIS -->
+<!-- CUSTOM LANGUAGE SYSTEM - COMPLETE FIX -->
 <!-- ============================================ -->
 
-<!-- 1. প্রথমে নেভিগেশন মেনুতে ল্যাঙ্গুয়েজ বাটন যোগ করুন (navbar এর ভিতরে) -->
-<!-- আপনার navbar এর ভিতরে এই লাইনটি যোগ করুন -->
-<!-- <li><a href="#" onclick="openLanguagePopup(); return false;"><i class="fas fa-language"></i> Language</a></li> -->
-
-<!-- 2. ভাষা পপআপ মডাল HTML (পেজের যে কোনো জায়গায় যোগ করুন, body-এর শেষের দিকে ভালো) -->
+<!-- Language Modal HTML -->
 <div id="languageModal" style="
   position: fixed;
   top: 0;
@@ -9337,7 +9333,7 @@ window.PushNotificationManager = PushNotificationManager;
   ">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h2 style="margin: 0; color: #b71c1c;">
-        <i class="fas fa-language"></i> Select Language
+        <i class="fas fa-language"></i> Select Language / ভাষা নির্বাচন করুন
       </h2>
       <button onclick="closeLanguagePopup()" style="
         background: none;
@@ -9356,13 +9352,13 @@ window.PushNotificationManager = PushNotificationManager;
     </div>
     
     <p style="color: #666; margin-bottom: 20px;">
-      Choose your preferred language. The page will automatically translate.
+      Choose your preferred language. / আপনার পছন্দের ভাষা নির্বাচন করুন।
     </p>
     
     <!-- Google Translate Widget -->
     <div id="google_translate_element" style="margin-bottom: 20px;"></div>
     
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-top: 12px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 12px;">
       <button onclick="changeLanguage('en')" class="lang-btn" style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; background: white; cursor: pointer; font-weight: 600; transition: all 0.3s;">🇬🇧 English</button>
       <button onclick="changeLanguage('bn')" class="lang-btn" style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; background: white; cursor: pointer; font-weight: 600; transition: all 0.3s;">🇧🇩 বাংলা</button>
       <button onclick="changeLanguage('hi')" class="lang-btn" style="padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; background: white; cursor: pointer; font-weight: 600; transition: all 0.3s;">🇮🇳 हिन्दी</button>
@@ -9380,7 +9376,6 @@ window.PushNotificationManager = PushNotificationManager;
 </div>
 
 <style>
-  /* Language button hover effect */
   .lang-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -9388,7 +9383,6 @@ window.PushNotificationManager = PushNotificationManager;
     background: #fff5f5 !important;
   }
   
-  /* Google Translate widget styling */
   .goog-te-combo {
     padding: 12px !important;
     border: 2px solid #e0e0e0 !important;
@@ -9399,7 +9393,6 @@ window.PushNotificationManager = PushNotificationManager;
     background: white !important;
   }
   
-  /* Hide Google Translate banner */
   .goog-te-banner-frame {
     display: none !important;
   }
@@ -9412,21 +9405,15 @@ window.PushNotificationManager = PushNotificationManager;
     font-family: inherit !important;
   }
   
-  /* Modal animations */
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  
-  @keyframes scaleIn {
-    from { transform: scale(0.9); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+  /* Hide Google Translate popup */
+  .goog-te-menu-frame {
+    display: none !important;
   }
 </style>
 
 <script>
 // ============================================
-// LANGUAGE POPUP FUNCTIONS
+// LANGUAGE POPUP FUNCTIONS - FIXED
 // ============================================
 
 // Open Language Popup
@@ -9435,13 +9422,11 @@ function openLanguagePopup() {
   if (modal) {
     modal.style.display = 'flex';
     // Re-initialize Google Translate if needed
-    if (typeof googleTranslateElementInit === 'function') {
-      // Make sure the translate element is visible
-      const translateEl = document.getElementById('google_translate_element');
-      if (translateEl && !translateEl.innerHTML.trim()) {
+    setTimeout(function() {
+      if (typeof googleTranslateElementInit === 'function') {
         googleTranslateElementInit();
       }
-    }
+    }, 100);
   }
 }
 
@@ -9456,7 +9441,8 @@ function closeLanguagePopup() {
 // Change language directly using Google Translate API
 function changeLanguage(langCode) {
   // Find the Google Translate dropdown and change its value
-  const select = document.querySelector('.goog-te-combo');
+  let select = document.querySelector('.goog-te-combo');
+  
   if (select) {
     select.value = langCode;
     select.dispatchEvent(new Event('change'));
@@ -9466,7 +9452,7 @@ function changeLanguage(langCode) {
     // If dropdown doesn't exist yet, initialize and try again
     if (typeof googleTranslateElementInit === 'function') {
       googleTranslateElementInit();
-      setTimeout(() => {
+      setTimeout(function() {
         const select2 = document.querySelector('.goog-te-combo');
         if (select2) {
           select2.value = langCode;
@@ -9478,7 +9464,7 @@ function changeLanguage(langCode) {
   }
 }
 
-// Initialize Google Translate
+// Initialize Google Translate - FIXED
 function googleTranslateElementInit() {
   const translateEl = document.getElementById('google_translate_element');
   if (translateEl) {
@@ -9489,6 +9475,9 @@ function googleTranslateElementInit() {
       includedLanguages: 'en,bn,hi,ur,ar,fr,es,zh-CN,de,it,ja,ko,ru,pt',
       layout: google.translate.TranslateElement.InlineLayout.SIMPLE
     }, 'google_translate_element');
+    console.log('🌐 Google Translate initialized successfully');
+  } else {
+    console.warn('❌ Google Translate element not found');
   }
 }
 
@@ -9515,13 +9504,75 @@ window.closeLanguagePopup = closeLanguagePopup;
 window.changeLanguage = changeLanguage;
 window.googleTranslateElementInit = googleTranslateElementInit;
 
-console.log('🌐 Custom Language Button loaded!');
+console.log('🌐 Custom Language System loaded!');
 </script>
 
 <!-- ============================================ -->
-<!-- Load Google Translate API -->
+<!-- Load Google Translate API - FIXED (using HTTPS) -->
 <!-- ============================================ -->
-<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+<!-- ============================================ -->
+<!-- FIX: Add Language Button to Navigation -->
+<!-- ============================================ -->
+<script>
+// Override updateNavigation to include Language button
+(function() {
+  const originalUpdateNav = window.updateNavigation || function() {};
+  
+  // Replace updateNavigation with enhanced version
+  window.updateNavigation = function() {
+    // Call original function first
+    if (typeof originalUpdateNav === 'function' && originalUpdateNav !== window.updateNavigation) {
+      try {
+        originalUpdateNav();
+      } catch(e) {}
+    }
+    
+    // Add Language button if not exists
+    setTimeout(function() {
+      const navMenu = document.getElementById('navMenu');
+      if (!navMenu) return;
+      
+      // Check if language button already exists
+      const existingLang = navMenu.querySelector('[data-page="language"]');
+      if (existingLang) return;
+      
+      // Create language button
+      const langLi = document.createElement('li');
+      const langLink = document.createElement('a');
+      langLink.href = '#';
+      langLink.setAttribute('data-page', 'language');
+      langLink.innerHTML = '<i class="fas fa-language"></i> Language';
+      langLink.onclick = function(e) {
+        e.preventDefault();
+        openLanguagePopup();
+        return false;
+      };
+      langLi.appendChild(langLink);
+      
+      // Add to menu
+      const lastItem = navMenu.lastElementChild;
+      if (lastItem) {
+        navMenu.insertBefore(langLi, lastItem.nextSibling);
+      } else {
+        navMenu.appendChild(langLi);
+      }
+      
+      console.log('✅ Language button added to navigation');
+    }, 500);
+  };
+  
+  // Also run on DOM ready
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+      if (typeof window.updateNavigation === 'function') {
+        window.updateNavigation();
+      }
+    }, 1000);
+  });
+})();
+</script>
 
 </body>
 </html>
