@@ -128,15 +128,26 @@
             font-size: 11px !important;
             padding: 2px 10px !important;
         }
-        /* Popup */
+        /* Popup - Updated with avatar */
         .donor-popup {
             text-align: center;
-            padding: 4px 2px;
-            min-width: 180px;
+            padding: 6px 4px;
+            min-width: 200px;
+            max-width: 240px;
+        }
+        .donor-popup .avatar {
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #b71c1c;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
         }
         .donor-popup strong {
             font-size: 16px;
             display: block;
+            margin-top: 2px;
         }
         .donor-popup .blood-badge {
             background: #b71c1c;
@@ -197,6 +208,12 @@
             display: block;
             margin-top: 2px;
         }
+        .donor-popup .donor-id {
+            font-size: 10px;
+            color: #aaa;
+            display: block;
+            margin-top: 2px;
+        }
         /* Loading */
         #loadingOverlay {
             position: fixed;
@@ -221,9 +238,7 @@
             animation: spin 0.9s linear infinite;
         }
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
         .loader-text {
             margin-top: 16px;
@@ -313,28 +328,13 @@
             white-space: nowrap;
         }
         @media (max-width: 700px) {
-            .map-header h1 {
-                font-size: 17px;
-            }
-            .layer-btn {
-                font-size: 11px;
-                padding: 4px 10px;
-            }
-            .stats-badge {
-                font-size: 11px;
-                padding: 2px 8px;
-            }
-            .search-box input {
-                width: 80px;
-                font-size: 12px;
-            }
-            .filter-select {
-                font-size: 11px;
-                padding: 3px 8px;
-            }
-            .auth-status .user-email {
-                max-width: 80px;
-            }
+            .map-header h1 { font-size: 17px; }
+            .layer-btn { font-size: 11px; padding: 4px 10px; }
+            .stats-badge { font-size: 11px; padding: 2px 8px; }
+            .search-box input { width: 80px; font-size: 12px; }
+            .filter-select { font-size: 11px; padding: 3px 8px; }
+            .auth-status .user-email { max-width: 80px; }
+            .donor-popup .avatar { width: 50px; height: 50px; }
         }
         @media (max-width: 500px) {
             .map-header {
@@ -345,9 +345,7 @@
             .header-controls {
                 justify-content: space-between;
             }
-            .search-box input {
-                width: 100px;
-            }
+            .search-box input { width: 100px; }
         }
     </style>
 </head>
@@ -430,6 +428,18 @@
         let isLoggedIn = false;
 
         // =====================================================
+        // Helper: Get Avatar URL based on profile pic or gender
+        // =====================================================
+        function getAvatarUrl(donor) {
+            const profilePic = donor.profilePic || null;
+            if (profilePic) return profilePic;
+            // Fallback to gender-based avatar
+            return donor.gender === 'female' 
+                ? 'https://i.ibb.co/KxVgKwMH/1000020299.png' 
+                : 'https://i.ibb.co/PzD3Nbd7/1000020297.png';
+        }
+
+        // =====================================================
         // Auth State Listener
         // =====================================================
         auth.onAuthStateChanged(user => {
@@ -447,11 +457,9 @@
                     e.preventDefault();
                     auth.signOut().then(() => {
                         showToast('Logged out successfully');
-                        // Reload donors to update buttons
                         loadDonors();
                     }).catch(err => showToast('Logout failed'));
                 };
-                // Reload donors to show call buttons
                 loadDonors();
             } else {
                 currentUser = null;
@@ -461,7 +469,6 @@
                 authBtn.textContent = 'Login';
                 authBtn.href = 'https://blooddonorbd.github.io/database/index.html#login';
                 authBtn.onclick = null;
-                // Reload donors to show register buttons
                 loadDonors();
             }
         });
@@ -538,13 +545,27 @@
                     const donor = doc.data();
                     if (donor.lat && donor.lng && typeof donor.lat === 'number' && typeof donor.lng === 'number') {
                         
+                        // ✅ Get avatar URL
+                        const avatarUrl = getAvatarUrl(donor);
+
                         // --- Build popup based on LOGIN STATUS (caller) ---
                         let popupContent = `
                             <div class="donor-popup">
+                                <img src="${avatarUrl}" alt="${donor.fullName || 'Donor'}" class="avatar">
                                 <strong>${donor.fullName || 'Anonymous Donor'}</strong>
                                 <span class="blood-badge">${donor.bloodGroup || 'N/A'}</span>
                                 <div class="location"><i class="fas fa-map-marker-alt"></i> ${donor.district || ''}, ${donor.upazila || ''}</div>
                         `;
+
+                        // Show last donation date if available
+                        if (donor.lastDonationDate) {
+                            const lastDate = new Date(donor.lastDonationDate).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                            });
+                            popupContent += `<div style="font-size: 11px; color: #888; margin: 2px 0;">🩸 Last: ${lastDate}</div>`;
+                        }
 
                         // ✅ If CALLER is logged in → Show CALL button
                         if (isLoggedIn && donor.phoneNumber) {
@@ -567,11 +588,16 @@
                             `;
                         }
 
+                        // Show donor ID if exists
+                        if (donor.donorId) {
+                            popupContent += `<span class="donor-id">🆔 ${donor.donorId}</span>`;
+                        }
+
                         popupContent += `</div>`;
 
                         const marker = L.marker([donor.lat, donor.lng])
                             .addTo(map)
-                            .bindPopup(popupContent, { maxWidth: 240 });
+                            .bindPopup(popupContent, { maxWidth: 260 });
                         
                         donorMarkers.push(marker);
                         donorData.push({
@@ -719,8 +745,6 @@
         // Init
         // =====================================================
         document.addEventListener('DOMContentLoaded', () => {
-            // Auth will trigger loadDonors() on state change
-            // But load initially if already logged in
             if (auth.currentUser) {
                 isLoggedIn = true;
                 currentUser = auth.currentUser;
