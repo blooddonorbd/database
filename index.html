@@ -2201,27 +2201,28 @@ window.initNotices = initNotices;
     const isDonorType = userData.userType === 'donor';
     
     const profile = {
-      uid: result.user.uid,
-      email: userData.email,
-      fullName: userData.fullName,
-      phoneNumber: userData.phoneNumber,
-      bloodGroup: userData.bloodGroup || null,
-      nidNumber: userData.nidNumber || '',
-      birthday: userData.birthday || '',
-      weight: userData.weight || null,
-      userType: userData.userType,
-      isDonor: isDonorType,
-      isSeeker: !isDonorType,
-      district: userData.district || '',
-      upazila: userData.upazila || '',
-      address: userData.address || '',
-      profilePic: userData.profilePic || null,  // 🔥 ADD THIS
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      isVerified: false,
-      approvalStatus: isDonorType ? 'pending' : 'approved',
-      role: 'user',
-      certificates: []
-    };
+  uid: result.user.uid,
+  email: userData.email,
+  fullName: userData.fullName,
+  phoneNumber: userData.phoneNumber,
+  bloodGroup: userData.bloodGroup || null,
+  nidNumber: userData.nidNumber || '',
+  birthday: userData.birthday || '',
+  weight: userData.weight || null,
+  userType: userData.userType,
+  isDonor: isDonorType,
+  isSeeker: !isDonorType,
+  district: userData.district || '',
+  upazila: userData.upazila || '',
+  address: userData.address || '',
+  profilePic: userData.profilePic || null,
+  gender: userData.gender || 'male',  // ✅ ADD THIS LINE
+  createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+  isVerified: false,
+  approvalStatus: isDonorType ? 'pending' : 'approved',
+  role: 'user',
+  certificates: []
+};
     
     await db.collection('users').doc(result.user.uid).set(profile);
           userProfile = profile;
@@ -2974,6 +2975,24 @@ setTimeout(async () => {
   </select>
 </div>
 
+<div class="form-group">
+  <label>Gender *</label>
+  <select id="regGender" required>
+    <option value="">Select Gender</option>
+    <option value="male">Male</option>
+    <option value="female">Female</option>
+  </select>
+</div>
+
+          <div class="form-group">
+            <label>Gender *</label>
+            <select id="regGender" required>
+              <option value="">Select Gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+
 <!-- 🎂 BIRTHDAY FIELD -->
 <div class="form-group">
   <label>Date of Birth *</label>
@@ -3174,7 +3193,7 @@ async function handleProfilePicSelect() {
           return;
         }
         
-       const userData = {
+  const userData = {
     fullName: document.getElementById('regFullName').value.trim(),
     email: document.getElementById('regEmail').value.trim(),
     phoneNumber: document.getElementById('regPhone').value.trim(),
@@ -3187,7 +3206,8 @@ async function handleProfilePicSelect() {
     address: document.getElementById('regAddress').value.trim(),
     userType: userType,
     password: password,
-    profilePic: uploadedImageUrl || null  // 🔥 ADD THIS LINE
+    profilePic: uploadedImageUrl || null,
+    gender: document.getElementById('regGender').value  // ✅ ADD THIS LINE
   };
   
   await authSystem.register(userData);
@@ -3537,6 +3557,7 @@ setTimeout(() => {
     <p><strong>Phone:</strong> ${userProfile?.phoneNumber || '-'}</p>
     <p><strong>NID/Birth Reg:</strong> ${userProfile?.nidNumber || '-'}</p>
     <p><strong>Date of Birth:</strong> ${userProfile?.birthday ? new Date(userProfile.birthday).toLocaleDateString() : '-'}</p>
+    <p><strong>Gender:</strong> ${userProfile?.gender === 'male' ? 'Male' : userProfile?.gender === 'female' ? 'Female' : 'Not specified'}</p>
     <p><strong>Weight:</strong> ${userProfile?.weight ? userProfile.weight + ' kg' : '-'}</p>
     ${userProfile?.isDonor ? `<p><strong>Blood Group:</strong> ${userProfile?.bloodGroup || '-'}</p>` : ''}
     <p><strong>District:</strong> ${userProfile?.district || '-'}, ${userProfile?.upazila || ''}</p>
@@ -3957,6 +3978,15 @@ setTimeout(() => {
   <small>Must be at least 18 years old to donate blood</small>
 </div>
 
+<!-- ✅ NEW: Gender Field -->
+        <div class="form-group">
+          <label>Gender</label>
+          <select id="profileGender">
+            <option value="male" ${userProfile?.gender === 'male' ? 'selected' : ''}>Male</option>
+            <option value="female" ${userProfile?.gender === 'female' ? 'selected' : ''}>Female</option>
+          </select>
+        </div>
+
 <!-- ⚖️ WEIGHT FIELD IN PROFILE -->
 <div class="form-group">
   <label>Weight (kg)</label>
@@ -4026,8 +4056,9 @@ ${userProfile?.isDonor ?
       district: document.getElementById('profileDistrict').value,
       upazila: document.getElementById('profileUpazila').value.trim(),
       address: document.getElementById('profileAddress').value.trim(),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    };
+      gender: document.getElementById('profileGender').value,  // ✅ ADD THIS LINE
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
     
     if (userProfile?.isDonor) {
       updates.bloodGroup = document.getElementById('profileBloodGroup').value;
