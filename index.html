@@ -32,6 +32,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+<script src="https://elfsightcdn.com/platform.js" async></script>
 <!-- ADD THESE TWO LINES -->
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="https://i.ibb.co/fd3zk65t/1000018685.jpg">
@@ -5682,14 +5683,17 @@ setTimeout(function() {
   // In updateNavigation() function, replace this section:
 if (currentUser) {
   navMenu.innerHTML = `
-    <li><a href="#" data-page="home" onclick="router.navigate('home');return false;"><i class="fas fa-home"></i> Home</a></li>
-    <li><a href="#" data-page="dashboard" onclick="router.navigate('dashboard');return false;">Dashboard</a></li>
-    <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors');return false;"><i class="fas fa-search"></i> Find</a></li>
-    <li><a href="#" data-page="request-blood" onclick="router.navigate('request-blood');return false;"><i class="fas fa-tint"></i> Request</a></li>
-    <li><a href="#" data-page="success-stories" onclick="router.navigate('success-stories');return false;"><i class="fas fa-heart"></i> Stories</a></li>
-    <li><a href="#" data-page="dm-donor" onclick="router.navigate('dm-donor');return false;"><i class="fas fa-comments"></i> DM</a></li>
-    <li><a href="#" data-page="profile" onclick="router.navigate('profile');return false;"><i class="fas fa-user"></i> Profile</a></li>
-  `;
+  <li><a href="#" data-page="home" onclick="router.navigate('home');return false;"><i class="fas fa-home"></i> Home</a></li>
+  <li><a href="#" data-page="dashboard" onclick="router.navigate('dashboard');return false;">Dashboard</a></li>
+  <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors');return false;"><i class="fas fa-search"></i> Find</a></li>
+  <li><a href="#" data-page="request-blood" onclick="router.navigate('request-blood');return false;"><i class="fas fa-tint"></i> Request</a></li>
+  <li><a href="#" data-page="success-stories" onclick="router.navigate('success-stories');return false;"><i class="fas fa-heart"></i> Stories</a></li>
+  <li><a href="#" data-page="dm-donor" onclick="router.navigate('dm-donor');return false;"><i class="fas fa-comments"></i> DM</a></li>
+  <li><a href="#" data-page="profile" onclick="router.navigate('profile');return false;"><i class="fas fa-user"></i> Profile</a></li>
+  <li class="translator-item">
+    <div class="elfsight-app-ac636dd1-14a0-4815-814b-91f5eeebdf79" data-elfsight-app-lazy></div>
+  </li>
+`;
   
 // ✅ Show profile picture in navigation
 const profilePicUrl = userProfile?.profilePic || null;
@@ -8704,7 +8708,7 @@ window.calculateNextEligibility = calculateNextEligibility;
   </script>
   <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" id="scrollTopBtn" style="
   position: fixed; 
-  bottom: 30px; 
+  bottom: 100px; 
   right: 30px; 
   z-index: 999;
   background: #b71c1c; 
@@ -9306,7 +9310,9 @@ window.PushNotificationManager = PushNotificationManager;
     }
   });
 </script>
-
+<!-- Elfsight AI Chatbot | Untitled AI Chatbot -->
+<script src="https://elfsightcdn.com/platform.js" async></script>
+<div class="elfsight-app-27d255f2-cd7e-49a9-8342-ab5d483d6d71" data-elfsight-app-lazy></div>
 
 </body>
 </html>
