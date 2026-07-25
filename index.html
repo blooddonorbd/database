@@ -107,6 +107,32 @@ button, a, input {
     min-height: 20px;
     min-width: 44px;
 }
+
+/* প্রাইভেসি প্রোটেকশন - ইমেজ ডাউনলোড বন্ধ */
+img {
+    -webkit-user-drag: none;
+    user-drag: none;
+    -webkit-touch-callout: none;
+    pointer-events: none;
+}
+
+img[src*="ibb.co"], 
+img[src*="imgbb"],
+.dm-user-avatar img,
+.donor-card-avatar,
+.profile-avatar img,
+#profilePicPreviewImg {
+    -webkit-user-drag: none !important;
+    user-drag: none !important;
+    pointer-events: none !important;
+}
+
+/* Right-click context menu বন্ধ করার জন্য */
+.no-download {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
     
     /* Private DM Styles */
   .dm-container {
@@ -9148,6 +9174,23 @@ if (originalRequestSubmit) {
     }
   });
 }
+
+// গ্লোবাল ইমেজ প্রটেকশন
+document.addEventListener('contextmenu', function(e) {
+    if (e.target.tagName === 'IMG' && 
+        (e.target.src.includes('ibb.co') || e.target.src.includes('imgbb'))) {
+        e.preventDefault();
+        Toast.show('📷 Image download is disabled for privacy', 'warning');
+        return false;
+    }
+});
+
+document.addEventListener('dragstart', function(e) {
+    if (e.target.tagName === 'IMG') {
+        e.preventDefault();
+        return false;
+    }
+});
 
 // Show offline status indicator
 function addOfflineIndicator() {
