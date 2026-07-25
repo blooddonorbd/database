@@ -1423,6 +1423,9 @@ window.addEventListener('scroll', () => {
   </div>
 </div>
 
+<!-- Elfsight AI Chatbot | Untitled AI Chatbot -->
+<script src="https://elfsightcdn.com/platform.js" async></script>
+<div class="elfsight-app-27d255f2-cd7e-49a9-8342-ab5d483d6d71" data-elfsight-app-lazy></div>
   <div id="toastContainer" class="toast-container"></div>
 
   <div id="registerModal" class="loading-overlay" style="display: none; background: rgba(0,0,0,0.5);">
@@ -6833,6 +6836,305 @@ setTimeout(() => {
       districts.map(d => `<option value="${d}">${d}</option>`).join('');
   }
 }, 300);
+
+// ============================================
+// TOGGLE COMMENTS ON STORY CARD - আপডেটেড
+// ============================================
+async function toggleStoryComments(storyId, event) {
+  // event স্টপ প্রপাগেশন
+  if (event) {
+    event.stopPropagation();
+  }
+  
+  // Find the story card by data attribute
+  const card = document.querySelector(`.story-card[data-story-id="${storyId}"]`);
+  
+  if (!card) {
+    Toast.show('Please click on the story to view comments', 'info');
+    router.navigate(`story-details/${storyId}`);
+    return;
+  }
+  
+  let commentsSection = card.querySelector('.story-comments-section');
+  
+  if (commentsSection) {
+    if (commentsSection.style.display === 'none' || commentsSection.style.display === '') {
+      commentsSection.style.display = 'block';
+      await loadCommentsForCard(storyId, commentsSection);
+    } else {
+      commentsSection.style.display = 'none';
+    }
+    return;
+  }
+  
+  commentsSection = document.createElement('div');
+  commentsSection.className = 'story-comments-section';
+  commentsSection.style.cssText = `
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 2px solid #f0f0f0;
+    display: block;
+    animation: fadeIn 0.3s ease;
+  `;
+  commentsSection.innerHTML = `
+    <div style="text-align: center; padding: 12px; color: #999;">
+      <i class="fas fa-spinner fa-spin"></i> Loading comments...
+    </div>
+  `;
+  
+  const actionDiv = card.querySelector('div[style*="margin-top: 12px; display: flex; gap: 16px;"]');
+  if (actionDiv) {
+    actionDiv.after(commentsSection);
+  } else {
+    card.querySelector('div[style*="padding: 20px;"]').appendChild(commentsSection);
+  }
+  
+  await loadCommentsForCard(storyId, commentsSection);
+}
+
+// ============================================
+// LOAD COMMENTS FOR CARD - UPDATED WITH PROFILE PICTURES
+// ============================================
+async function loadCommentsForCard(storyId, container) {
+  try {
+    const doc = await db.collection('successStories').doc(storyId).get();
+    if (!doc.exists) {
+      container.innerHTML = `
+        <p style="text-align: center; color: #999; font-size: 13px; padding: 12px;">
+          <i class="fas fa-exclamation-triangle"></i> Story not found
+        </p>
+      `;
+      return;
+    }
+    
+    const story = doc.data();
+    const comments = story.comments || [];
+    
+    // Get user details for all commenters to show profile pictures
+    const commentUsers = {};
+    for (const comment of comments) {
+      if (comment.userId && !commentUsers[comment.userId]) {
+        try {
+          const userDoc = await db.collection('users').doc(comment.userId).get();
+          if (userDoc.exists) {
+            commentUsers[comment.userId] = userDoc.data();
+          }
+        } catch (e) {
+          console.warn('Could not fetch user for comment:', comment.userId);
+        }
+      }
+    }
+    
+    if (comments.length === 0) {
+      container.innerHTML = `
+        <p style="text-align: center; color: #999; font-size: 13px; padding: 12px;">
+          <i class="fas fa-comment-slash"></i> No comments yet
+        </p>
+        ${currentUser ? `
+          <div style="display: flex; gap: 10px; margin-top: 8px;">
+            <input type="text" id="quickComment_${storyId}" placeholder="Write a comment..." 
+                   style="flex: 1; padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 25px; font-size: 13px;"
+                   onkeypress="if(event.key==='Enter'){ addQuickComment('${storyId}', event); }">
+            <button onclick="addQuickComment('${storyId}', event)" class="btn btn-primary" 
+                    style="border-radius: 25px; padding: 10px 20px; font-size: 13px;">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+        ` : `
+          <button onclick="promptRegistration()" class="btn btn-outline btn-block" style="margin-top: 8px; font-size: 13px; padding: 8px;">
+            <i class="fas fa-lock"></i> Login to Comment
+          </button>
+        `}
+      `;
+      return;
+    }
+    
+    const sortedComments = [...comments].reverse().slice(0, 3);
+    
+    container.innerHTML = `
+      ${sortedComments.map(comment => {
+        // Get user data for this comment
+        const userData = comment.userId ? commentUsers[comment.userId] : null;
+        
+        // Determine avatar URL
+        let avatarUrl;
+        if (userData && userData.profilePic) {
+          avatarUrl = userData.profilePic;
+        } else if (userData) {
+          // Use gender-based avatar
+          const gender = userData.gender || 'male';
+          avatarUrl = gender === 'female' 
+            ? 'https://i.ibb.co/KxVgKwMH/1000020299.png' 
+            : 'https://i.ibb.co/PzD3Nbd7/1000020297.png';
+        } else {
+          // Fallback: use default avatar
+          avatarUrl = 'https://i.ibb.co/PzD3Nbd7/1000020297.png';
+        }
+        
+        const displayName = comment.userName || 'Anonymous';
+        const commentDate = comment.createdAt?.toDate?.()?.toLocaleDateString() || '';
+        
+        return `
+          <div style="display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+            <div style="
+              width: 32px; 
+              height: 32px; 
+              border-radius: 50%; 
+              overflow: hidden;
+              flex-shrink: 0;
+              border: 2px solid #b71c1c;
+              background: #f0f0f0;
+            ">
+              <img 
+                src="${avatarUrl}" 
+                alt="${displayName}" 
+                style="width: 100%; height: 100%; object-fit: cover;"
+                onerror="this.src='${userData?.gender === 'female' ? 'https://i.ibb.co/KxVgKwMH/1000020299.png' : 'https://i.ibb.co/PzD3Nbd7/1000020297.png'}'"
+              >
+            </div>
+            <div style="flex: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong style="font-size: 13px;">${displayName}</strong>
+                <span style="font-size: 10px; color: #999;">${commentDate}</span>
+              </div>
+              <p style="margin: 2px 0 0; font-size: 13px; color: #444;">${comment.comment}</p>
+            </div>
+          </div>
+        `;
+      }).join('')}
+      
+      ${comments.length > 3 ? `
+        <div style="text-align: center; padding: 8px 0;">
+          <button onclick="router.navigate('story-details/${storyId}')" 
+                  style="background: none; border: none; color: #b71c1c; cursor: pointer; font-weight: 600; font-size: 13px;">
+            View all ${comments.length} comments <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      ` : ''}
+      
+      ${currentUser ? `
+        <div style="display: flex; gap: 10px; margin-top: 8px;">
+          <input type="text" id="quickComment_${storyId}" placeholder="Write a comment..." 
+                 style="flex: 1; padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 25px; font-size: 13px;"
+                 onkeypress="if(event.key==='Enter'){ addQuickComment('${storyId}', event); }">
+          <button onclick="addQuickComment('${storyId}', event)" class="btn btn-primary" 
+                  style="border-radius: 25px; padding: 10px 20px; font-size: 13px;">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      ` : `
+        <button onclick="promptRegistration()" class="btn btn-outline btn-block" style="margin-top: 8px; font-size: 13px; padding: 8px;">
+          <i class="fas fa-lock"></i> Login to Comment
+        </button>
+      `}
+    `;
+    
+  } catch (error) {
+    console.error('Error loading comments:', error);
+    container.innerHTML = `
+      <p style="text-align: center; color: #d32f2f; font-size: 13px; padding: 12px;">
+        <i class="fas fa-exclamation-triangle"></i> Failed to load comments
+      </p>
+    `;
+  }
+}
+
+// ============================================
+// ADD QUICK COMMENT FROM CARD - FIXED
+// ============================================
+async function addQuickComment(storyId, event) {
+  if (event) {
+    event.stopPropagation();
+  }
+  
+  if (!currentUser) {
+    promptRegistration();
+    return;
+  }
+  
+  const input = document.getElementById(`quickComment_${storyId}`);
+  if (!input) {
+    Toast.show('Comment input not found', 'error');
+    return;
+  }
+  
+  const commentText = input.value.trim();
+  if (!commentText) {
+    Toast.show('Please write a comment', 'warning');
+    return;
+  }
+  
+  try {
+    const storyRef = db.collection('successStories').doc(storyId);
+    const doc = await storyRef.get();
+    
+    if (!doc.exists) {
+      Toast.show('Story not found', 'error');
+      return;
+    }
+    
+    const story = doc.data();
+    const comments = story.comments || [];
+    
+    // 🔥 FIX: Use a regular JavaScript timestamp instead of FieldValue.serverTimestamp()
+    // This is the key change - serverTimestamp() is NOT allowed inside arrays
+    const newComment = {
+      id: `c_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      userId: currentUser.uid,
+      userName: userProfile.fullName,
+      comment: commentText,
+      createdAt: new Date().toISOString() // Use ISO string or timestamp number
+    };
+    
+    comments.push(newComment);
+    
+    // Update the document with the new comments array
+    await storyRef.update({
+      comments: comments,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp() // This is fine here - it's not inside an array
+    });
+    
+    input.value = '';
+    Toast.show('💬 Comment added!', 'success');
+    
+    // Reload comments for this card
+    const card = document.querySelector(`.story-card[data-story-id="${storyId}"]`);
+    if (card) {
+      const commentsSection = card.querySelector('.story-comments-section');
+      if (commentsSection) {
+        await loadCommentsForCard(storyId, commentsSection);
+      }
+    }
+    
+    // Update comment count in card
+    updateCommentCount(storyId, comments.length);
+    
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    Toast.show('Failed to add comment: ' + error.message, 'error');
+  }
+}
+
+// ============================================
+// UPDATE COMMENT COUNT IN CARD
+// ============================================
+function updateCommentCount(storyId, count) {
+  const allSpans = document.querySelectorAll(`span[onclick*="toggleStoryComments('${storyId}')"]`);
+  allSpans.forEach(span => {
+    const countSpan = span.querySelector('span:last-child');
+    if (countSpan) {
+      countSpan.textContent = count;
+    }
+  });
+}
+
+// ============================================
+// MAKE FUNCTIONS GLOBAL
+// ============================================
+window.toggleStoryComments = toggleStoryComments;
+window.loadCommentsForCard = loadCommentsForCard;
+window.addQuickComment = addQuickComment;
+window.updateCommentCount = updateCommentCount;
 // ============================================
 // SUCCESS STORIES - FREE COMMUNITY SECTION
 // ============================================
@@ -6987,9 +7289,11 @@ function renderStories(stories) {
   }
 }
 
-// Create Story Card
+// Create Story Card - With Profile Picture (Fixed)
 function createStoryCard(story) {
   const card = document.createElement('div');
+  card.className = 'story-card';
+  card.dataset.storyId = story.id;
   card.style.cssText = `
     background: white;
     border-radius: 12px;
@@ -7000,9 +7304,14 @@ function createStoryCard(story) {
     animation: fadeInUp 0.4s ease;
   `;
 
-  card.addEventListener('click', () => {
-    router.navigate(`story-details/${story.id}`);
-  });
+  // ✅ কার্ডে ক্লিক করলে story-details এ যাবে - আপডেটেড
+card.addEventListener('click', function(e) {
+  // যদি ক্লিকটা ইনপুট, বাটন, স্প্যান বা ফর্ম এলিমেন্টে হয় তাহলে নেভিগেট করবে না
+  if (e.target.closest('span') || e.target.closest('button') || e.target.closest('input') || e.target.closest('textarea') || e.target.closest('form')) {
+    return;
+  }
+  router.navigate(`story-details/${story.id}`);
+});
 
   const date = story.createdAt?.toDate?.() || new Date();
   const formattedDate = date.toLocaleDateString('en-US', {
@@ -7014,26 +7323,92 @@ function createStoryCard(story) {
   const displayName = story.isAnonymous ? 'Anonymous Hero' : (story.userName || story.donorName || 'Anonymous');
   const likesCount = story.likes || 0;
   const commentsCount = (story.comments || []).length;
-
-  // Check if user liked this story
   const hasLiked = story.likedBy && story.likedBy.includes(currentUser?.uid);
 
+  // ============================================
+  // 🔥 PROFILE PICTURE LOGIC
+  // ============================================
+  let avatarUrl;
+  
+  if (story.isAnonymous) {
+    avatarUrl = 'https://i.ibb.co/PzD3Nbd7/1000020297.png';
+  } else if (story.profilePic) {
+    avatarUrl = story.profilePic;
+  } else {
+    const gender = story.gender || 'male';
+    avatarUrl = gender === 'female' 
+      ? 'https://i.ibb.co/KxVgKwMH/1000020299.png' 
+      : 'https://i.ibb.co/PzD3Nbd7/1000020297.png';
+  }
+
+  // ============================================
+  // 🖼️ AVATAR HTML
+  // ============================================
+  const avatarHtml = `
+    <div style="
+      width: 44px; 
+      height: 44px; 
+      border-radius: 50%; 
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 2px solid #b71c1c;
+      box-shadow: 0 2px 8px rgba(183, 28, 28, 0.2);
+      background: #f0f0f0;
+    ">
+      <img 
+        src="${avatarUrl}" 
+        alt="${displayName}" 
+        style="
+          width: 100%; 
+          height: 100%; 
+          object-fit: cover;
+          transition: transform 0.3s ease;
+        "
+        onerror="this.src='${story.gender === 'female' ? 'https://i.ibb.co/KxVgKwMH/1000020299.png' : 'https://i.ibb.co/PzD3Nbd7/1000020297.png'}'"
+      >
+    </div>
+  `;
+
+  // ============================================
+  // 📝 CARD HTML - সব স্প্যানে onclick এর পরিবর্তে addEventListener ব্যবহার করা হয়েছে
+  // ============================================
   card.innerHTML = `
     <div style="padding: 20px;">
       <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-        <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #b71c1c, #ff5252); 
-                    display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 18px; flex-shrink: 0;">
-          ${story.isAnonymous ? '🫂' : displayName.charAt(0).toUpperCase()}
+        ${avatarHtml}
+        
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            ${displayName}
+            ${story.isVerified ? `
+              <span style="color: #1a73e8; font-size: 14px;" title="Verified User">
+                <i class="fas fa-check-circle"></i>
+              </span>
+            ` : ''}
+            ${story.isDonor ? `
+              <span style="background: #b71c1c; color: white; padding: 1px 8px; border-radius: 10px; font-size: 9px; font-weight: 600;">
+                Donor
+              </span>
+            ` : ''}
+          </div>
+          <div style="font-size: 12px; color: #999; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span><i class="far fa-calendar-alt"></i> ${formattedDate}</span>
+            ${story.district ? `<span>• 📍 ${story.district}</span>` : ''}
+          </div>
         </div>
-        <div style="flex: 1;">
-          <div style="font-weight: 600; font-size: 15px;">${displayName}</div>
-          <div style="font-size: 12px; color: #999;">${formattedDate}</div>
+        
+        <div style="display: flex; gap: 4px; flex-shrink: 0;">
+          ${story.isFeatured ? `
+            <span style="background: #ffd700; color: #333; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; animation: pulse-gold 2s infinite;">
+              <i class="fas fa-crown"></i> Featured
+            </span>
+          ` : ''}
+          ${story.isEmergency ? `
+            <span style="background: #d32f2f; color: white; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; animation: pulse-red 1.5s infinite;">
+              <i class="fas fa-exclamation-triangle"></i> URGENT
+            </span>
+          ` : ''}
         </div>
-        ${story.isFeatured ? `
-          <span style="background: #ffd700; color: #333; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 700;">
-            <i class="fas fa-star"></i> Featured
-          </span>
-        ` : ''}
       </div>
 
       <span style="background: #b71c1c; color: white; padding: 2px 14px; border-radius: 20px; font-weight: 700; font-size: 14px; display: inline-block; margin-bottom: 8px;">
@@ -7048,24 +7423,30 @@ function createStoryCard(story) {
         ${story.story || 'No story details provided.'}
       </p>
       
-      ${story.district ? `
+      ${story.hospitalName ? `
         <div style="margin-top: 8px; font-size: 13px; color: #666;">
-          <i class="fas fa-map-marker-alt"></i> ${story.district}
+          <i class="fas fa-hospital" style="color: #1565c0;"></i> ${story.hospitalName}
         </div>
       ` : ''}
       
-      <div style="margin-top: 12px; display: flex; gap: 16px; font-size: 13px; color: #666;">
-        <span onclick="event.stopPropagation(); likeStory('${story.id}')" style="cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; transition: background 0.2s;"
-              onmouseenter="this.style.backgroundColor='#ffebee'" onmouseleave="this.style.backgroundColor='transparent'">
+      <!-- অ্যাকশন বাটন - এখানে সব ইভেন্ট addEventListener দিয়ে করা হবে -->
+      <div style="margin-top: 12px; display: flex; gap: 16px; font-size: 13px; color: #666; border-top: 1px solid #f0f0f0; padding-top: 12px;">
+        <span class="story-like-btn" data-story-id="${story.id}" style="cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; transition: background 0.2s;">
           <i class="fas fa-heart" style="color: ${hasLiked ? '#d32f2f' : '#ccc'};"></i>
           <span>${likesCount}</span>
         </span>
-        <span style="display: flex; align-items: center; gap: 4px;">
-          <i class="fas fa-comment" style="color: #ccc;"></i>
+        
+        <span class="story-comment-btn" data-story-id="${story.id}" style="cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; transition: background 0.2s;">
+          <i class="fas fa-comment" style="color: #999;"></i>
           <span>${commentsCount}</span>
         </span>
+        
+        <span class="story-share-btn" data-story-id="${story.id}" style="cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 8px; transition: background 0.2s;">
+          <i class="fas fa-share-alt" style="color: #999;"></i>
+        </span>
+        
         ${hasAdminAccess() ? `
-          <span onclick="event.stopPropagation(); deleteStory('${story.id}')" style="cursor: pointer; color: #d32f2f; margin-left: auto;">
+          <span class="story-delete-btn" data-story-id="${story.id}" style="cursor: pointer; color: #d32f2f; margin-left: auto; padding: 4px 8px; border-radius: 4px; transition: background 0.2s;">
             <i class="fas fa-trash"></i>
           </span>
         ` : ''}
@@ -7073,65 +7454,61 @@ function createStoryCard(story) {
     </div>
   `;
 
-  return card;
-}
-
-// Like Story
-async function likeStory(storyId) {
-  if (!currentUser) {
-    promptRegistration();
-    return;
-  }
-
-  try {
-    const storyRef = db.collection('successStories').doc(storyId);
-    const doc = await storyRef.get();
-    const story = doc.data();
-    
-    let likedBy = story.likedBy || [];
-    let likes = story.likes || 0;
-    
-    if (likedBy.includes(currentUser.uid)) {
-      // Unlike
-      likedBy = likedBy.filter(uid => uid !== currentUser.uid);
-      likes = Math.max(0, likes - 1);
-    } else {
-      // Like
-      likedBy.push(currentUser.uid);
-      likes += 1;
-    }
-    
-    await storyRef.update({
-      likes: likes,
-      likedBy: likedBy,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  // ============================================
+  // 🔥 ইভেন্ট লিসেনার যোগ করুন (onclick এর পরিবর্তে)
+  // ============================================
+  
+  // Like বাটন
+  const likeBtn = card.querySelector('.story-like-btn');
+  if (likeBtn) {
+    likeBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const storyId = this.dataset.storyId;
+      likeStory(storyId);
     });
-    
-    // Refresh the stories
-    loadAllStories();
-  } catch (error) {
-    console.error('Error liking story:', error);
-    Toast.show('Failed to like story', 'error');
   }
+
+  // Comment বাটন
+const commentBtn = card.querySelector('.story-comment-btn');
+if (commentBtn) {
+  commentBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    const storyId = this.dataset.storyId;
+    toggleStoryComments(storyId, e);
+  });
 }
 
-// Delete Story (Admin Only)
-async function deleteStory(storyId) {
-  if (!hasAdminAccess()) {
-    Toast.show('Admin access required', 'error');
-    return;
+  // Share বাটন
+  const shareBtn = card.querySelector('.story-share-btn');
+  if (shareBtn) {
+    shareBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const storyId = this.dataset.storyId;
+      shareStoryDirect(storyId);
+    });
   }
 
-  if (!confirm('Are you sure you want to delete this story?')) return;
-
-  try {
-    await db.collection('successStories').doc(storyId).delete();
-    Toast.show('Story deleted successfully', 'success');
-    loadAllStories();
-  } catch (error) {
-    console.error('Error deleting story:', error);
-    Toast.show('Failed to delete story', 'error');
+  // Delete বাটন (Admin Only)
+  const deleteBtn = card.querySelector('.story-delete-btn');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const storyId = this.dataset.storyId;
+      deleteStory(storyId);
+    });
   }
+
+  // ⭐ Hover Effects (কার্ডের ভেতরের স্প্যানগুলোর জন্য)
+  card.querySelectorAll('.story-like-btn, .story-comment-btn, .story-share-btn, .story-delete-btn').forEach(el => {
+    el.addEventListener('mouseenter', function() {
+      this.style.backgroundColor = '#f5f5f5';
+    });
+    el.addEventListener('mouseleave', function() {
+      this.style.backgroundColor = 'transparent';
+    });
+  });
+
+  return card;
 }
 
 // Filter Stories
@@ -7531,13 +7908,16 @@ async function addComment(storyId) {
     const story = doc.data();
     
     const comments = story.comments || [];
-    comments.push({
+    // 🔥 FIX: Use regular JavaScript timestamp instead of FieldValue.serverTimestamp()
+    const newComment = {
       id: `c_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
       userId: currentUser.uid,
       userName: userProfile.fullName,
       comment: commentText,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+      createdAt: new Date().toISOString() // Use ISO string or timestamp number
+    };
+    
+    comments.push(newComment);
 
     await storyRef.update({
       comments: comments,
@@ -7545,10 +7925,15 @@ async function addComment(storyId) {
     });
 
     input.value = '';
-    renderStoryDetail(story);
+    
+    // Reload the story detail
+    const doc2 = await storyRef.get();
+    renderStoryDetail({ id: storyId, ...doc2.data() });
+    
+    Toast.show('💬 Comment added!', 'success');
   } catch (error) {
     console.error('Error adding comment:', error);
-    Toast.show('Failed to add comment', 'error');
+    Toast.show('Failed to add comment: ' + error.message, 'error');
   }
 }
 
@@ -9455,8 +9840,5 @@ window.PushNotificationManager = PushNotificationManager;
     }
   });
 </script>
-<!-- Elfsight AI Chatbot | Untitled AI Chatbot -->
-<script src="https://elfsightcdn.com/platform.js" async></script>
-<div class="elfsight-app-27d255f2-cd7e-49a9-8342-ab5d483d6d71" data-elfsight-app-lazy></div>
 </body>
 </html>
