@@ -19,13 +19,9 @@
 <meta name="twitter:image" content="https://i.ibb.co/JRNPVP6S/1000018718.png" />
   <title>Blood Donor BD · Save Lives</title>
   
- <!-- Firebase Scripts -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-
-<!-- 🔒 Load Configuration (from separate file) -->
-<script src="config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   
   <link rel="icon" type="image/png" href="https://i.ibb.co/fd3zk65t/1000018685.jpg">
   
@@ -1750,24 +1746,23 @@ function findNearbyHospitals() {
 
 
     // Firebase Configuration
-// 🔒 Firebase Initialization using config.js
-if (typeof FIREBASE_CONFIG === 'undefined') {
-  console.error('❌ FIREBASE_CONFIG not found! Please check config.js');
-} else {
-  firebase.initializeApp(FIREBASE_CONFIG);
-  console.log('✅ Firebase initialized from config');
-}
-
+const firebaseConfig = {
+  apiKey: "AIzaSyCnky8bzx3KuFoujU5DSlLRYSZgiAF8840",
+  authDomain: "blood-donor-bd-2025.firebaseapp.com",
+  projectId: "blood-donor-bd-2025",
+  storageBucket: "blood-donor-bd-2025.firebasestorage.app",
+  messagingSenderId: "271945142840",
+  appId: "1:271945142840:web:b0edefddb55cac5f604ccd",
+  measurementId: "G-28KGSJREBR"
+};
+    
+    // After Firebase initialization
+const IMGBB_API_KEY = '54ffbc26529e5d05fa5cffad23712429';
+    
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
-    // 🔒 ImgBB API Key from config.js
-if (typeof IMGBB_API_KEY === 'undefined') {
-  console.error('❌ IMGBB_API_KEY not found! Please check config.js');
-  // Fallback - will show error
-  const IMGBB_API_KEY = '';
-} else {
-  console.log('✅ ImgBB API Key loaded from config');
-}
     
     // App State
     let currentUser = null;
@@ -3147,11 +3142,10 @@ async function handleProfilePicSelect() {
         // Pass the blob with a filename to FormData
         formData.append('image', croppedBlob, 'profile_cropped.jpg');
         
-        // উদাহরণ: Profile Picture Upload
-const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-  method: 'POST',
-  body: formData
-});
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+          method: 'POST',
+          body: formData
+        });
         
         const data = await response.json();
         
@@ -9535,21 +9529,8 @@ window.clearOfflineCache = () => offlineManager.clearCache();
 // PUSH NOTIFICATIONS - WITH YOUR VAPID KEY
 // ============================================
 
-// 🔒 VAPID Public Key from config.js
-if (typeof VAPID_PUBLIC_KEY === 'undefined') {
-  console.error('❌ VAPID_PUBLIC_KEY not found! Please check config.js');
-} else {
-  console.log('✅ VAPID Key loaded from config');
-}
-
-// Push Notification Manager class-এ ব্যবহার করুন
-class PushNotificationManager {
-    constructor() {
-        // ...
-        this.vapidKey = typeof VAPID_PUBLIC_KEY !== 'undefined' ? VAPID_PUBLIC_KEY : '';
-        // ...
-    }
-}
+// Your VAPID Public Key
+const VAPID_PUBLIC_KEY = "BHMKtlvzLGDuNh6eat6tR8uBQjYrN4otniIbhY2nNkBCPGU5I4L8B9JNSXHNNUB34Wv47YqZjirTmYex3sg9UTk";
 
 class PushNotificationManager {
   // ... ALL THE CODE INSIDE THIS CLASS ...
@@ -9627,6 +9608,7 @@ class PushNotificationManager {
         this.messaging = null;
         this.isSupported = false;
         this.currentToken = null;
+        this.vapidKey = 'BHMKtlvzLGDuNh6eat6tR8uBQjYrN4otniIbhY2nNkBCPGU5I4L8B9JNSXHNNUB34Wv47YqZjirTmYex3sg9UTk';
         this.initialized = false;
         
         this.init();
