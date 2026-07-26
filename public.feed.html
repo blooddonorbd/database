@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#b71c1c">
+  <meta name="apple-mobile-web-app-title" content="Blood Donor BD">
+  <meta name="theme-color" content="#b71c1c">
+  
+  <title>Community Feed - Blood Donor BD</title>
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* ===== RESET & BASE ===== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    /* ===== NAVBAR ===== */
+    .navbar {
+      background: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      padding: 0 20px;
+    }
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #b71c1c;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .nav-brand img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .nav-actions .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 14px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary {
+      background: #b71c1c;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #8b0000;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(183, 28, 28, 0.3);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid #b71c1c;
+      color: #b71c1c;
+    }
+    .btn-outline:hover {
+      background: #b71c1c;
+      color: white;
+    }
+    .btn-ghost {
+      background: #f0f2f5;
+      color: #333;
+    }
+    .btn-ghost:hover {
+      background: #e4e6eb;
+    }
+    .btn-logout {
+      background: transparent;
+      border: 1px solid #ddd;
+      color: #666;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-logout:hover {
+      background: #ffebee;
+      border-color: #d32f2f;
+      color: #d32f2f;
+    }
+
+    /* ===== MAIN LAYOUT ===== */
+    .feed-container {
+      max-width: 820px;
+      margin: 20px auto;
+      padding: 0 16px;
+    }
+
+    /* ===== STORY HEADER ===== */
+    .feed-header {
+      background: white;
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 16px;
+    }
+    .feed-header h1 {
+      font-size: 24px;
+      color: #1a1a2e;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .feed-header h1 i {
+      color: #b71c1c;
+    }
+    .feed-header p {
+      color: #666;
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    /* ===== FILTER BAR ===== */
+    .filter-bar {
+      background: white;
+      border-radius: 12px;
+      padding: 12px 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .filter-bar select,
+    .filter-bar input {
+      padding: 8px 14px;
+      border: 2px solid #e4e6eb;
+      border-radius: 25px;
+      font-size: 14px;
+      font-family: inherit;
+      background: #f8f9fa;
+      transition: all 0.3s ease;
+      flex: 1;
+      min-width: 140px;
+    }
+    .filter-bar select:focus,
+    .filter-bar input:focus {
+      outline: none;
+      border-color: #b71c1c;
+      background: white;
+    }
+    .filter-bar .btn {
+      padding: 8px 20px;
+      border-radius: 25px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 14px;
+    }
+
+    /* ===== FEED POSTS ===== */
+    .feed {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .feed-post {
+      background: white;
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      animation: fadeInUp 0.4s ease;
+      transition: all 0.3s ease;
+    }
+    .feed-post:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    .post-header {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+    .post-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 2px solid #b71c1c;
+      transition: all 0.3s ease;
+    }
+    .post-avatar:hover {
+      transform: scale(1.05);
+    }
+    .post-author {
+      flex: 1;
+    }
+    .post-author-name {
+      font-weight: 600;
+      font-size: 15px;
+      color: #1a1a2e;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .post-author-name .badge {
+      font-size: 10px;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+    .badge-donor {
+      background: #b71c1c;
+      color: white;
+    }
+    .badge-admin {
+      background: #ffd700;
+      color: #333;
+    }
+    .post-time {
+      font-size: 12px;
+      color: #999;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .post-time .post-location {
+      background: #f0f2f5;
+      padding: 0 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      color: #666;
+    }
+    .post-text {
+      font-size: 15px;
+      line-height: 1.7;
+      color: #1a1a2e;
+      margin-bottom: 12px;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+    .post-image {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      max-height: 500px;
+      object-fit: contain;
+      background: #f0f2f5;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .post-image:hover {
+      opacity: 0.95;
+    }
+
+    /* ===== POLL ===== */
+    .post-poll {
+      background: #f0f2f5;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .post-poll .poll-question {
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .poll-option-result {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      margin-bottom: 6px;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 2px solid transparent;
+      position: relative;
+      overflow: hidden;
+    }
+    .poll-option-result:hover {
+      border-color: #b71c1c;
+    }
+    .poll-option-result .poll-bar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      background: rgba(183, 28, 28, 0.1);
+      transition: width 0.6s ease;
+      border-radius: 8px;
+    }
+    .poll-option-result .poll-text {
+      position: relative;
+      z-index: 1;
+      font-size: 14px;
+      flex: 1;
+    }
+    .poll-option-result .poll-percent {
+      position: relative;
+      z-index: 1;
+      font-weight: 600;
+      color: #b71c1c;
+    }
+    .poll-option-result.selected {
+      border-color: #b71c1c;
+      background: rgba(183, 28, 28, 0.05);
+    }
+    .poll-total-votes {
+      font-size: 13px;
+      color: #999;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    /* ===== POST ACTIONS ===== */
+    .post-actions {
+      display: flex;
+      gap: 20px;
+      padding-top: 12px;
+      border-top: 1px solid #e4e6eb;
+      flex-wrap: wrap;
+    }
+    .post-actions button {
+      background: none;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      color: #666;
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      font-size: 14px;
+    }
+    .post-actions button:hover {
+      background: #f0f2f5;
+    }
+    .post-actions .liked {
+      color: #b71c1c;
+    }
+    .post-actions .liked i {
+      color: #b71c1c;
+    }
+
+    /* ===== COMMENTS ===== */
+    .post-comments {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #e4e6eb;
+    }
+    .post-comment {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 8px;
+      padding: 6px 0;
+    }
+    .post-comment .comment-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .post-comment .comment-body {
+      flex: 1;
+      background: #f0f2f5;
+      padding: 8px 14px;
+      border-radius: 18px;
+    }
+    .post-comment .comment-author {
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .post-comment .comment-author:hover {
+      color: #b71c1c;
+    }
+    .post-comment .comment-text {
+      font-size: 14px;
+      color: #333;
+    }
+    .post-comment .comment-time {
+      font-size: 11px;
+      color: #999;
+      margin-left: 8px;
+    }
+    .post-comment-input {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .post-comment-input input {
+      flex: 1;
+      background: #f0f2f5;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 25px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .post-comment-input input:focus {
+      outline: none;
+    }
+    .post-comment-input button {
+      background: #b71c1c;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 25px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 13px;
+    }
+    .post-comment-input button:hover {
+      background: #8b0000;
+    }
+
+    /* ===== CONTACT BUTTON ===== */
+    .contact-donor-btn {
+      background: #25D366;
+      color: white;
+      border: none;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .contact-donor-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 2px 12px rgba(37, 211, 102, 0.4);
+    }
+    .contact-donor-btn i {
+      font-size: 12px;
+    }
+
+    /* ===== LOADING & EMPTY ===== */
+    .loading-state {
+      text-align: center;
+      padding: 60px;
+      color: #999;
+    }
+    .loading-state i {
+      font-size: 48px;
+      opacity: 0.3;
+      margin-bottom: 16px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+      background: white;
+      border-radius: 12px;
+    }
+    .empty-state i {
+      font-size: 48px;
+      opacity: 0.3;
+      margin-bottom: 16px;
+    }
+    .empty-state h3 {
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .empty-state p {
+      font-size: 14px;
+    }
+
+    /* ===== TOAST ===== */
+    .toast-container {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      z-index: 10002;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toast {
+      background: white;
+      padding: 14px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideIn 0.3s ease;
+      max-width: 380px;
+      min-width: 280px;
+    }
+    .toast.success { border-left: 4px solid #2e7d32; }
+    .toast.error { border-left: 4px solid #d32f2f; }
+    .toast.warning { border-left: 4px solid #f57c00; }
+    .toast.info { border-left: 4px solid #b71c1c; }
+
+    /* ===== ANIMATIONS ===== */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .nav-actions .btn span { display: none; }
+      .feed-container { padding: 0 10px; }
+      .feed-post { padding: 12px 16px; }
+      .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .filter-bar select,
+      .filter-bar input {
+        min-width: 100%;
+      }
+      .post-actions {
+        gap: 12px;
+      }
+      .post-actions button {
+        font-size: 13px;
+        padding: 4px 6px;
+      }
+    }
+    @media (max-width: 480px) {
+      .nav-container { height: 56px; }
+      .nav-brand { font-size: 16px; }
+      .nav-brand img { width: 32px; height: 32px; }
+      .feed-header h1 { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a class="nav-brand" onclick="goHome()">
+        <img src="https://i.ibb.co/RTdtn0RG/1000018751.png" alt="Logo">
+        Blood Donor BD
+      </a>
+      <div class="nav-actions">
+        <button class="btn btn-ghost" onclick="goHome()" title="Home">
+          <i class="fas fa-home"></i> <span>Home</span>
+        </button>
+        <button class="btn btn-outline" onclick="goToProfile()" title="Profile">
+          <i class="fas fa-user"></i> <span>Profile</span>
+        </button>
+        <button class="btn btn-primary" onclick="goToDashboard()" title="Dashboard">
+          <i class="fas fa-th-large"></i> <span>Dashboard</span>
+        </button>
+        <button class="btn-logout" onclick="logout()" title="Logout">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <div class="feed-container" id="feedContainer">
+    <!-- Will be rendered by JavaScript -->
+  </div>
+
+  <!-- ===== TOAST CONTAINER ===== -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ============================================ -->
+  <!-- JAVASCRIPT -->
+  <!-- ============================================ -->
+  <script>
+    // =============================================
+    // FIREBASE CONFIG
+    // =============================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnky8bzx3KuFoujU5DSlLRYSZgiAF8840",
+      authDomain: "blood-donor-bd-2025.firebaseapp.com",
+      projectId: "blood-donor-bd-2025",
+      storageBucket: "blood-donor-bd-2025.firebasestorage.app",
+      messagingSenderId: "271945142840",
+      appId: "1:271945142840:web:b0edefddb55cac5f604ccd",
+      measurementId: "G-28KGSJREBR"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // =============================================
+    // STATE
+    // =============================================
+    let currentUser = null;
+    let allPosts = [];
+    let isLoading = false;
+    let lastDoc = null;
+    let hasMore = true;
+    const POSTS_PER_PAGE = 20;
+    let userCache = {}; // ইউজার ডাটা ক্যাশ করার জন্য
+
+    // =============================================
+    // TOAST SYSTEM
+    // =============================================
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      const icon = type === 'success' ? 'fa-check-circle' :
+                   type === 'error' ? 'fa-exclamation-circle' :
+                   type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+      toast.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 5000);
+    }
+
+    // =============================================
+    // NAVIGATION
+    // =============================================
+    function goHome() {
+      window.location.href = 'index.html';
+    }
+
+    function goToProfile() {
+      window.location.href = 'user.profile.html';
+    }
+
+    function goToDashboard() {
+      window.location.href = 'index.html/#dashboard';
+    }
+
+    async function logout() {
+      try {
+        await auth.signOut();
+        window.location.href = 'index.html';
+      } catch (error) {
+        showToast('Logout failed', 'error');
+      }
+    }
+
+    // =============================================
+    // UTILITY FUNCTIONS - FIXED
+    // =============================================
+    function getTimeAgo(date) {
+      const now = new Date();
+      const diff = now - date;
+      const seconds = Math.floor(diff / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
+      const weeks = Math.floor(days / 7);
+      const months = Math.floor(days / 30);
+      const years = Math.floor(days / 365);
+
+      if (seconds < 60) return 'Just now';
+      if (minutes < 60) return `${minutes}m ago`;
+      if (hours < 24) return `${hours}h ago`;
+      if (days < 7) return `${days}d ago`;
+      if (weeks < 4) return `${weeks}w ago`;
+      if (months < 12) return `${months}mo ago`;
+      return `${years}y ago`;
+    }
+
+    // 🔥 FIXED: Better avatar URL function
+    function getAvatarUrl(userData) {
+      // Check if userData has profilePic directly
+      if (userData?.profilePic) {
+        return userData.profilePic;
+      }
+      // Check if userData has userAvatar (from post)
+      if (userData?.userAvatar) {
+        return userData.userAvatar;
+      }
+      // Gender-based fallback
+      if (userData?.gender === 'female') {
+        return 'https://i.ibb.co/ZzL8pT3K/1000020380.png';
+      }
+      // Default male avatar
+      return 'https://i.ibb.co/WNH98LbN/1000020379.png';
+    }
+
+    // 🔥 NEW: Fetch user data from Firestore
+    async function getUserData(userId) {
+      if (!userId) return null;
+      
+      // Check cache first
+      if (userCache[userId]) {
+        return userCache[userId];
+      }
+      
+      try {
+        const doc = await db.collection('users').doc(userId).get();
+        if (doc.exists) {
+          const data = doc.data();
+          userCache[userId] = data;
+          return data;
+        }
+        return null;
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        return null;
+      }
+    }
+
+    // =============================================
+    // LOAD PUBLIC FEED - FIXED
+    // =============================================
+    async function loadFeed(filterBlood = '', filterDistrict = '', sortBy = 'newest') {
+      const container = document.getElementById('feedContainer');
+      if (isLoading) return;
+
+      isLoading = true;
+      container.innerHTML = `
+        <div class="loading-state">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Loading posts...</p>
+        </div>
+      `;
+
+      try {
+        let query = db.collection('userPosts');
+
+        // Sort
+        if (sortBy === 'newest') {
+          query = query.orderBy('createdAt', 'desc');
+        } else if (sortBy === 'popular') {
+          query = query.orderBy('likes', 'desc');
+        } else if (sortBy === 'oldest') {
+          query = query.orderBy('createdAt', 'asc');
+        }
+
+        query = query.limit(POSTS_PER_PAGE);
+
+        console.log('🔍 Fetching posts...');
+        const snapshot = await query.get();
+
+        if (snapshot.empty) {
+          console.log('📭 No posts found');
+          container.innerHTML = `
+            <div class="feed-header">
+              <h1><i class="fas fa-globe-asia"></i> Community Feed</h1>
+              <p>See what's happening in the Blood Donor BD community</p>
+            </div>
+            <div class="empty-state">
+              <i class="fas fa-newspaper"></i>
+              <h3>No Posts Yet</h3>
+              <p>Be the first to share something with the community!</p>
+              ${currentUser ? 
+                `<button onclick="goToProfile()" class="btn btn-primary" style="margin-top:12px;">
+                  <i class="fas fa-plus"></i> Create Post
+                </button>` : 
+                `<button onclick="goHome()" class="btn btn-primary" style="margin-top:12px;">
+                  <i class="fas fa-sign-in-alt"></i> Login to Post
+                </button>`
+              }
+            </div>
+          `;
+          isLoading = false;
+          return;
+        }
+
+        console.log(`✅ Found ${snapshot.size} posts`);
+
+        // Get all posts
+        const posts = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.poll) {
+            const createdAt = data.createdAt?.toDate?.() || new Date();
+            const duration = data.poll.duration || 7;
+            const expiryDate = new Date(createdAt);
+            expiryDate.setDate(expiryDate.getDate() + duration);
+            if (expiryDate < new Date()) {
+              return;
+            }
+          }
+          posts.push({ id: doc.id, ...data });
+        });
+
+        // 🔥 FIX: Enrich posts with user data
+        const enrichedPosts = [];
+        for (const post of posts) {
+          const userData = await getUserData(post.userId);
+          enrichedPosts.push({
+            ...post,
+            userProfilePic: userData?.profilePic || post.userAvatar || null,
+            userGender: userData?.gender || post.gender || 'male',
+            userFullName: userData?.fullName || post.userName || 'Unknown User',
+            userPhone: userData?.phoneNumber || post.phoneNumber || null,
+            userBloodGroup: userData?.bloodGroup || post.bloodGroup || null,
+            userDistrict: userData?.district || post.district || null,
+            isDonor: userData?.isDonor || post.isDonor || false,
+            userRole: userData?.role || post.userRole || 'user'
+          });
+        }
+
+        // Filter by blood group
+        let filteredPosts = enrichedPosts;
+        if (filterBlood) {
+          filteredPosts = enrichedPosts.filter(post => post.userBloodGroup === filterBlood);
+        }
+
+        // Filter by district
+        if (filterDistrict) {
+          filteredPosts = filteredPosts.filter(post => 
+            post.userDistrict?.toLowerCase() === filterDistrict.toLowerCase()
+          );
+        }
+
+        allPosts = filteredPosts;
+        renderPosts(filteredPosts);
+
+      } catch (error) {
+        console.error('❌ Error loading feed:', error);
+        
+        let errorMessage = error.message || 'Please try again later.';
+        if (errorMessage.includes('index')) {
+          errorMessage = 'Please create required Firestore index. Check console for details.';
+        }
+        
+        container.innerHTML = `
+          <div class="feed-header">
+            <h1><i class="fas fa-globe-asia"></i> Community Feed</h1>
+            <p>See what's happening in the Blood Donor BD community</p>
+          </div>
+          <div class="empty-state" style="border-left:4px solid #d32f2f;">
+            <i class="fas fa-exclamation-triangle" style="color:#d32f2f;"></i>
+            <h3>Failed to Load Feed</h3>
+            <p style="font-size:13px; color:#666;">${errorMessage}</p>
+            <button onclick="loadFeed()" class="btn btn-primary" style="margin-top:12px;">
+              <i class="fas fa-redo"></i> Retry
+            </button>
+            <button onclick="loadFeedSimple()" class="btn btn-outline" style="margin-top:8px;">
+              <i class="fas fa-bolt"></i> Try Simple Load
+            </button>
+          </div>
+        `;
+      }
+
+      isLoading = false;
+    }
+
+    // =============================================
+    // SIMPLE LOAD - Fallback
+    // =============================================
+    async function loadFeedSimple() {
+      const container = document.getElementById('feedContainer');
+      if (isLoading) return;
+
+      isLoading = true;
+      container.innerHTML = `
+        <div class="loading-state">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Loading posts (simple mode)...</p>
+        </div>
+      `;
+
+      try {
+        const snapshot = await db.collection('userPosts').limit(20).get();
+
+        if (snapshot.empty) {
+          container.innerHTML = `
+            <div class="feed-header">
+              <h1><i class="fas fa-globe-asia"></i> Community Feed</h1>
+              <p>See what's happening in the Blood Donor BD community</p>
+            </div>
+            <div class="empty-state">
+              <i class="fas fa-newspaper"></i>
+              <h3>No Posts Yet</h3>
+              <p>Be the first to share something with the community!</p>
+            </div>
+          `;
+          isLoading = false;
+          return;
+        }
+
+        const posts = [];
+        snapshot.forEach(doc => {
+          posts.push({ id: doc.id, ...doc.data() });
+        });
+
+        posts.sort((a, b) => {
+          const dateA = a.createdAt?.toDate?.() || new Date(0);
+          const dateB = b.createdAt?.toDate?.() || new Date(0);
+          return dateB - dateA;
+        });
+
+        // Enrich with user data
+        const enrichedPosts = [];
+        for (const post of posts) {
+          const userData = await getUserData(post.userId);
+          enrichedPosts.push({
+            ...post,
+            userProfilePic: userData?.profilePic || post.userAvatar || null,
+            userGender: userData?.gender || post.gender || 'male',
+            userFullName: userData?.fullName || post.userName || 'Unknown User',
+            userPhone: userData?.phoneNumber || post.phoneNumber || null,
+            userBloodGroup: userData?.bloodGroup || post.bloodGroup || null,
+            userDistrict: userData?.district || post.district || null,
+            isDonor: userData?.isDonor || post.isDonor || false,
+            userRole: userData?.role || post.userRole || 'user'
+          });
+        }
+
+        allPosts = enrichedPosts;
+        renderPosts(enrichedPosts);
+
+      } catch (error) {
+        console.error('❌ Simple load error:', error);
+        container.innerHTML = `
+          <div class="feed-header">
+            <h1><i class="fas fa-globe-asia"></i> Community Feed</h1>
+            <p>See what's happening in the Blood Donor BD community</p>
+          </div>
+          <div class="empty-state" style="border-left:4px solid #d32f2f;">
+            <i class="fas fa-exclamation-triangle" style="color:#d32f2f;"></i>
+            <h3>Failed to Load Feed</h3>
+            <p style="font-size:13px; color:#666;">${error.message || 'Please try again later.'}</p>
+            <button onclick="loadFeed()" class="btn btn-primary" style="margin-top:12px;">
+              <i class="fas fa-redo"></i> Retry
+            </button>
+          </div>
+        `;
+      }
+
+      isLoading = false;
+    }
+
+    // =============================================
+    // RENDER POSTS - FIXED
+    // =============================================
+    function renderPosts(posts) {
+      const container = document.getElementById('feedContainer');
+
+      if (!posts || posts.length === 0) {
+        container.innerHTML = `
+          <div class="feed-header">
+            <h1><i class="fas fa-globe-asia"></i> Community Feed</h1>
+            <p>See what's happening in the Blood Donor BD community</p>
+          </div>
+          <div class="empty-state">
+            <i class="fas fa-search"></i>
+            <h3>No Posts Found</h3>
+            <p>Try adjusting your filters or check back later.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const filterHTML = buildFilterBar();
+      const postsHTML = posts.map(post => renderSinglePost(post)).join('');
+
+      container.innerHTML = `
+        <div class="feed-header">
+          <h1><i class="fas fa-globe-asia"></i> Community Feed</h1>
+          <p>See what's happening in the Blood Donor BD community</p>
+        </div>
+        ${filterHTML}
+        <div class="feed">
+          ${postsHTML}
+        </div>
+        ${hasMore ? `
+          <div style="text-align:center; margin-top:20px;">
+            <button onclick="loadMore()" class="btn btn-ghost" style="padding:12px 32px; border-radius:25px;">
+              <i class="fas fa-chevron-down"></i> Load More
+            </button>
+          </div>
+        ` : ''}
+      `;
+
+      document.getElementById('filterBlood')?.addEventListener('change', applyFilters);
+      document.getElementById('filterDistrict')?.addEventListener('change', applyFilters);
+      document.getElementById('filterSort')?.addEventListener('change', applyFilters);
+    }
+
+    // =============================================
+    // BUILD FILTER BAR
+    // =============================================
+    function buildFilterBar() {
+      const districts = [
+        'Dhaka', 'Chattogram', 'Rajshahi', 'Khulna', 'Sylhet', 'Barisal', 'Rangpur', 'Mymensingh',
+        'Comilla', 'Bogra', 'Faridpur', 'Dinajpur', 'Pabna', 'Narayanganj', 'Gazipur', 'Narsingdi'
+      ];
+
+      return `
+        <div class="filter-bar">
+          <select id="filterBlood">
+            <option value="">All Blood Groups</option>
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+            <option value="O+">O+</option>
+            <option value="O-">O-</option>
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+          </select>
+          <select id="filterDistrict">
+            <option value="">All Districts</option>
+            ${districts.map(d => `<option value="${d}">${d}</option>`).join('')}
+          </select>
+          <select id="filterSort">
+            <option value="newest">Newest First</option>
+            <option value="popular">Most Liked</option>
+            <option value="oldest">Oldest First</option>
+          </select>
+          <button onclick="resetFilters()" class="btn btn-ghost" style="padding:8px 16px;">
+            <i class="fas fa-times"></i> Clear
+          </button>
+        </div>
+      `;
+    }
+
+    // =============================================
+    // FILTER FUNCTIONS
+    // =============================================
+    function applyFilters() {
+      const blood = document.getElementById('filterBlood')?.value || '';
+      const district = document.getElementById('filterDistrict')?.value || '';
+      const sort = document.getElementById('filterSort')?.value || 'newest';
+      loadFeed(blood, district, sort);
+    }
+
+    function resetFilters() {
+      document.getElementById('filterBlood').value = '';
+      document.getElementById('filterDistrict').value = '';
+      document.getElementById('filterSort').value = 'newest';
+      applyFilters();
+    }
+
+    // =============================================
+    // RENDER SINGLE POST - FIXED
+    // =============================================
+    function renderSinglePost(post) {
+      const isLiked = post.likedBy && currentUser && post.likedBy.includes(currentUser.uid);
+      const comments = post.comments || [];
+      const displayComments = comments.slice(0, 2);
+
+      // 🔥 FIX: Use enriched user data
+      const authorName = post.userFullName || post.userName || 'Unknown User';
+      const authorAvatar = getAvatarUrl({
+        profilePic: post.userProfilePic,
+        userAvatar: post.userAvatar,
+        gender: post.userGender
+      });
+      
+      const createdAt = post.createdAt?.toDate?.() || new Date();
+      const timeAgo = getTimeAgo(createdAt);
+
+      const isDonor = post.isDonor || false;
+      const isAdmin = post.userRole === 'main_admin' || post.userRole === 'admin';
+      const phoneNumber = post.userPhone || post.phoneNumber || null;
+      const bloodGroup = post.userBloodGroup || post.bloodGroup || null;
+      const district = post.userDistrict || post.district || null;
+
+      // Poll rendering
+      let pollHTML = '';
+      if (post.poll) {
+        pollHTML = renderPoll(post, post.id);
+      }
+
+      // Image rendering
+      let imageHTML = '';
+      if (post.imageUrl) {
+        imageHTML = `
+          <img src="${post.imageUrl}" alt="Post image" class="post-image" loading="lazy" 
+               onclick="openImageModal('${post.imageUrl}')">
+        `;
+      }
+
+      return `
+        <div class="feed-post" data-post-id="${post.id}">
+          <div class="post-header" onclick="goToUserProfile('${post.userId}')">
+            <img src="${authorAvatar}" alt="Avatar" class="post-avatar" loading="lazy">
+            <div class="post-author">
+              <div class="post-author-name">
+                ${authorName}
+                ${isDonor ? `<span class="badge badge-donor">🩸 Donor</span>` : ''}
+                ${isAdmin ? `<span class="badge badge-admin">👑 Admin</span>` : ''}
+                ${phoneNumber ? `
+                  <button class="contact-donor-btn" onclick="event.stopPropagation(); contactDonor('${post.userId}', '${phoneNumber}', '${authorName}')">
+                    <i class="fab fa-whatsapp"></i> Contact
+                  </button>
+                ` : ''}
+              </div>
+              <div class="post-time">
+                ${timeAgo}
+                ${district ? `<span class="post-location"><i class="fas fa-map-marker-alt"></i> ${district}</span>` : ''}
+                ${bloodGroup ? `<span class="post-location" style="background:#ffebee; color:#b71c1c;">🩸 ${bloodGroup}</span>` : ''}
+              </div>
+            </div>
+          </div>
+
+          ${post.text ? `<div class="post-text">${post.text}</div>` : ''}
+          ${imageHTML}
+          ${pollHTML}
+
+          <div class="post-actions">
+            <button onclick="likePost('${post.id}')" class="${isLiked ? 'liked' : ''}">
+              <i class="fas fa-heart"></i> <span>${post.likes || 0}</span>
+            </button>
+            <button onclick="toggleComments('${post.id}')">
+              <i class="fas fa-comment"></i> <span>${comments.length}</span>
+            </button>
+            <button onclick="sharePost('${post.id}')">
+              <i class="fas fa-share-alt"></i> <span>Share</span>
+            </button>
+            ${phoneNumber ? `
+              <button onclick="contactDonor('${post.userId}', '${phoneNumber}', '${authorName}')" style="color:#25D366;">
+                <i class="fab fa-whatsapp"></i> <span>Contact</span>
+              </button>
+            ` : ''}
+          </div>
+
+          <!-- Comments -->
+          <div class="post-comments" id="comments-${post.id}" style="${comments.length > 0 ? 'display:block;' : 'display:none;'}">
+            ${displayComments.map(comment => `
+              <div class="post-comment">
+                <img src="${comment.avatar || 'https://i.ibb.co/WNH98LbN/1000020379.png'}" alt="Avatar" class="comment-avatar" 
+                     onclick="goToUserProfile('${comment.userId}')">
+                <div class="comment-body">
+                  <span class="comment-author" onclick="goToUserProfile('${comment.userId}')">${comment.userName || 'Anonymous'}</span>
+                  <span class="comment-time">${getTimeAgo(comment.createdAt?.toDate?.() || new Date())}</span>
+                  <div class="comment-text">${comment.comment}</div>
+                </div>
+              </div>
+            `).join('')}
+
+            ${comments.length > 2 ? `
+              <div style="text-align:center; padding:4px 0; font-size:13px; color:#666;">
+                <button onclick="loadAllComments('${post.id}')" style="background:none; border:none; color:#b71c1c; cursor:pointer; font-weight:600;">
+                  View all ${comments.length} comments
+                </button>
+              </div>
+            ` : ''}
+
+            ${currentUser ? `
+              <div class="post-comment-input">
+                <input type="text" id="commentInput-${post.id}" placeholder="Write a comment..." onkeypress="if(event.key==='Enter') addComment('${post.id}')">
+                <button onclick="addComment('${post.id}')">Post</button>
+              </div>
+            ` : `
+              <div style="text-align:center; padding:8px; font-size:13px; color:#999;">
+                <a href="javascript:void(0)" onclick="goHome()" style="color:#b71c1c; font-weight:600;">Login</a> to comment
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    // =============================================
+    // RENDER POLL
+    // =============================================
+    function renderPoll(post, postId) {
+      const poll = post.poll;
+      const totalVotes = poll.options.reduce((sum, o) => sum + (o.votes || 0), 0);
+      const hasVoted = poll.voters && currentUser && poll.voters.includes(currentUser.uid);
+      const isMultiple = poll.multiple || false;
+
+      let optionsHTML = poll.options.map((option, index) => {
+        const percentage = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
+        const isSelected = hasVoted && option.voters && option.voters.includes(currentUser?.uid);
+
+        return `
+          <div class="poll-option-result ${isSelected ? 'selected' : ''}" onclick="votePoll('${postId}', ${index})">
+            <div class="poll-bar" style="width:${percentage}%;"></div>
+            <span class="poll-text">${option.text}</span>
+            <span class="poll-percent">${percentage}%</span>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="post-poll">
+          <div class="poll-question">📊 ${poll.question}</div>
+          ${optionsHTML}
+          <div class="poll-total-votes">${totalVotes} ${totalVotes === 1 ? 'vote' : 'votes'}</div>
+          ${!hasVoted && currentUser ? `
+            <div style="text-align:center; margin-top:8px; font-size:13px; color:#666;">
+              ${isMultiple ? 'You can select multiple options' : 'Select one option'}
+            </div>
+          ` : hasVoted ? `
+            <div style="text-align:center; margin-top:8px; font-size:13px; color:#2e7d32;">
+              <i class="fas fa-check-circle"></i> You voted
+            </div>
+          ` : !currentUser ? `
+            <div style="text-align:center; margin-top:8px; font-size:13px; color:#999;">
+              <a href="javascript:void(0)" onclick="goHome()" style="color:#b71c1c; font-weight:600;">Login</a> to vote
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // =============================================
+    // POST INTERACTIONS
+    // =============================================
+
+    async function likePost(postId) {
+      if (!currentUser) {
+        showToast('Please login to like posts', 'warning');
+        return;
+      }
+
+      try {
+        const postRef = db.collection('userPosts').doc(postId);
+        const post = await postRef.get();
+
+        if (!post.exists) return;
+
+        const data = post.data();
+        const likedBy = data.likedBy || [];
+        const isLiked = likedBy.includes(currentUser.uid);
+
+        if (isLiked) {
+          await postRef.update({
+            likes: firebase.firestore.FieldValue.increment(-1),
+            likedBy: firebase.firestore.FieldValue.arrayRemove(currentUser.uid)
+          });
+        } else {
+          await postRef.update({
+            likes: firebase.firestore.FieldValue.increment(1),
+            likedBy: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+          });
+        }
+
+        applyFilters();
+
+      } catch (error) {
+        console.error('Error liking post:', error);
+        showToast('Failed to like post', 'error');
+      }
+    }
+
+    async function addComment(postId) {
+      if (!currentUser) {
+        showToast('Please login to comment', 'warning');
+        return;
+      }
+
+      const input = document.getElementById(`commentInput-${postId}`);
+      if (!input) return;
+
+      const commentText = input.value.trim();
+      if (!commentText) {
+        showToast('Please write a comment', 'warning');
+        return;
+      }
+
+      try {
+        const comment = {
+          userId: currentUser.uid,
+          userName: currentUser.displayName || 'Anonymous',
+          avatar: currentUser.photoURL || null,
+          comment: commentText,
+          createdAt: new Date().toISOString()
+        };
+
+        const postRef = db.collection('userPosts').doc(postId);
+        await postRef.update({
+          comments: firebase.firestore.FieldValue.arrayUnion(comment)
+        });
+
+        input.value = '';
+        showToast('Comment added!', 'success');
+        applyFilters();
+
+      } catch (error) {
+        console.error('Error adding comment:', error);
+        showToast('Failed to add comment', 'error');
+      }
+    }
+
+    async function votePoll(postId, optionIndex) {
+      if (!currentUser) {
+        showToast('Please login to vote', 'warning');
+        return;
+      }
+
+      try {
+        const postRef = db.collection('userPosts').doc(postId);
+        const post = await postRef.get();
+
+        if (!post.exists) return;
+
+        const data = post.data();
+        const poll = data.poll;
+
+        if (!poll) return;
+
+        if (poll.voters && poll.voters.includes(currentUser.uid)) {
+          showToast('You already voted on this poll', 'warning');
+          return;
+        }
+
+        const options = poll.options.map((opt, index) => {
+          if (index === optionIndex) {
+            return {
+              ...opt,
+              votes: (opt.votes || 0) + 1,
+              voters: [...(opt.voters || []), currentUser.uid]
+            };
+          }
+          return opt;
+        });
+
+        const voters = [...(poll.voters || []), currentUser.uid];
+
+        await postRef.update({
+          poll: { ...poll, options, voters }
+        });
+
+        showToast('Vote recorded!', 'success');
+        applyFilters();
+
+      } catch (error) {
+        console.error('Error voting on poll:', error);
+        showToast('Failed to vote', 'error');
+      }
+    }
+
+    // =============================================
+    // CONTACT DONOR
+    // =============================================
+    function contactDonor(userId, phoneNumber, donorName) {
+      if (!phoneNumber) {
+        showToast('Phone number not available', 'warning');
+        return;
+      }
+
+      if (!currentUser) {
+        showToast('Please login to contact donors', 'warning');
+        return;
+      }
+
+      let cleanNumber = phoneNumber.replace(/[^0-9+]/g, '');
+      if (!cleanNumber.startsWith('+') && !cleanNumber.startsWith('0')) {
+        cleanNumber = '0' + cleanNumber;
+      }
+      if (cleanNumber.startsWith('0') && cleanNumber.length === 11) {
+        cleanNumber = '+880' + cleanNumber.substring(1);
+      }
+
+      const whatsappUrl = `https://wa.me/${cleanNumber}?text=Hello%2C%20I%20saw%20your%20post%20on%20Blood%20Donor%20BD%20and%20would%20like%20to%20connect.`;
+      window.open(whatsappUrl, '_blank');
+
+      try {
+        db.collection('contactLogs').add({
+          donorId: userId,
+          seekerId: currentUser.uid,
+          seekerName: currentUser.displayName || 'Anonymous',
+          donorName: donorName,
+          donorPhone: phoneNumber,
+          contactedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          method: 'whatsapp'
+        });
+      } catch (e) {
+        console.warn('Could not log contact:', e);
+      }
+
+      showToast(`Opening WhatsApp to contact ${donorName}...`, 'success');
+    }
+
+    // =============================================
+    // COMMENT TOGGLE & LOAD ALL
+    // =============================================
+    function toggleComments(postId) {
+      const comments = document.getElementById(`comments-${postId}`);
+      if (comments) {
+        comments.style.display = comments.style.display === 'none' ? 'block' : 'none';
+      }
+    }
+
+    function loadAllComments(postId) {
+      const post = allPosts.find(p => p.id === postId);
+      if (!post) return;
+
+      const comments = post.comments || [];
+      if (comments.length === 0) {
+        showToast('No comments to show', 'info');
+        return;
+      }
+
+      let commentList = comments.map(c => `
+        <div style="display:flex; gap:10px; padding:8px 0; border-bottom:1px solid #f0f2f5;">
+          <img src="${c.avatar || 'https://i.ibb.co/WNH98LbN/1000020379.png'}" alt="Avatar" style="width:32px; height:32px; border-radius:50%; object-fit:cover; cursor:pointer;" 
+               onclick="goToUserProfile('${c.userId}')">
+          <div>
+            <strong style="font-size:14px; cursor:pointer;" onclick="goToUserProfile('${c.userId}')">${c.userName || 'Anonymous'}</strong>
+            <span style="font-size:11px; color:#999; margin-left:8px;">${getTimeAgo(c.createdAt?.toDate?.() || new Date())}</span>
+            <div style="font-size:14px; color:#333; margin-top:2px;">${c.comment}</div>
+          </div>
+        </div>
+      `).join('');
+
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed; top:0; left:0; right:0; bottom:0;
+        background: rgba(0,0,0,0.6);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 10002; padding:20px;
+        backdrop-filter: blur(4px);
+      `;
+      modal.innerHTML = `
+        <div style="background:white; border-radius:16px; max-width:500px; width:100%; max-height:80vh; padding:24px; overflow-y:auto; animation:scaleIn 0.3s ease;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="font-size:18px;">All Comments (${comments.length})</h3>
+            <button onclick="this.closest('div[style]').parentElement.remove()" 
+                    style="background:#f0f2f5; border:none; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer;">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          ${commentList}
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+      });
+    }
+
+    // =============================================
+    // SHARE POST
+    // =============================================
+    function sharePost(postId) {
+      const post = allPosts.find(p => p.id === postId);
+      if (!post) return;
+
+      const shareText = `🩸 ${post.text || 'Check out this post on Blood Donor BD!'}`;
+      const url = `${window.location.origin}/user.profile.html?id=${post.userId}`;
+
+      if (navigator.share) {
+        navigator.share({
+          title: 'Blood Donor BD Post',
+          text: shareText,
+          url: url
+        }).catch(() => {});
+      } else {
+        const fullText = `${shareText}\n\nView profile: ${url}`;
+        navigator.clipboard.writeText(fullText).then(() => {
+          showToast('Post link copied to clipboard!', 'success');
+        }).catch(() => {
+          prompt('Share this post:', fullText);
+        });
+      }
+    }
+
+    // =============================================
+    // GO TO USER PROFILE
+    // =============================================
+    function goToUserProfile(userId) {
+      if (userId) {
+        window.location.href = `user.profile.html?id=${userId}`;
+      }
+    }
+
+    // =============================================
+    // IMAGE MODAL
+    // =============================================
+    function openImageModal(imageUrl) {
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed; top:0; left:0; right:0; bottom:0;
+        background: rgba(0,0,0,0.9);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 10003; padding:20px;
+        cursor: pointer;
+      `;
+      modal.innerHTML = `
+        <img src="${imageUrl}" alt="Full size" style="max-width:95%; max-height:95%; object-fit:contain; border-radius:8px;">
+        <button onclick="this.parentElement.remove()" style="position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.2); border:none; color:white; width:40px; height:40px; border-radius:50%; font-size:20px; cursor:pointer; transition:all 0.3s;"
+                onmouseenter="this.style.background='rgba(255,255,255,0.4)'" onmouseleave="this.style.background='rgba(255,255,255,0.2)'">
+          <i class="fas fa-times"></i>
+        </button>
+      `;
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+      });
+      document.body.appendChild(modal);
+    }
+
+    // =============================================
+    // LOAD MORE
+    // =============================================
+    function loadMore() {
+      showToast('Loading more posts...', 'info');
+      applyFilters();
+    }
+
+    // =============================================
+    // INIT
+    // =============================================
+    document.addEventListener('DOMContentLoaded', () => {
+      auth.onAuthStateChanged((user) => {
+        if (user) {
+          currentUser = user;
+          console.log('👤 User logged in:', user.uid);
+        } else {
+          console.log('👤 No user logged in');
+        }
+        loadFeed();
+      });
+    });
+
+    // =============================================
+    // KEYBOARD SHORTCUTS
+    // =============================================
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === 'r') {
+        e.preventDefault();
+        applyFilters();
+        showToast('Feed refreshed!', 'success');
+      }
+      if (e.key === 'Escape') {
+        document.querySelectorAll('div[style*="position: fixed"]').forEach(m => {
+          if (m.style.zIndex === '10002' || m.style.zIndex === '10003') {
+            m.remove();
+          }
+        });
+      }
+    });
+
+    // =============================================
+    // EXPOSE FUNCTIONS GLOBALLY
+    // =============================================
+    window.goHome = goHome;
+    window.goToProfile = goToProfile;
+    window.goToDashboard = goToDashboard;
+    window.logout = logout;
+    window.loadFeed = loadFeed;
+    window.loadFeedSimple = loadFeedSimple;
+    window.applyFilters = applyFilters;
+    window.resetFilters = resetFilters;
+    window.likePost = likePost;
+    window.addComment = addComment;
+    window.votePoll = votePoll;
+    window.contactDonor = contactDonor;
+    window.toggleComments = toggleComments;
+    window.loadAllComments = loadAllComments;
+    window.sharePost = sharePost;
+    window.goToUserProfile = goToUserProfile;
+    window.openImageModal = openImageModal;
+    window.loadMore = loadMore;
+    window.showToast = showToast;
+  </script>
+</body>
+</html>
