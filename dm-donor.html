@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#b71c1c">
+  <meta name="apple-mobile-web-app-title" content="Blood Donor BD">
+  <meta name="theme-color" content="#b71c1c">
+  <title>Direct Message - Blood Donor BD</title>
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+    
+    .navbar {
+      background: white;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      padding: 0 20px;
+    }
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #b71c1c;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .nav-brand img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .nav-actions .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 14px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary {
+      background: #b71c1c;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #8b0000;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(183, 28, 28, 0.3);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid #b71c1c;
+      color: #b71c1c;
+    }
+    .btn-outline:hover {
+      background: #b71c1c;
+      color: white;
+    }
+    .btn-ghost {
+      background: #f0f2f5;
+      color: #333;
+    }
+    .btn-ghost:hover {
+      background: #e4e6eb;
+    }
+    .btn-logout {
+      background: transparent;
+      border: 1px solid #ddd;
+      color: #666;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-logout:hover {
+      background: #ffebee;
+      border-color: #d32f2f;
+      color: #d32f2f;
+    }
+    
+    /* DM Container */
+    .dm-container {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 0 16px;
+      height: calc(100vh - 180px);
+      min-height: 500px;
+      display: flex;
+      gap: 20px;
+    }
+    
+    .dm-sidebar {
+      width: 300px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    
+    .dm-sidebar-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #eee;
+      background: #fafafa;
+    }
+    
+    .dm-sidebar-header h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+    }
+    
+    .dm-sidebar-header .badge-dm {
+      background: #b71c1c;
+      color: white;
+      padding: 2px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+    }
+    
+    .dm-users-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    
+    .dm-user-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    
+    .dm-user-item:hover {
+      background: #f5f5f5;
+    }
+    
+    .dm-user-item.active {
+      background: #ffebee;
+      border-left: 3px solid #b71c1c;
+    }
+    
+    .dm-user-item .dm-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: #f0f0f0;
+    }
+    
+    .dm-user-item .dm-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .dm-user-item .dm-info {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .dm-user-item .dm-name {
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    
+    .dm-user-item .dm-preview {
+      font-size: 12px;
+      color: #999;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .dm-user-item .dm-time {
+      font-size: 10px;
+      color: #bbb;
+      white-space: nowrap;
+    }
+    
+    .dm-user-item .dm-unread {
+      background: #b71c1c;
+      color: white;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 700;
+    }
+    
+    .dm-unread-priority {
+      background: #ffebee !important;
+      border-left: 4px solid #d32f2f !important;
+      font-weight: 600;
+    }
+    
+    .dm-unread-priority .dm-preview {
+      color: #d32f2f !important;
+      font-weight: 600;
+    }
+    
+    .dm-chat-area {
+      flex: 1;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .dm-chat-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fafafa;
+    }
+    
+    .dm-chat-header-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .dm-chat-header-info .dm-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      overflow: hidden;
+    }
+    
+    .dm-chat-header-info .dm-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .dm-chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #fafafa;
+    }
+    
+    .dm-message {
+      max-width: 75%;
+      padding: 10px 16px;
+      border-radius: 16px;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      animation: fadeIn 0.2s ease;
+    }
+    
+    .dm-message-sent {
+      align-self: flex-end;
+      background: #b71c1c;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+    
+    .dm-message-received {
+      align-self: flex-start;
+      background: white;
+      color: #333;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .dm-message-time {
+      font-size: 10px;
+      opacity: 0.7;
+      margin-top: 4px;
+      display: block;
+      text-align: right;
+    }
+    
+    .dm-empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #999;
+      text-align: center;
+      padding: 40px;
+    }
+    
+    .dm-empty-state i {
+      font-size: 48px;
+      opacity: 0.3;
+      margin-bottom: 16px;
+    }
+    
+    .dm-chat-input {
+      padding: 16px;
+      border-top: 1px solid #eee;
+      display: flex;
+      gap: 12px;
+      background: white;
+    }
+    
+    .dm-chat-input input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 25px;
+      font-size: 14px;
+      transition: border 0.2s;
+    }
+    
+    .dm-chat-input input:focus {
+      outline: none;
+      border-color: #b71c1c;
+    }
+    
+    .dm-chat-input button {
+      border-radius: 25px;
+      padding: 12px 24px;
+    }
+    
+    .loading-spinner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      color: #999;
+    }
+    
+    .loading-spinner i {
+      margin-right: 8px;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    .toast-container {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      z-index: 10002;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .toast {
+      background: white;
+      padding: 14px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideIn 0.3s ease;
+      max-width: 380px;
+      min-width: 280px;
+    }
+    
+    .toast.success { border-left: 4px solid #2e7d32; }
+    .toast.error { border-left: 4px solid #d32f2f; }
+    .toast.warning { border-left: 4px solid #f57c00; }
+    .toast.info { border-left: 4px solid #b71c1c; }
+    
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes scaleIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .dm-container {
+        flex-direction: column;
+        height: auto;
+        min-height: 0;
+      }
+      
+      .dm-sidebar {
+        width: 100%;
+        max-height: 200px;
+      }
+      
+      .dm-chat-area {
+        min-height: 400px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a class="nav-brand" onclick="goHome()">
+        <img src="https://i.ibb.co/RTdtn0RG/1000018751.png" alt="Logo">
+        Blood Donor BD
+      </a>
+      <div class="nav-actions">
+        <button class="btn btn-ghost" onclick="goHome()" title="Home">
+          <i class="fas fa-home"></i> <span>Home</span>
+        </button>
+        <button class="btn btn-outline" onclick="goBack()" title="Back">
+          <i class="fas fa-arrow-left"></i> <span>Back</span>
+        </button>
+        <button class="btn-logout" onclick="logout()" title="Logout">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <div class="dm-container" id="dmContainer">
+    <div class="dm-sidebar">
+      <div class="dm-sidebar-header">
+        <h3>
+          <i class="fas fa-user-friends"></i> Conversations
+          <span class="badge-dm" id="dmConversationCount">0</span>
+        </h3>
+        <div style="margin-top: 8px;">
+          <input type="text" id="dmSearchUsers" placeholder="Search users..." style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 20px; font-size: 13px;">
+        </div>
+      </div>
+      <div class="dm-users-list" id="dmUsersList">
+        <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading conversations...</div>
+      </div>
+    </div>
+    
+    <div class="dm-chat-area">
+      <div class="dm-chat-header" id="dmChatHeader">
+        <div class="dm-chat-header-info">
+          <div style="color: #999;">
+            <i class="fas fa-inbox" style="font-size: 24px;"></i>
+          </div>
+          <div>
+            <h4 style="margin: 0; color: #666;">Select a conversation</h4>
+            <p style="margin: 0; font-size: 12px; color: #999;">Start private messaging</p>
+          </div>
+        </div>
+      </div>
+      <div class="dm-chat-messages" id="dmChatMessages">
+        <div class="dm-empty-state">
+          <i class="fas fa-comment-dots"></i>
+          <h4>No conversation selected</h4>
+          <p>Choose a user from the left to start chatting privately</p>
+        </div>
+      </div>
+      <div class="dm-chat-input" id="dmChatInput" style="display: none;">
+        <input type="text" id="dmMessageInput" placeholder="Type a private message..." onkeypress="if(event.key==='Enter') sendPrivateMessage()">
+        <button onclick="sendPrivateMessage()" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TOAST CONTAINER ===== -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    // =============================================
+    // FIREBASE CONFIG
+    // =============================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyCnky8bzx3KuFoujU5DSlLRYSZgiAF8840",
+      authDomain: "blood-donor-bd-2025.firebaseapp.com",
+      projectId: "blood-donor-bd-2025",
+      storageBucket: "blood-donor-bd-2025.firebasestorage.app",
+      messagingSenderId: "271945142840",
+      appId: "1:271945142840:web:b0edefddb55cac5f604ccd",
+      measurementId: "G-28KGSJREBR"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // =============================================
+    // STATE
+    // =============================================
+    let currentUser = null;
+    let userProfile = null;
+    let selectedUserId = null;
+    let selectedConversationId = null;
+    let dmListeners = {};
+    let dmConversationCache = [];
+    let userCache = {};
+
+    // =============================================
+    // TOAST SYSTEM
+    // =============================================
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      const icon = type === 'success' ? 'fa-check-circle' :
+                   type === 'error' ? 'fa-exclamation-circle' :
+                   type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+      toast.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 5000);
+    }
+
+    // =============================================
+    // NAVIGATION
+    // =============================================
+    function goHome() {
+      window.location.href = 'index.html';
+    }
+
+    function goBack() {
+      window.history.back();
+    }
+
+    async function logout() {
+      try {
+        await auth.signOut();
+        window.location.href = 'index.html';
+      } catch (error) {
+        showToast('Logout failed', 'error');
+      }
+    }
+
+    function getUrlParams() {
+      const params = new URLSearchParams(window.location.search);
+      return { userId: params.get('userId') };
+    }
+
+    // =============================================
+    // UTILITY FUNCTIONS
+    // =============================================
+    function getTimeAgo(date) {
+      const now = new Date();
+      const diff = now - date;
+      const seconds = Math.floor(diff / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const hours = Math.floor(minutes / 60);
+      const days = Math.floor(hours / 24);
+
+      if (seconds < 60) return 'Just now';
+      if (minutes < 60) return `${minutes}m ago`;
+      if (hours < 24) return `${hours}h ago`;
+      return `${days}d ago`;
+    }
+
+    function getAvatarUrl(userData) {
+      if (userData?.profilePic) return userData.profilePic;
+      if (userData?.userAvatar) return userData.userAvatar;
+      if (userData?.gender === 'female') {
+        return 'https://i.ibb.co/ZzL8pT3K/1000020380.png';
+      }
+      return 'https://i.ibb.co/WNH98LbN/1000020379.png';
+    }
+
+    async function getUserData(userId) {
+      if (!userId) return null;
+      if (userCache[userId]) return userCache[userId];
+      
+      try {
+        const doc = await db.collection('users').doc(userId).get();
+        if (doc.exists) {
+          const data = doc.data();
+          userCache[userId] = data;
+          return data;
+        }
+        return null;
+      } catch (error) {
+        console.error('Error fetching user:', error);
+        return null;
+      }
+    }
+
+    // =============================================
+    // GET OR CREATE CONVERSATION
+    // =============================================
+    async function getOrCreateConversation(otherUserId) {
+      if (!currentUser || !otherUserId) {
+        showToast('Invalid user', 'error');
+        return null;
+      }
+
+      try {
+        // Check for existing conversation
+        let snapshot;
+        try {
+          snapshot = await db.collection('privateMessages')
+            .where('participants', 'array-contains', currentUser.uid)
+            .get();
+        } catch (error) {
+          snapshot = { docs: [] };
+        }
+
+        for (const doc of snapshot.docs || []) {
+          const data = doc.data();
+          if (data.participants && data.participants.includes(otherUserId)) {
+            return { conversationId: doc.id, exists: true };
+          }
+        }
+
+        // Create new conversation
+        const newConv = {
+          participants: [currentUser.uid, otherUserId],
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          lastMessageTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          lastMessage: 'Conversation started',
+          unread: {
+            [currentUser.uid]: 0,
+            [otherUserId]: 0
+          }
+        };
+
+        const docRef = await db.collection('privateMessages').add(newConv);
+        return { conversationId: docRef.id, exists: false };
+
+      } catch (error) {
+        console.error('Error getting/creating conversation:', error);
+        showToast('Could not start conversation. Please try again.', 'error');
+        return null;
+      }
+    }
+
+    // =============================================
+    // LOAD PRIVATE CONVERSATIONS
+    // =============================================
+    async function loadPrivateConversations() {
+      const usersList = document.getElementById('dmUsersList');
+      if (!usersList) return;
+
+      try {
+        if (!currentUser || !currentUser.uid) {
+          usersList.innerHTML = `
+            <div style="text-align: center; padding: 30px; color: #f57c00;">
+              <i class="fas fa-exclamation-triangle"></i>
+              <p>Please login to see conversations</p>
+            </div>
+          `;
+          return;
+        }
+
+        // Get all users
+        const allUsersSnapshot = await db.collection('users')
+          .where('approvalStatus', 'in', ['approved', 'pending'])
+          .limit(50)
+          .get();
+
+        const allUsers = [];
+        allUsersSnapshot.forEach(doc => {
+          const user = doc.data();
+          if (user.uid !== currentUser.uid) {
+            allUsers.push({ userId: doc.id, ...user });
+          }
+        });
+
+        if (allUsers.length === 0) {
+          usersList.innerHTML = `
+            <div class="dm-empty-state" style="padding: 20px;">
+              <i class="fas fa-users" style="font-size: 32px;"></i>
+              <p style="font-size: 13px;">No other users found</p>
+            </div>
+          `;
+          return;
+        }
+
+        // Get conversations
+        let conversationUsers = [];
+        try {
+          const convSnapshot = await db.collection('privateMessages')
+            .where('participants', 'array-contains', currentUser.uid)
+            .get();
+
+          convSnapshot.forEach(doc => {
+            const data = doc.data();
+            const otherUser = data.participants?.find(uid => uid !== currentUser.uid);
+            if (otherUser) {
+              conversationUsers.push({
+                userId: otherUser,
+                conversationId: doc.id,
+                lastMessage: data.lastMessage || '',
+                lastMessageTimestamp: data.lastMessageTimestamp?.toDate?.() || new Date(0),
+                unread: data.unread?.[currentUser.uid] || 0
+              });
+            }
+          });
+        } catch (error) {
+          console.log('No conversations yet');
+        }
+
+        // Get user details for conversation users
+        const userDetails = {};
+        await Promise.all(conversationUsers.map(async (conv) => {
+          try {
+            const doc = await db.collection('users').doc(conv.userId).get();
+            if (doc.exists) {
+              userDetails[conv.userId] = { id: doc.id, ...doc.data() };
+            }
+          } catch (e) {
+            console.error('Error fetching user:', e);
+          }
+        }));
+
+        // Filter valid conversations
+        const validConversations = conversationUsers.filter(conv => userDetails[conv.userId]);
+
+        // Separate users: with conversations vs new
+        const convUserIds = new Set(validConversations.map(c => c.userId));
+        const newUsers = allUsers.filter(user => !convUserIds.has(user.userId));
+
+        // SORT: Unread first, then by timestamp
+        validConversations.sort((a, b) => {
+          if (a.unread > 0 && b.unread === 0) return -1;
+          if (a.unread === 0 && b.unread > 0) return 1;
+          return b.lastMessageTimestamp - a.lastMessageTimestamp;
+        });
+
+        let html = '';
+
+        // SECTION 1: Conversations
+        if (validConversations.length > 0) {
+          const totalUnread = validConversations.filter(c => c.unread > 0).length;
+          html += `
+            <div style="padding: 8px 12px; background: #e8f5e9; border-radius: 8px; margin-bottom: 8px; font-size: 12px; font-weight: 600; color: #2e7d32;">
+              <i class="fas fa-comment-dots"></i> Your Conversations (${validConversations.length})
+              ${totalUnread > 0 ? `<span style="background: #d32f2f; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 8px;">${totalUnread} unread</span>` : ''}
+            </div>
+          `;
+
+          validConversations.forEach(conv => {
+            const user = userDetails[conv.userId];
+            if (user) {
+              html += createDMUserItem(user, conv);
+            }
+          });
+
+          updateConversationCount(validConversations.length);
+        }
+
+        // SECTION 2: New Users
+        if (newUsers.length > 0) {
+          if (validConversations.length > 0) {
+            html += `
+              <div style="padding: 8px 12px; background: #e3f2fd; border-radius: 8px; margin: 12px 0 8px 0; font-size: 12px; font-weight: 600; color: #1565c0; border-top: 2px solid #e3f2fd; padding-top: 12px;">
+                <i class="fas fa-users"></i> All Donors & Seekers (${newUsers.length})
+              </div>
+            `;
+          } else {
+            html += `
+              <div style="padding: 12px; background: #fff3e0; border-radius: 8px; margin-bottom: 12px; font-size: 13px; color: #f57c00;">
+                <i class="fas fa-info-circle"></i> No conversations yet. Start chatting with someone below!
+              </div>
+            `;
+          }
+
+          newUsers.forEach(user => {
+            html += createDMUserItem(user, null);
+          });
+        }
+
+        if (html === '') {
+          html = `
+            <div class="dm-empty-state" style="padding: 20px;">
+              <i class="fas fa-users" style="font-size: 32px;"></i>
+              <p style="font-size: 13px;">No users found</p>
+            </div>
+          `;
+        }
+
+        usersList.innerHTML = html;
+
+        // Auto-select first conversation or URL userId
+        const params = getUrlParams();
+        const urlUserId = params.userId;
+
+        if (urlUserId) {
+          // Check if user exists in conversations
+          const existingConv = validConversations.find(c => c.userId === urlUserId);
+          if (existingConv) {
+            const user = userDetails[urlUserId];
+            if (user) {
+              selectedUserId = urlUserId;
+              selectedConversationId = existingConv.conversationId;
+              loadPrivateChat(urlUserId, existingConv.conversationId);
+            }
+          } else {
+            // New user - create conversation
+            selectedUserId = urlUserId;
+            const result = await getOrCreateConversation(urlUserId);
+            if (result) {
+              selectedConversationId = result.conversationId;
+              loadPrivateChat(urlUserId, result.conversationId);
+            }
+          }
+        } else if (!selectedUserId && validConversations.length > 0) {
+          const firstConv = validConversations[0];
+          const user = userDetails[firstConv.userId];
+          if (user) {
+            selectedUserId = firstConv.userId;
+            selectedConversationId = firstConv.conversationId;
+            loadPrivateChat(firstConv.userId, firstConv.conversationId);
+          }
+        }
+
+      } catch (error) {
+        console.error('Error loading conversations:', error);
+        usersList.innerHTML = `
+          <div style="text-align: center; padding: 30px; color: #d32f2f;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 32px;"></i>
+            <p style="margin-top: 8px;">Error loading conversations. Please refresh.</p>
+            <button onclick="loadPrivateConversations()" class="btn btn-primary" style="margin-top: 12px; padding: 8px 16px; font-size: 13px;">
+              <i class="fas fa-redo"></i> Retry
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    // =============================================
+    // CREATE DM USER ITEM
+    // =============================================
+    function createDMUserItem(user, conversation) {
+      const name = user.fullName || 'Unknown User';
+      const avatarUrl = getAvatarUrl(user);
+      const isDonor = user.isDonor;
+
+      let preview = 'Click to start chat';
+      let time = '';
+      let unread = 0;
+
+      if (conversation) {
+        preview = conversation.lastMessage || 'No messages yet';
+        time = conversation.lastMessageTimestamp ?
+          conversation.lastMessageTimestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+        unread = conversation.unread || 0;
+      }
+
+      const isActive = selectedUserId === user.uid;
+
+      let itemStyle = '';
+      if (unread > 0) {
+        itemStyle = `
+          background: #ffebee !important;
+          border-left: 4px solid #d32f2f !important;
+          font-weight: 600;
+          border-radius: 8px;
+          margin-bottom: 4px;
+        `;
+        if (isActive) {
+          itemStyle = `
+            background: #ffcdd2 !important;
+            border-left: 4px solid #b71c1c !important;
+            font-weight: 700;
+            border-radius: 8px;
+            margin-bottom: 4px;
+          `;
+        }
+      } else if (isActive) {
+        itemStyle = `
+          background: #ffebee !important;
+          border-left: 3px solid #b71c1c !important;
+          border-radius: 8px;
+          margin-bottom: 4px;
+        `;
+      }
+
+      return `
+        <div class="dm-user-item ${unread > 0 ? 'dm-unread-priority' : ''} ${isActive ? 'active' : ''}"
+             onclick="selectDMUser('${user.uid}')"
+             style="${itemStyle}">
+          <div class="dm-avatar">
+            <img src="${avatarUrl}" alt="${name}" loading="lazy">
+          </div>
+          <div class="dm-info">
+            <div class="dm-name">
+              ${name}
+              ${isDonor ? `<span style="background: #b71c1c; color: white; padding: 1px 8px; border-radius: 10px; font-size: 9px; font-weight: 600;">${user.bloodGroup || ''}</span>` : `<span style="background: #1565c0; color: white; padding: 1px 8px; border-radius: 10px; font-size: 9px; font-weight: 600;">Seeker</span>`}
+            </div>
+            <div class="dm-preview" style="${unread > 0 ? 'color: #d32f2f; font-weight: 600;' : ''}">
+              ${unread > 0 ? '🔴 ' : ''}${preview}
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;">
+            ${time ? `<span class="dm-time">${time}</span>` : ''}
+            ${unread > 0 ? `<span class="dm-unread">${unread}</span>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    // =============================================
+    // SELECT DM USER
+    // =============================================
+    async function selectDMUser(userId) {
+      if (userId === currentUser.uid) {
+        showToast('You cannot message yourself', 'warning');
+        return;
+      }
+
+      selectedUserId = userId;
+
+      // Get or create conversation
+      const result = await getOrCreateConversation(userId);
+      if (result) {
+        selectedConversationId = result.conversationId;
+        loadPrivateChat(userId, result.conversationId);
+      }
+    }
+
+    // =============================================
+    // LOAD PRIVATE CHAT
+    // =============================================
+    async function loadPrivateChat(userId, conversationId) {
+      const messagesContainer = document.getElementById('dmChatMessages');
+      const header = document.getElementById('dmChatHeader');
+      const inputContainer = document.getElementById('dmChatInput');
+
+      if (!messagesContainer || !header || !inputContainer) return;
+
+      try {
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (!userDoc.exists) {
+          showToast('User not found', 'error');
+          return;
+        }
+        const user = userDoc.data();
+        const avatarUrl = getAvatarUrl(user);
+
+        header.innerHTML = `
+          <div class="dm-chat-header-info">
+            <div class="dm-avatar">
+              <img src="${avatarUrl}" alt="${user.fullName || 'User'}">
+            </div>
+            <div>
+              <h4 style="margin: 0;">${user.fullName || 'Unknown User'}</h4>
+              <p style="margin: 0; font-size: 12px; color: #999;">
+                ${user.isDonor ? `🩸 ${user.bloodGroup || ''} · ${user.district || ''}` : '🔍 Donor Seeker'}
+              </p>
+            </div>
+          </div>
+          <div>
+            <span class="badge" style="background: ${user.isDonor ? '#b71c1c' : '#1565c0'}; color: white; padding: 2px 12px; border-radius: 12px; font-size: 12px;">
+              ${user.isDonor ? 'Donor' : 'Seeker'}
+            </span>
+            ${user.phoneNumber ? `<a href="tel:${user.phoneNumber}" class="btn btn-outline" style="padding: 4px 12px; font-size: 12px; margin-left: 8px;">
+              <i class="fas fa-phone"></i>
+            </a>` : ''}
+          </div>
+        `;
+
+        inputContainer.style.display = 'flex';
+        messagesContainer.innerHTML = `
+          <div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading messages...</div>
+        `;
+
+        await loadPrivateMessages(conversationId, messagesContainer);
+        await markConversationRead(conversationId);
+
+        // Refresh conversation list to update unread counts
+        loadPrivateConversations();
+
+      } catch (error) {
+        console.error('Error loading chat:', error);
+        showToast('Failed to load chat', 'error');
+      }
+    }
+
+    // =============================================
+    // LOAD PRIVATE MESSAGES
+    // =============================================
+    async function loadPrivateMessages(conversationId, container) {
+      if (!conversationId) return;
+
+      try {
+        // Clear previous listener
+        if (dmListeners[conversationId]) {
+          dmListeners[conversationId]();
+          delete dmListeners[conversationId];
+        }
+
+        // Set up real-time listener
+        const unsubscribe = db.collection('privateMessages')
+          .doc(conversationId)
+          .collection('messages')
+          .orderBy('timestamp', 'asc')
+          .onSnapshot((snapshot) => {
+            if (snapshot.empty) {
+              container.innerHTML = `
+                <div class="dm-empty-state" style="padding: 20px;">
+                  <i class="fas fa-comment" style="font-size: 32px;"></i>
+                  <h4>No messages yet</h4>
+                  <p>Start a private conversation now!</p>
+                </div>
+              `;
+              return;
+            }
+
+            const messages = [];
+            snapshot.forEach(doc => messages.push({ id: doc.id, ...doc.data() }));
+
+            container.innerHTML = messages.map(msg => {
+              const isSent = msg.senderId === currentUser.uid;
+              const time = msg.timestamp?.toDate?.()?.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+              }) || '';
+
+              return `
+                <div class="dm-message ${isSent ? 'dm-message-sent' : 'dm-message-received'}">
+                  ${msg.message}
+                  <span class="dm-message-time">
+                    ${time}
+                    ${isSent ? (msg.read ? '✓✓' : '✓') : ''}
+                  </span>
+                </div>
+              `;
+            }).join('');
+
+            container.scrollTop = container.scrollHeight;
+          }, (error) => {
+            console.warn('Message listener error:', error);
+            container.innerHTML = `
+              <div style="text-align: center; padding: 30px; color: #d32f2f;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Error loading messages</p>
+              </div>
+            `;
+          });
+
+        dmListeners[conversationId] = unsubscribe;
+
+      } catch (error) {
+        console.error('Error loading messages:', error);
+        container.innerHTML = `
+          <div style="text-align: center; padding: 30px; color: #d32f2f;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>Error loading messages</p>
+          </div>
+        `;
+      }
+    }
+
+    // =============================================
+    // SEND PRIVATE MESSAGE
+    // =============================================
+    async function sendPrivateMessage() {
+      const input = document.getElementById('dmMessageInput');
+      const message = input?.value.trim();
+
+      if (!message) {
+        showToast('Please type a message', 'warning');
+        return;
+      }
+
+      if (!selectedUserId) {
+        showToast('Select a user to message', 'warning');
+        return;
+      }
+
+      try {
+        const result = await getOrCreateConversation(selectedUserId);
+        if (!result) {
+          showToast('Failed to start conversation', 'error');
+          return;
+        }
+
+        const conversationId = result.conversationId;
+
+        // Send message
+        await db.collection('privateMessages')
+          .doc(conversationId)
+          .collection('messages')
+          .add({
+            senderId: currentUser.uid,
+            receiverId: selectedUserId,
+            message: message,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            read: false
+          });
+
+        // Update conversation metadata
+        await db.collection('privateMessages')
+          .doc(conversationId)
+          .update({
+            lastMessage: message,
+            lastMessageTimestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            [`unread.${selectedUserId}`]: firebase.firestore.FieldValue.increment(1)
+          });
+
+        input.value = '';
+        loadPrivateConversations();
+
+      } catch (error) {
+        console.error('Error sending message:', error);
+        showToast('Failed to send message', 'error');
+      }
+    }
+
+    // =============================================
+    // MARK CONVERSATION AS READ
+    // =============================================
+    async function markConversationRead(conversationId) {
+      try {
+        await db.collection('privateMessages')
+          .doc(conversationId)
+          .update({
+            [`unread.${currentUser.uid}`]: 0
+          });
+      } catch (error) {
+        console.error('Error marking read:', error);
+      }
+    }
+
+    // =============================================
+    // UPDATE CONVERSATION COUNT
+    // =============================================
+    function updateConversationCount(count) {
+      const el = document.getElementById('dmConversationCount');
+      if (el) {
+        el.textContent = count;
+      }
+    }
+
+    // =============================================
+    // FILTER DM USERS
+    // =============================================
+    function filterDMUsers(query) {
+      const items = document.querySelectorAll('.dm-user-item');
+      const q = query.toLowerCase().trim();
+
+      items.forEach(item => {
+        const nameEl = item.querySelector('.dm-name');
+        if (nameEl) {
+          const name = nameEl.textContent.toLowerCase();
+          item.style.display = name.includes(q) ? 'flex' : 'none';
+        }
+      });
+    }
+
+    // =============================================
+    // INITIALIZATION
+    // =============================================
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        currentUser = user;
+        db.collection('users').doc(user.uid).get().then(doc => {
+          if (doc.exists) {
+            userProfile = doc.data();
+            loadPrivateConversations();
+          }
+        });
+      } else {
+        document.getElementById('dmContainer').innerHTML = `
+          <div style="text-align:center; padding:60px; background:white; border-radius:12px; max-width:500px; margin:20px auto;">
+            <i class="fas fa-user-slash" style="font-size:48px; color:#999;"></i>
+            <h3 style="margin-top:16px; color:#666;">Please Login</h3>
+            <p style="color:#999; margin-bottom:20px;">You need to be logged in to send messages.</p>
+            <button onclick="window.location.href='index.html'" class="btn btn-primary" style="padding:12px 32px;">
+              <i class="fas fa-sign-in-alt"></i> Go to Dashboard
+            </button>
+          </div>
+        `;
+      }
+    });
+
+    // =============================================
+    // SEARCH INPUT LISTENER
+    // =============================================
+    document.getElementById('dmSearchUsers')?.addEventListener('input', function() {
+      filterDMUsers(this.value);
+    });
+
+    // =============================================
+    // EXPOSE FUNCTIONS GLOBALLY
+    // =============================================
+    window.goHome = goHome;
+    window.goBack = goBack;
+    window.logout = logout;
+    window.selectDMUser = selectDMUser;
+    window.sendPrivateMessage = sendPrivateMessage;
+    window.filterDMUsers = filterDMUsers;
+    window.loadPrivateConversations = loadPrivateConversations;
+    window.showToast = showToast;
+
+    console.log('💬 DM Page Loaded');
+    console.log('📌 Commands:');
+    console.log('  - selectDMUser(userId) - Select a user to chat with');
+    console.log('  - sendPrivateMessage() - Send a message to selected user');
+  </script>
+</body>
+</html>
