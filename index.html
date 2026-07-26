@@ -4250,7 +4250,11 @@ function updateBirthdayDisplay() {
 // Call this function after dashboard renders
 // Add this inside renderDashboard() after the HTML is set
 
-    async function renderFindDonorsPage() {
+    // ============================================
+// FIND DONORS PAGE - RENDER
+// ============================================
+
+async function renderFindDonorsPage() {
   const main = document.getElementById('mainContent');
   main.innerHTML = `
     <h1 style="margin-bottom: 24px;">Find Blood Donors</h1>
@@ -4283,7 +4287,10 @@ function updateBirthdayDisplay() {
   setTimeout(() => searchDonors(1), 100);
 }
 
-    // Search Donors with Pagination
+// ============================================
+// SEARCH DONORS WITH PAGINATION
+// ============================================
+
 let currentDonorPage = 1;
 let donorsPerPage = 24;
 let filteredDonors = [];
@@ -4320,66 +4327,118 @@ async function searchDonors(page = 1) {
   }
 }
 
+// ============================================
+// GET DONOR ELIGIBILITY STATUS
+// ============================================
 
-// 🔥 ডোনারের এলিজিবিলিটি চেক করার ফাংশন (APPROVAL STATUS সহ)
 function getDonorEligibilityStatus(donor) {
-    // যদি ডোনারের কাছে lastDonationDate না থাকে, তাহলে Eligible
-    if (!donor.lastDonationDate) {
-        return { status: 'eligible', label: '✅ Eligible', color: '#2e7d32', bg: '#e8f5e9' };
-    }
-    
-    // চেক করুন approval status
-    const approvalStatus = donor.lastDonationApprovalStatus || 'pending';
-    
-    // যদি pending বা rejected হয়, তাহলে Not Eligible দেখান
-    if (approvalStatus === 'pending') {
-        return { 
-            status: 'pending', 
-            label: '⏳Donation Pending ', 
-            color: '#f57c00', 
-            bg: '#fff3e0'
-        };
-    }
-    
-    if (approvalStatus === 'rejected') {
-        return { 
-            status: 'rejected', 
-            label: '❌ Needs Verification', 
-            color: '#d32f2f', 
-            bg: '#ffebee'
-        };
-    }
-    
-    // APPROVED - তাহলে দিন গণনা করুন
-    const lastDate = new Date(donor.lastDonationDate);
-    const today = new Date();
-    const diffTime = today - lastDate;
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    const waitDays = donor.gender === 'female' ? 120 : 90;
-    
-    if (diffDays >= waitDays) {
-        return { 
-            status: 'eligible', 
-            label: '✅ Eligible', 
-            color: '#2e7d32', 
-            bg: '#e8f5e9',
-            daysSince: diffDays,
-            waitDays: waitDays
-        };
-    } else {
-        const remainingDays = waitDays - diffDays;
-        return { 
-            status: 'not-eligible', 
-            label: `⏳ ${remainingDays} days left`, 
-            color: '#f57c00', 
-            bg: '#fff3e0',
-            daysSince: diffDays,
-            waitDays: waitDays,
-            remainingDays: remainingDays
-        };
-    }
+  if (!donor.lastDonationDate) {
+    return { status: 'eligible', label: '✅ Eligible', color: '#2e7d32', bg: '#e8f5e9' };
+  }
+  
+  const approvalStatus = donor.lastDonationApprovalStatus || 'pending';
+  
+  if (approvalStatus === 'pending') {
+    return { status: 'pending', label: '⏳ Donation Pending', color: '#f57c00', bg: '#fff3e0' };
+  }
+  
+  if (approvalStatus === 'rejected') {
+    return { status: 'rejected', label: '❌ Needs Verification', color: '#d32f2f', bg: '#ffebee' };
+  }
+  
+  const lastDate = new Date(donor.lastDonationDate);
+  const today = new Date();
+  const diffTime = today - lastDate;
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const waitDays = donor.gender === 'female' ? 120 : 90;
+  
+  if (diffDays >= waitDays) {
+    return { 
+      status: 'eligible', 
+      label: '✅ Eligible', 
+      color: '#2e7d32', 
+      bg: '#e8f5e9',
+      daysSince: diffDays,
+      waitDays: waitDays
+    };
+  } else {
+    const remainingDays = waitDays - diffDays;
+    return { 
+      status: 'not-eligible', 
+      label: `⏳ ${remainingDays} days left`, 
+      color: '#f57c00', 
+      bg: '#fff3e0',
+      daysSince: diffDays,
+      waitDays: waitDays,
+      remainingDays: remainingDays
+    };
+  }
 }
+
+// ============================================
+// GET ROLE THEME (NEW)
+// ============================================
+
+function getRoleTheme(role) {
+  switch (role) {
+    case 'main_admin':
+      return {
+        cardBg: 'linear-gradient(135deg, #fff8e1, #ffd54f, #fff8e1)',
+        cardBorder: '3px solid #ffd700',
+        cardShadow: '0 8px 32px rgba(255, 215, 0, 0.4)',
+        badgeBg: 'linear-gradient(135deg, #ff6f00, #ffa000, #ff6f00)',
+        badgeText: '#ffffff',
+        badgeLabel: '👑 Administrator',
+        roleIcon: '👑',
+        cardHover: '0 12px 40px rgba(255, 215, 0, 0.6)',
+        statColor: '#ff8f00',
+        borderColor: '#ffd700'
+      };
+    case 'admin':
+      return {
+        cardBg: 'linear-gradient(135deg, #e3f2fd, #90caf9, #e3f2fd)',
+        cardBorder: '3px solid #1a237e',
+        cardShadow: '0 8px 32px rgba(26, 35, 126, 0.3)',
+        badgeBg: 'linear-gradient(135deg, #0d47a1, #1976d2, #0d47a1)',
+        badgeText: '#ffffff',
+        badgeLabel: '🛡️ Admin',
+        roleIcon: '🛡️',
+        cardHover: '0 12px 40px rgba(26, 35, 126, 0.5)',
+        statColor: '#0d47a1',
+        borderColor: '#1a237e'
+      };
+    case 'moderator':
+      return {
+        cardBg: 'linear-gradient(135deg, #e8f5e9, #81c784, #e8f5e9)',
+        cardBorder: '3px solid #1b5e20',
+        cardShadow: '0 8px 32px rgba(27, 94, 32, 0.3)',
+        badgeBg: 'linear-gradient(135deg, #1b5e20, #388e3c, #1b5e20)',
+        badgeText: '#ffffff',
+        badgeLabel: '🔰 Moderator',
+        roleIcon: '🔰',
+        cardHover: '0 12px 40px rgba(27, 94, 32, 0.5)',
+        statColor: '#1b5e20',
+        borderColor: '#1b5e20'
+      };
+    default:
+      return {
+        cardBg: '#ffffff',
+        cardBorder: 'none',
+        cardShadow: '0 2px 10px rgba(0,0,0,0.1)',
+        badgeBg: 'none',
+        badgeText: 'transparent',
+        badgeLabel: '',
+        roleIcon: '',
+        cardHover: '0 8px 25px rgba(0,0,0,0.15)',
+        statColor: '#b71c1c',
+        borderColor: 'transparent'
+      };
+  }
+}
+
+// ============================================
+// RENDER DONOR PAGE
+// ============================================
 
 function renderDonorPage(page) {
   const results = document.getElementById('donorResults');
@@ -4403,117 +4462,318 @@ function renderDonorPage(page) {
   
   pageDonors.forEach(donor => {
     const roleSymbol = getRoleSymbol(donor.role);
+    const theme = getRoleTheme(donor.role);
     
-    // এলিজিবিলিটি চেক করুন
-const eligibility = getDonorEligibilityStatus(donor);
-
-// এলিজিবিলিটি ব্যাজ - উপরে ডান কর্ণারে (স্ট্যাটাস অনুযায়ী)
-let badgeStyle = '';
-let badgeText = '';
-
-if (eligibility.status === 'eligible') {
-  badgeStyle = 'background: #e8f5e9; color: #2e7d32; border: 1px solid #2e7d32;';
-  badgeText = '✅ Eligible';
-} else if (eligibility.status === 'pending') {
-  badgeStyle = 'background: #fff3e0; color: #f57c00; border: 1px solid #f57c00;';
-  badgeText = '⏳ Donation Pending';
-} else if (eligibility.status === 'rejected') {
-  badgeStyle = 'background: #ffebee; color: #d32f2f; border: 1px solid #d32f2f;';
-  badgeText = '❌ Needs Verification';
-} else {
-  badgeStyle = 'background: #fff3e0; color: #f57c00; border: 1px solid #f57c00;';
-  badgeText = `⏳ ${eligibility.remainingDays || 0} days left`;
-}
+    // Eligibility check
+    const eligibility = getDonorEligibilityStatus(donor);
     
-    // প্রোফাইল পিকচার বা ডিফল্ট জেন্ডার-ভিত্তিক অ্যাভাটার
-const profilePicUrl = donor.profilePic || null;
-const avatarHtml = profilePicUrl ? 
-  `<img src="${profilePicUrl}" alt="${donor.fullName}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #b71c1c; box-shadow: 0 2px 8px rgba(183, 28, 28, 0.2);">` :
-  `<img src="${donor.gender === 'female' ? 'https://i.ibb.co/ZzL8pT3K/1000020380.png' : 'https://i.ibb.co/WNH98LbN/1000020379.png'}" alt="${donor.fullName}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #b71c1c; box-shadow: 0 2px 8px rgba(183, 28, 28, 0.2);">`;
+    let badgeStyle = '';
+    let badgeText = '';
+    
+    if (eligibility.status === 'eligible') {
+      badgeStyle = 'background: #e8f5e9; color: #2e7d32; border: 1px solid #2e7d32;';
+      badgeText = '✅ Eligible';
+    } else if (eligibility.status === 'pending') {
+      badgeStyle = 'background: #fff3e0; color: #f57c00; border: 1px solid #f57c00;';
+      badgeText = '⏳ Donation Pending';
+    } else if (eligibility.status === 'rejected') {
+      badgeStyle = 'background: #ffebee; color: #d32f2f; border: 1px solid #d32f2f;';
+      badgeText = '❌ Needs Verification';
+    } else {
+      badgeStyle = 'background: #fff3e0; color: #f57c00; border: 1px solid #f57c00;';
+      badgeText = `⏳ ${eligibility.remainingDays || 0} days left`;
+    }
+    
+    // ============================================
+    // ROLE BADGE (Top Left) - THEMED
+    // ============================================
+    let roleBadge = '';
+    if (donor.role === 'main_admin') {
+      roleBadge = `<span style="
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        background: linear-gradient(135deg, #ff6f00, #ffd700, #ff6f00);
+        color: #ffffff;
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 700;
+        box-shadow: 0 2px 12px rgba(255, 215, 0, 0.5);
+        border: 1px solid #ffd700;
+        z-index: 2;
+        letter-spacing: 0.5px;
+      ">👑 Administrator</span>`;
+    } else if (donor.role === 'admin') {
+      roleBadge = `<span style="
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        background: linear-gradient(135deg, #0d47a1, #1976d2, #0d47a1);
+        color: white;
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 700;
+        box-shadow: 0 2px 12px rgba(26, 35, 126, 0.4);
+        border: 1px solid #1a237e;
+        z-index: 2;
+        letter-spacing: 0.5px;
+      ">🛡️ Admin</span>`;
+    } else if (donor.role === 'moderator') {
+      roleBadge = `<span style="
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        background: linear-gradient(135deg, #1b5e20, #388e3c, #1b5e20);
+        color: white;
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 700;
+        box-shadow: 0 2px 12px rgba(27, 94, 32, 0.4);
+        border: 1px solid #1b5e20;
+        z-index: 2;
+        letter-spacing: 0.5px;
+      ">🔰 Moderator</span>`;
+    }
+    
+    // Profile picture or gender-based avatar
+    const profilePicUrl = donor.profilePic || null;
+    const avatarHtml = profilePicUrl ? 
+      `<img src="${profilePicUrl}" alt="${donor.fullName}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid ${theme.borderColor || '#b71c1c'}; box-shadow: 0 2px 8px rgba(183, 28, 28, 0.2);">` :
+      `<img src="${donor.gender === 'female' ? 'https://i.ibb.co/ZzL8pT3K/1000020380.png' : 'https://i.ibb.co/WNH98LbN/1000020379.png'}" alt="${donor.fullName}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid ${theme.borderColor || '#b71c1c'}; box-shadow: 0 2px 8px rgba(183, 28, 28, 0.2);">`;
     
     const card = document.createElement('div');
     card.className = 'request-card';
     card.style.cssText = `
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      background: ${theme.cardBg || '#ffffff'};
+      border-radius: 16px;
+      box-shadow: ${theme.cardShadow || '0 2px 10px rgba(0,0,0,0.1)'};
+      border: ${theme.cardBorder || 'none'};
       padding: 24px;
       margin-bottom: 0;
-      transition: all 0.3s ease;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
       height: 100%;
       position: relative;
+      overflow: hidden;
     `;
     
-    // হোভার ইফেক্ট
+    // Add shimmer effect for Admin roles
+    if (donor.role === 'main_admin') {
+      card.style.background = 'linear-gradient(135deg, #fff8e1 0%, #ffd54f 50%, #fff8e1 100%)';
+      card.style.backgroundSize = '200% 200%';
+      card.style.animation = 'goldenShimmer 3s ease-in-out infinite';
+    } else if (donor.role === 'admin') {
+      card.style.background = 'linear-gradient(135deg, #e3f2fd 0%, #90caf9 50%, #e3f2fd 100%)';
+      card.style.backgroundSize = '200% 200%';
+      card.style.animation = 'blueShimmer 3s ease-in-out infinite';
+    } else if (donor.role === 'moderator') {
+      card.style.background = 'linear-gradient(135deg, #e8f5e9 0%, #81c784 50%, #e8f5e9 100%)';
+      card.style.backgroundSize = '200% 200%';
+      card.style.animation = 'greenShimmer 3s ease-in-out infinite';
+    }
+    
+    // Hover effect
     card.addEventListener('mouseenter', function() {
-      this.style.transform = 'translateY(-5px)';
-      this.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+      this.style.transform = 'translateY(-8px) scale(1.02)';
+      this.style.boxShadow = theme.cardHover || '0 8px 25px rgba(0,0,0,0.15)';
     });
     card.addEventListener('mouseleave', function() {
-      this.style.transform = 'translateY(0)';
-      this.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+      this.style.transform = 'translateY(0) scale(1)';
+      this.style.boxShadow = theme.cardShadow || '0 2px 10px rgba(0,0,0,0.1)';
     });
     
-    // ✅ এলিজিবিলিটি ব্যাজ - উপরে ডান কর্ণারে
-    const eligibilityBadge = eligibility.status === 'eligible' 
-      ? `<span style="background: #e8f5e9; color: #2e7d32; border: 1px solid #2e7d32;">✅ Eligible</span>`
-      : `<span style="background: #fff3e0; color: #f57c00; border: 1px solid #f57c00;">⏳ ${eligibility.remainingDays || 0} days left</span>`;
+    // Get display name with role icon
+    const displayName = donor.role === 'main_admin' ? `👑 ${donor.fullName}` :
+                        donor.role === 'admin' ? `🛡️ ${donor.fullName}` :
+                        donor.role === 'moderator' ? `🔰 ${donor.fullName}` :
+                        donor.fullName;
     
     card.innerHTML = `
-      <!-- এলিজিবিলিটি ব্যাজ - উপরে ডান কর্ণারে -->
-<div style="
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-  z-index: 2;
-  ${badgeStyle}
-">
-  ${badgeText}
-</div>
+      <!-- Eligibility Badge - Top Right -->
+      <div style="
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        z-index: 2;
+        ${badgeStyle}
+      ">
+        ${badgeText}
+      </div>
       
-      <!-- প্রোফাইল পিকচার - সেন্টার -->
+      <!-- Role Badge - Top Left -->
+      ${roleBadge}
+      
+      <!-- Role Icon Badge - Bottom Left (for quick recognition) -->
+      ${donor.role === 'main_admin' ? `
+        <div style="
+          position: absolute;
+          bottom: 12px;
+          left: 12px;
+          z-index: 2;
+        ">
+          <span style="
+            display: inline-block;
+            background: rgba(255, 215, 0, 0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 16px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+          ">👑</span>
+        </div>
+      ` : ''}
+      ${donor.role === 'admin' ? `
+        <div style="
+          position: absolute;
+          bottom: 12px;
+          left: 12px;
+          z-index: 2;
+        ">
+          <span style="
+            display: inline-block;
+            background: rgba(26, 35, 126, 0.15);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 16px;
+            border: 1px solid rgba(26, 35, 126, 0.2);
+          ">🛡️</span>
+        </div>
+      ` : ''}
+      ${donor.role === 'moderator' ? `
+        <div style="
+          position: absolute;
+          bottom: 12px;
+          left: 12px;
+          z-index: 2;
+        ">
+          <span style="
+            display: inline-block;
+            background: rgba(27, 94, 32, 0.15);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 16px;
+            border: 1px solid rgba(27, 94, 32, 0.2);
+          ">🔰</span>
+        </div>
+      ` : ''}
+      
+      <!-- Profile Picture -->
       <div style="margin-bottom: 12px; position: relative;">
         ${avatarHtml}
         ${eligibility.status === 'eligible' ? 
-  `<img src="https://i.ibb.co/Y4m98vSQ/1000020383.png" 
-        style="position: absolute; bottom: 2px; right: -2px; width: 24px; height: 24px; border-radius: 50%;" />` :
-  `<div style="position: absolute; bottom: -2px; right: -2px; background: #f57c00; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px;">
-     <i class="fas fa-clock"></i>
-   </div>`
-}</div>
+          `<img src="https://i.ibb.co/Y4m98vSQ/1000020383.png" 
+                style="position: absolute; bottom: 2px; right: -2px; width: 24px; height: 24px; border-radius: 50%;" />` :
+          `<div style="position: absolute; bottom: -2px; right: -2px; background: #f57c00; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px;">
+             <i class="fas fa-clock"></i>
+           </div>`
+        }
+      </div>
       
-      <!-- ডোনারের নাম - সেন্টার -->
-      <h3 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600; color: #333;">
-        ${roleSymbol}${donor.fullName}
+      <!-- Donor Name with Role Icon -->
+      <h3 style="
+        margin: 0 0 4px 0; 
+        font-size: 18px; 
+        font-weight: 700; 
+        color: ${donor.role === 'main_admin' ? '#e65100' : donor.role === 'admin' ? '#0d47a1' : donor.role === 'moderator' ? '#1b5e20' : '#333'};
+      ">
+        ${displayName}
       </h3>
       
-      <!-- ব্লাড গ্রুপ - বাম দিকে -->
+      <!-- Admin Role Label (below name) -->
+      ${donor.role === 'main_admin' ? `
+        <div style="
+          background: linear-gradient(90deg, #ff6f00, #ffd700, #ff6f00);
+          background-size: 200% 100%;
+          animation: goldenShimmer 2s ease-in-out infinite;
+          color: white;
+          padding: 2px 16px;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 700;
+          margin-bottom: 8px;
+          display: inline-block;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+        ">⭐ Premium Member</div>
+      ` : ''}
+      ${donor.role === 'admin' ? `
+        <div style="
+          background: linear-gradient(90deg, #0d47a1, #1976d2, #0d47a1);
+          background-size: 200% 100%;
+          animation: blueShimmer 2s ease-in-out infinite;
+          color: white;
+          padding: 2px 16px;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 700;
+          margin-bottom: 8px;
+          display: inline-block;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+        ">🔵 Staff Member</div>
+      ` : ''}
+      ${donor.role === 'moderator' ? `
+        <div style="
+          background: linear-gradient(90deg, #1b5e20, #388e3c, #1b5e20);
+          background-size: 200% 100%;
+          animation: greenShimmer 2s ease-in-out infinite;
+          color: white;
+          padding: 2px 16px;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 700;
+          margin-bottom: 8px;
+          display: inline-block;
+          letter-spacing: 1px;
+          text-transform: uppercase;
+        ">🟢 Team Member</div>
+      ` : ''}
+      
+      <!-- Blood Group -->
       <div style="width: 100%; text-align: left; margin: 8px 0 12px 0;">
-        <span style="background: #b71c1c; color: white; padding: 4px 16px; border-radius: 20px; font-weight: 700; font-size: 16px; display: inline-block;">
+        <span style="
+          background: ${donor.role === 'main_admin' ? 'linear-gradient(135deg, #ff6f00, #ffd700)' : 
+                      donor.role === 'admin' ? 'linear-gradient(135deg, #0d47a1, #1976d2)' : 
+                      donor.role === 'moderator' ? 'linear-gradient(135deg, #1b5e20, #388e3c)' : 
+                      '#b71c1c'};
+          color: white;
+          padding: 4px 16px;
+          border-radius: 20px;
+          font-weight: 700;
+          font-size: 16px;
+          display: inline-block;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        ">
           ${donor.bloodGroup}
         </span>
         <span class="badge" style="background:#2e7d32;color:white;padding:3px 12px;border-radius:20px;font-size:11px;margin-left:8px;">
           <i class="fas fa-check-circle"></i> Verified
         </span>
+        ${donor.role === 'main_admin' ? `
+          <span style="background: #ffd700; color: #333; padding: 2px 8px; border-radius: 12px; font-size: 9px; font-weight: 700; margin-left: 4px; border: 1px solid #e6c200;">
+            PREMIUM
+          </span>
+        ` : ''}
       </div>
       
-      <!-- ডোনার ডিটেইলস - বাম দিকে -->
+      <!-- Donor Details -->
       <div style="width: 100%; text-align: left; display: flex; flex-direction: column; gap: 8px; margin: 4px 0 16px 0; border-top: 1px solid #f0f0f0; padding-top: 12px;">
         <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: #555;">
-          <i class="fas fa-map-marker-alt" style="width: 18px; color: #b71c1c;"></i>
-          <span>${donor.district}, ${donor.upazila || ''}</span>
+          <i class="fas fa-map-marker-alt" style="width: 18px; color: ${theme.statColor || '#b71c1c'};"></i>
+          <span>${donor.upazila || ''}, ${donor.district}</span>
         </div>
         <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: #555;">
-          <i class="fas fa-phone" style="width: 18px; color: #b71c1c;"></i>
+          <i class="fas fa-phone" style="width: 18px; color: ${theme.statColor || '#b71c1c'};"></i>
           <span>${donor.phoneNumber ? donor.phoneNumber.slice(0,6)+'*****' : 'N/A'}</span>
         </div>
         ${donor.lastDonationDate ? `
@@ -4527,15 +4787,21 @@ const avatarHtml = profilePicUrl ?
             <span style="color: #2e7d32; font-weight: 500;">First-time donor at Blood Donor BD</span>
           </div>
         `}
+        ${donor.role === 'main_admin' ? `
+          <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: #888; border-top: 1px solid #f5f5f5; padding-top: 8px; margin-top: 4px;">
+            <i class="fas fa-crown" style="width: 18px; color: #e65100; filter: none;"></i>
+            <span style="color: #e65100; font-weight: 600;">Founder & Lead Developer</span>
+          </div>
+        ` : ''}
       </div>
       
-      <!-- অ্যাকশন বাটন -->
+      <!-- Action Buttons -->
       <div style="width: 100%; display: flex; gap: 10px; margin-top: auto; border-top: 1px solid #f0f0f0; padding-top: 16px;">
         ${currentUser ? `
-          <button onclick="revealContact('${donor.id}', '${donor.phoneNumber}', '${donor.fullName}')" class="btn btn-primary" style="flex: 1; padding: 10px; font-size: 13px; border-radius: 8px;">
+          <button onclick="revealContact('${donor.id}', '${donor.phoneNumber}', '${donor.fullName}')" class="btn btn-primary" style="flex: 1; padding: 10px; font-size: 13px; border-radius: 8px; background: ${donor.role === 'main_admin' ? 'linear-gradient(135deg, #ff6f00, #ffd700)' : donor.role === 'admin' ? 'linear-gradient(135deg, #0d47a1, #1976d2)' : donor.role === 'moderator' ? 'linear-gradient(135deg, #1b5e20, #388e3c)' : '#b71c1c'};">
             <i class="fas fa-phone"></i> Call
           </button>
-          <button onclick="goToPrivateDM('${donor.id}')" class="btn btn-outline" style="flex: 1; padding: 10px; font-size: 13px; border-radius: 8px;">
+          <button onclick="goToPrivateDM('${donor.id}')" class="btn btn-outline" style="flex: 1; padding: 10px; font-size: 13px; border-radius: 8px; ${donor.role === 'main_admin' ? 'border-color: #ffd700; color: #e65100;' : donor.role === 'admin' ? 'border-color: #0d47a1; color: #0d47a1;' : donor.role === 'moderator' ? 'border-color: #1b5e20; color: #1b5e20;' : ''}">
             <i class="fas fa-comment"></i> Message
           </button>
         ` : `
@@ -4549,14 +4815,14 @@ const avatarHtml = profilePicUrl ?
     donorList.appendChild(card);
   });
 
-  // রেস্পন্সিভ
+  // Responsive grid
   if (window.innerWidth < 480) {
     donorList.style.gridTemplateColumns = '1fr';
   } else if (window.innerWidth < 768) {
     donorList.style.gridTemplateColumns = 'repeat(2, 1fr)';
   }
   
-  // পেজিনেশন কন্ট্রোল
+  // Pagination Controls
   const paginationControls = document.getElementById('paginationControls');
   if (totalPages > 1) {
     let paginationHTML = '';
@@ -4590,6 +4856,30 @@ const avatarHtml = profilePicUrl ?
     paginationControls.innerHTML = paginationHTML;
   }
 }
+
+// ============================================
+// ADD CSS ANIMATIONS FOR SHIMMER EFFECTS
+// ============================================
+
+const styleSheet = document.createElement("style");
+styleSheet.textContent = `
+  @keyframes goldenShimmer {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes blueShimmer {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  @keyframes greenShimmer {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+`;
+document.head.appendChild(styleSheet);
 
     async function revealContact(donorId, phone, donorName) {
       if (!phone) {
