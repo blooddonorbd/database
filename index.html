@@ -4484,14 +4484,12 @@ const avatarHtml = profilePicUrl ?
       <div style="margin-bottom: 12px; position: relative;">
         ${avatarHtml}
         ${eligibility.status === 'eligible' ? 
-          `<div style="position: absolute; bottom: -2px; right: -2px; background: #2e7d32; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white;">
-            <i class="fas fa-check"></i>
-          </div>` : 
-          `<div style="position: absolute; bottom: -2px; right: -2px; background: #f57c00; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; border: 2px solid white;">
-            <i class="fas fa-clock"></i>
-          </div>`
-        }
-      </div>
+  `<img src="https://i.ibb.co/Y4m98vSQ/1000020383.png" 
+        style="position: absolute; bottom: 2px; right: -2px; width: 24px; height: 24px; border-radius: 50%;" />` :
+  `<div style="position: absolute; bottom: -2px; right: -2px; background: #f57c00; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px;">
+     <i class="fas fa-clock"></i>
+   </div>`
+}</div>
       
       <!-- ডোনারের নাম - সেন্টার -->
       <h3 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 600; color: #333;">
