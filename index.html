@@ -528,7 +528,6 @@ img[src*="imgbb"],
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 8px;
   font-size: 24px;
   font-weight: 700;
   color: var(--primary);
@@ -540,9 +539,8 @@ img[src*="imgbb"],
 .nav-brand img {
   width: 55px;
   height: 55px;
-  margin-top: 8px;
   border-radius: 50%;
-  margin-right: 8px;
+  margin-right: 15px;
 }
 
 /* ============================================
@@ -629,12 +627,12 @@ img[src*="imgbb"],
   font-size: 28px;
   cursor: pointer;
   padding: 8px 14px;
-  margin-top: -15px;
-  margin-right: 5%;
-  margin-left: auto;
+  margin-top: -5px;
+  margin-right: 1%;
+  margin-left: 5px;
   color: var(--dark);
   transition: var(--transition);
-  line-height: 1;
+  line-height: 2;
   border-radius: 8px;
 }
 
@@ -655,11 +653,12 @@ img[src*="imgbb"],
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+  margin-left: auto; /* এই লাইনটি যোগ করুন */
 }
 
 .user-info {
   display: flex;
-  align-items: center;
+  align-items: right;
   gap: 10px;
 }
 
@@ -669,8 +668,9 @@ img[src*="imgbb"],
   border-radius: 50%;
   background: var(--primary);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: right;
+  margin-left: auto;
+  justify-content: right;
   color: var(--white);
   font-weight: 600;
   overflow: hidden;
@@ -1754,18 +1754,18 @@ window.addEventListener('scroll', () => {
       <div class="nav-container">
         <div class="nav-brand">
   <img src="https://i.ibb.co/RTdtn0RG/1000018751.png" alt="Logo" style="width: 55px; height: 55px; border-radius: 50%; margin-right: 8px;">
-          <span st>Blood Donor BD</span>
+          <span style="margin-right: 1px;">Blood Donor BD</span>
 </div>
         
         <ul id="navMenu" class="nav-menu"></ul>
         
         <div class="nav-user">
           <div id="userInfo" class="user-info"></div>
-        </div></div>
+        </div>
         
-        <div><button class="mobile-menu-btn">
+        <div><button class="mobile-menu-btn" style="margin-left: -4px;">
           <i class="fas fa-bars"></i>
-        </button>
+        </button></div>
         </div>
         <div id="liveClock" style="
   text-align: center; 
