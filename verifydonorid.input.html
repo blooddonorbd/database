@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Verify Donor ID · Blood Donor BD</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 480px;
+            width: 100%;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            padding: 40px 32px;
+            text-align: center;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+        .logo img {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+        }
+        .logo h1 {
+            font-size: 22px;
+            color: #b71c1c;
+            font-weight: 700;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 32px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .input-group input {
+            padding: 16px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 18px;
+            font-family: 'Poppins', sans-serif;
+            transition: 0.3s;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #b71c1c;
+            box-shadow: 0 0 0 4px rgba(183, 28, 28, 0.1);
+        }
+        .input-group button {
+            padding: 16px;
+            background: #b71c1c;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .input-group button:hover {
+            background: #8b0000;
+            transform: translateY(-2px);
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #999;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link:hover { color: #b71c1c; }
+        
+        .example {
+            margin-top: 16px;
+            font-size: 13px;
+            color: #aaa;
+        }
+        .example span {
+            background: #f5f5f5;
+            padding: 2px 12px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="logo">
+        <img src="https://i.ibb.co/RTdtn0RG/1000018751.png" alt="Logo">
+        <h1>Blood Donor BD</h1>
+    </div>
+    <p class="subtitle">Enter a Donor ID to verify their identity</p>
+
+    <form id="verifyForm" class="input-group">
+        <input type="text" id="donorIdInput" placeholder="e.g. BD-12345" required autofocus>
+        <button type="submit">
+            <i class="fas fa-shield-alt"></i> Verify Donor
+        </button>
+    </form>
+
+    <div class="example">
+        💡 Example: <span>BD-1001</span>
+    </div>
+
+    <a href="#" class="back-link" onclick="window.history.back(); return false;">
+        <i class="fas fa-arrow-left"></i> Go Back
+    </a>
+</div>
+
+<script>
+    document.getElementById('verifyForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const input = document.getElementById('donorIdInput');
+        const donorId = input.value.trim();
+        
+        if (!donorId) {
+            input.style.borderColor = '#d32f2f';
+            input.placeholder = '⚠️ Please enter a Donor ID';
+            input.focus();
+            return;
+        }
+        
+        // Redirect to the verification page
+        window.location.href = `verifydonorid.html?id=${encodeURIComponent(donorId)}`;
+    });
+
+    // Real-time validation - clear error state on input
+    document.getElementById('donorIdInput').addEventListener('input', function() {
+        this.style.borderColor = '#e0e0e0';
+        if (this.placeholder.includes('⚠️')) {
+            this.placeholder = 'e.g. BD-12345';
+        }
+    });
+</script>
+
+</body>
+</html>
