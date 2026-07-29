@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#b71c1c">
+  <meta name="apple-mobile-web-app-title" content="Edit Profile - Blood Donor BD">
+  <meta name="theme-color" content="#b71c1c">
+  
+  <title>Edit Profile - Blood Donor BD</title>
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f0f2f5;
+      color: #1c1e21;
+      min-height: 100vh;
+    }
+    
+    /* ===== NAVBAR ===== */
+    .navbar {
+      background: white;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      padding: 0 20px;
+    }
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #b71c1c;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .nav-brand img {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 40px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f0f2f5;
+      color: #1c1e21;
+    }
+    .btn-primary { background: #b71c1c; color: white; }
+    .btn-primary:hover { background: #8b0000; transform: scale(1.02); }
+    .btn-outline { background: transparent; border: 2px solid #b71c1c; color: #b71c1c; }
+    .btn-outline:hover { background: #b71c1c; color: white; }
+    .btn-ghost { background: #f0f2f5; color: #1c1e21; }
+    .btn-ghost:hover { background: #e4e6eb; }
+    .btn-success { background: #2e7d32; color: white; }
+    .btn-success:hover { background: #1b5e20; transform: scale(1.02); }
+    .btn-danger { background: #d32f2f; color: white; }
+    .btn-danger:hover { background: #b71c1c; }
+    .btn-logout {
+      background: transparent;
+      border: 1px solid #ddd;
+      color: #666;
+      padding: 8px 14px;
+      border-radius: 40px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-logout:hover { background: #ffebee; border-color: #d32f2f; color: #d32f2f; }
+    
+    /* ===== MAIN CONTAINER ===== */
+    .edit-profile-container {
+      max-width: 720px;
+      margin: 30px auto;
+      padding: 0 16px;
+    }
+    
+    .edit-card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    
+    .edit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid #f0f2f5;
+    }
+    .edit-header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1c1e21;
+    }
+    .edit-header .subtitle {
+      font-size: 14px;
+      color: #65676b;
+      font-weight: 400;
+    }
+    
+    /* ===== AVATAR SECTION ===== */
+    .avatar-section {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 20px;
+      background: #f7f8fa;
+      border-radius: 12px;
+      margin-bottom: 28px;
+    }
+    .avatar-wrapper {
+      position: relative;
+      flex-shrink: 0;
+    }
+    .avatar-preview {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid white;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      background: #e4e6eb;
+    }
+    .avatar-placeholder {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #b71c1c, #e53935);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 40px;
+      font-weight: 700;
+      border: 4px solid white;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    }
+    .avatar-upload-btn {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      background: #b71c1c;
+      color: white;
+      border: 3px solid white;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .avatar-upload-btn:hover { transform: scale(1.1); background: #8b0000; }
+    .avatar-info h3 { font-size: 16px; font-weight: 600; color: #1c1e21; margin-bottom: 4px; }
+    .avatar-info p { font-size: 13px; color: #65676b; }
+    
+    /* ===== FORM ===== */
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      font-size: 14px;
+      color: #1c1e21;
+      margin-bottom: 6px;
+    }
+    .form-group label .required {
+      color: #d32f2f;
+      margin-left: 2px;
+    }
+    .form-group .help-text {
+      font-size: 12px;
+      color: #65676b;
+      margin-top: 4px;
+    }
+    .form-control {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e4e6eb;
+      border-radius: 12px;
+      font-size: 15px;
+      font-family: inherit;
+      transition: all 0.2s;
+      background: white;
+      color: #1c1e21;
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: #b71c1c;
+      box-shadow: 0 0 0 4px rgba(183, 28, 28, 0.1);
+    }
+    .form-control.error {
+      border-color: #d32f2f;
+      box-shadow: 0 0 0 4px rgba(211, 47, 47, 0.1);
+    }
+    .form-control:disabled {
+      background: #f0f2f5;
+      cursor: not-allowed;
+    }
+    textarea.form-control {
+      resize: vertical;
+      min-height: 80px;
+    }
+    select.form-control {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23656e7b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      padding-right: 40px;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+    
+    /* ===== TOGGLE ===== */
+    .toggle-group {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 12px 0;
+    }
+    .toggle-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      padding: 8px 16px;
+      border-radius: 40px;
+      background: #f0f2f5;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+    }
+    .toggle-option:hover { background: #e4e6eb; }
+    .toggle-option.active {
+      background: #ffebee;
+      border-color: #b71c1c;
+      color: #b71c1c;
+    }
+    .toggle-option input[type="radio"] {
+      display: none;
+    }
+    .toggle-option .icon { font-size: 18px; }
+    .toggle-option .label { font-weight: 500; font-size: 14px; }
+    
+    /* ===== SECTION DIVIDER ===== */
+    .section-divider {
+      border: none;
+      border-top: 2px solid #f0f2f5;
+      margin: 28px 0;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1c1e21;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title i { color: #b71c1c; }
+    
+    /* ===== FORM ACTIONS ===== */
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      padding-top: 24px;
+      border-top: 2px solid #f0f2f5;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .form-actions .btn {
+      padding: 12px 32px;
+      font-size: 15px;
+    }
+    
+    /* ===== TOAST ===== */
+    .toast-container {
+      position: fixed;
+      top: 80px;
+      right: 20px;
+      z-index: 10002;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .toast {
+      background: white;
+      padding: 14px 20px;
+      border-radius: 14px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideIn 0.3s ease;
+      max-width: 380px;
+      min-width: 260px;
+    }
+    .toast.success { border-left: 4px solid #2e7d32; }
+    .toast.error { border-left: 4px solid #d32f2f; }
+    .toast.warning { border-left: 4px solid #f57c00; }
+    .toast.info { border-left: 4px solid #b71c1c; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    /* ===== LOADING ===== */
+    .loading-spinner {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .loading-spinner i {
+      font-size: 48px;
+      color: #b71c1c;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .loading-spinner p {
+      margin-top: 16px;
+      color: #65676b;
+    }
+    
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .edit-card { padding: 20px; }
+      .form-row { grid-template-columns: 1fr; }
+      .form-row-3 { grid-template-columns: 1fr; }
+      .avatar-section { flex-direction: column; text-align: center; }
+      .edit-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .form-actions .btn { flex: 1; justify-content: center; }
+      .nav-actions .btn span { display: none; }
+      .avatar-preview, .avatar-placeholder { width: 80px; height: 80px; font-size: 32px; }
+      .avatar-upload-btn { width: 30px; height: 30px; font-size: 12px; }
+    }
+    @media (max-width: 480px) {
+      .edit-profile-container { padding: 0 8px; margin: 16px auto; }
+      .edit-card { padding: 16px; }
+      .toggle-option { padding: 6px 12px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="navbar">
+  <div class="nav-container">
+    <a class="nav-brand" onclick="goHome()">
+      <img src="https://i.ibb.co/RTdtn0RG/1000018751.png" alt="Logo">
+      Blood Donor BD
+    </a>
+    <div class="nav-actions">
+      <button class="btn btn-ghost" onclick="goHome()"><i class="fas fa-home"></i> <span>Home</span></button>
+      <button class="btn btn-outline" onclick="goBack()"><i class="fas fa-arrow-left"></i> <span>Back</span></button>
+      <button class="btn-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== MAIN CONTENT ===== -->
+<div class="edit-profile-container" id="editProfileContainer">
+  <!-- Rendered by JavaScript -->
+</div>
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ============================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================ -->
+<script>
+  // =============================================
+  // FIREBASE CONFIG
+  // =============================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyCnky8bzx3KuFoujU5DSlLRYSZgiAF8840",
+    authDomain: "blood-donor-bd-2025.firebaseapp.com",
+    projectId: "blood-donor-bd-2025",
+    storageBucket: "blood-donor-bd-2025.firebasestorage.app",
+    messagingSenderId: "271945142840",
+    appId: "1:271945142840:web:b0edefddb55cac5f604ccd",
+    measurementId: "G-28KGSJREBR"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  // =============================================
+  // IMGBB API KEY
+  // =============================================
+  const IMGBB_API_KEY = '54ffbc26529e5d05fa5cffad23712429';
+
+  // =============================================
+  // STATE
+  // =============================================
+  let currentUser = null;
+  let userProfile = null;
+  let avatarFile = null;
+  let isSaving = false;
+
+  // =============================================
+  // TOAST SYSTEM
+  // =============================================
+  function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icon = type === 'success' ? 'fa-check-circle' :
+                 type === 'error' ? 'fa-exclamation-circle' :
+                 type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+    toast.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
+  }
+
+  // =============================================
+  // NAVIGATION
+  // =============================================
+  function goHome() {
+    window.location.href = 'index.html';
+  }
+
+  function goBack() {
+    window.history.back();
+  }
+
+  async function logout() {
+    try {
+      await auth.signOut();
+      window.location.href = 'index.html';
+    } catch (error) {
+      showToast('Logout failed', 'error');
+    }
+  }
+
+  // =============================================
+  // UPLOAD IMAGE TO IMGBB
+  // =============================================
+  async function uploadImage(file) {
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        return data.data.url;
+      } else {
+        throw new Error(data.error?.message || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Image upload error:', error);
+      throw error;
+    }
+  }
+
+  // =============================================
+  // GET AVATAR URL
+  // =============================================
+  function getAvatarUrl(userData) {
+    if (userData?.profilePic) return userData.profilePic;
+    if (userData?.userAvatar) return userData.userAvatar;
+    if (userData?.gender === 'female') {
+      return 'https://i.ibb.co/ZzL8pT3K/1000020380.png';
+    }
+    return 'https://i.ibb.co/WNH98LbN/1000020379.png';
+  }
+
+  // =============================================
+  // LOAD PROFILE DATA
+  // =============================================
+  async function loadProfile() {
+    const container = document.getElementById('editProfileContainer');
+    
+    const user = auth.currentUser;
+    if (!user) {
+      container.innerHTML = `
+        <div class="edit-card" style="text-align:center; padding:60px;">
+          <i class="fas fa-user-slash" style="font-size:48px; color:#999;"></i>
+          <h3 style="margin-top:16px; color:#1c1e21;">Please Login</h3>
+          <p style="color:#65676b; margin-bottom:20px;">You need to be logged in to edit your profile.</p>
+          <button onclick="window.location.href='index.html'" class="btn btn-primary" style="padding:12px 32px;">
+            <i class="fas fa-sign-in-alt"></i> Go to Dashboard
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    currentUser = user;
+
+    container.innerHTML = `
+      <div class="loading-spinner">
+        <i class="fas fa-spinner"></i>
+        <p>Loading your profile...</p>
+      </div>
+    `;
+
+    try {
+      const doc = await db.collection('users').doc(user.uid).get();
+      if (doc.exists) {
+        userProfile = { id: doc.id, ...doc.data() };
+        renderEditForm();
+      } else {
+        // Create default profile if doesn't exist
+        userProfile = {
+          id: user.uid,
+          fullName: user.displayName || '',
+          email: user.email || '',
+          phoneNumber: '',
+          bloodGroup: '',
+          district: '',
+          gender: '',
+          isDonor: false,
+          bio: '',
+          role: 'user',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await db.collection('users').doc(user.uid).set(userProfile);
+        renderEditForm();
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      container.innerHTML = `
+        <div class="edit-card" style="text-align:center; padding:60px;">
+          <i class="fas fa-exclamation-triangle" style="font-size:48px; color:#d32f2f;"></i>
+          <h3 style="margin-top:16px; color:#1c1e21;">Failed to Load Profile</h3>
+          <p style="color:#65676b;">${error.message || 'Please refresh the page.'}</p>
+          <button onclick="location.reload()" class="btn btn-primary" style="margin-top:16px;">
+            <i class="fas fa-redo"></i> Refresh
+          </button>
+        </div>
+      `;
+    }
+  }
+
+  // =============================================
+  // RENDER EDIT FORM
+  // =============================================
+  function renderEditForm() {
+    const container = document.getElementById('editProfileContainer');
+    const profile = userProfile;
+    
+    const avatarUrl = getAvatarUrl(profile);
+    const initial = (profile.fullName || 'U').charAt(0).toUpperCase();
+
+    const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+    const districts = [
+      'Dhaka', 'Chittagong', 'Khulna', 'Rajshahi', 'Barisal', 'Sylhet', 'Rangpur', 'Mymensingh',
+      'Comilla', 'Narayanganj', 'Gazipur', 'Savar', 'Jessore', 'Bogra', 'Dinajpur', 'Pabna',
+      'Tangail', 'Jamalpur', 'Sherpur', 'Netrokona', 'Kishoreganj', 'Narsingdi', 'Manikganj',
+      'Munshiganj', 'Narail', 'Magura', 'Jhenaidah', 'Chuadanga', 'Meherpur', 'Kushtia',
+      'Satkhira', 'Bagerhat', 'Patuakhali', 'Barguna', 'Pirojpur', 'Jhalokati', 'Bhola',
+      'Lakshmipur', 'Noakhali', 'Feni', 'Khagrachhari', 'Rangamati', 'Bandarban', 'Cox\'s Bazar'
+    ];
+
+    container.innerHTML = `
+      <div class="edit-card">
+        <div class="edit-header">
+          <div>
+            <h1>Edit Profile</h1>
+            <span class="subtitle">Update your personal information</span>
+          </div>
+          <button class="btn btn-ghost" onclick="goBack()">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+        </div>
+
+        <!-- Avatar Section -->
+        <div class="avatar-section">
+          <div class="avatar-wrapper">
+            ${avatarUrl ? 
+              `<img src="${avatarUrl}" alt="Profile" class="avatar-preview" id="avatarPreview" loading="lazy">` :
+              `<div class="avatar-placeholder" id="avatarPlaceholder">${initial}</div>`
+            }
+            <button class="avatar-upload-btn" onclick="triggerAvatarUpload()">
+              <i class="fas fa-camera"></i>
+            </button>
+            <input type="file" id="avatarInput" accept="image/*" style="display:none;" onchange="handleAvatarSelect(event)">
+          </div>
+          <div class="avatar-info">
+            <h3>Profile Photo</h3>
+            <p>Click the camera icon to upload a new photo</p>
+          </div>
+        </div>
+
+        <!-- Personal Information -->
+        <hr class="section-divider">
+        <div class="section-title">
+          <i class="fas fa-user"></i> Personal Information
+        </div>
+
+        <div class="form-group">
+          <label>Full Name <span class="required">*</span></label>
+          <input type="text" class="form-control" id="fullName" value="${profile.fullName || ''}" placeholder="Enter your full name">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email Address <span class="required">*</span></label>
+            <input type="email" class="form-control" id="email" value="${profile.email || ''}" placeholder="Enter your email" disabled>
+            <div class="help-text">Email cannot be changed</div>
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" class="form-control" id="phoneNumber" value="${profile.phoneNumber || ''}" placeholder="Enter phone number">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Blood Group</label>
+            <select class="form-control" id="bloodGroup">
+              <option value="">Select Blood Group</option>
+              ${bloodGroups.map(bg => `<option value="${bg}" ${profile.bloodGroup === bg ? 'selected' : ''}>${bg}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>District</label>
+            <select class="form-control" id="district">
+              <option value="">Select District</option>
+              ${districts.map(d => `<option value="${d}" ${profile.district === d ? 'selected' : ''}>${d}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Gender</label>
+          <div class="toggle-group" id="genderGroup">
+            <label class="toggle-option ${profile.gender === 'male' ? 'active' : ''}" onclick="selectGender('male')">
+              <input type="radio" name="gender" value="male" ${profile.gender === 'male' ? 'checked' : ''}>
+              <span class="icon">👨</span>
+              <span class="label">Male</span>
+            </label>
+            <label class="toggle-option ${profile.gender === 'female' ? 'active' : ''}" onclick="selectGender('female')">
+              <input type="radio" name="gender" value="female" ${profile.gender === 'female' ? 'checked' : ''}>
+              <span class="icon">👩</span>
+              <span class="label">Female</span>
+            </label>
+            <label class="toggle-option ${profile.gender === 'other' ? 'active' : ''}" onclick="selectGender('other')">
+              <input type="radio" name="gender" value="other" ${profile.gender === 'other' ? 'checked' : ''}>
+              <span class="icon">👤</span>
+              <span class="label">Other</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Bio</label>
+          <textarea class="form-control" id="bio" placeholder="Tell others about yourself...">${profile.bio || ''}</textarea>
+          <div class="help-text">${(profile.bio || '').length} / 200 characters</div>
+        </div>
+
+        <!-- Donor Settings -->
+        <hr class="section-divider">
+        <div class="section-title">
+          <i class="fas fa-tint"></i> Donor Settings
+        </div>
+
+        <div class="form-group">
+          <div style="display:flex; align-items:center; gap:12px; padding:12px 0;">
+            <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:600; font-size:15px;">
+              <input type="checkbox" id="isDonor" ${profile.isDonor ? 'checked' : ''} style="width:20px; height:20px; accent-color:#b71c1c;">
+              I am a blood donor
+            </label>
+          </div>
+          <div class="help-text">Enable this if you're willing to donate blood to those in need</div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button class="btn btn-success" onclick="saveProfile()" id="saveBtn">
+            <i class="fas fa-save"></i> Save Changes
+          </button>
+          <button class="btn btn-danger" onclick="resetForm()">
+            <i class="fas fa-undo"></i> Reset
+          </button>
+          <button class="btn btn-ghost" onclick="goBack()">
+            <i class="fas fa-times"></i> Cancel
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Bio character counter
+    const bioInput = document.getElementById('bio');
+    if (bioInput) {
+      bioInput.addEventListener('input', () => {
+        const count = bioInput.value.length;
+        const helpText = bioInput.parentElement.querySelector('.help-text');
+        if (helpText) {
+          helpText.textContent = `${count} / 200 characters`;
+          if (count > 200) {
+            helpText.style.color = '#d32f2f';
+          } else {
+            helpText.style.color = '#65676b';
+          }
+        }
+      });
+    }
+
+    // Full name validation
+    const fullNameInput = document.getElementById('fullName');
+    if (fullNameInput) {
+      fullNameInput.addEventListener('blur', () => {
+        if (!fullNameInput.value.trim()) {
+          fullNameInput.classList.add('error');
+        } else {
+          fullNameInput.classList.remove('error');
+        }
+      });
+    }
+  }
+
+  // =============================================
+  // GENDER SELECTION
+  // =============================================
+  function selectGender(gender) {
+    const group = document.getElementById('genderGroup');
+    if (!group) return;
+    
+    const options = group.querySelectorAll('.toggle-option');
+    options.forEach(opt => {
+      const radio = opt.querySelector('input[type="radio"]');
+      if (radio && radio.value === gender) {
+        radio.checked = true;
+        opt.classList.add('active');
+      } else {
+        opt.classList.remove('active');
+      }
+    });
+  }
+
+  // =============================================
+  // AVATAR UPLOAD
+  // =============================================
+  function triggerAvatarUpload() {
+    document.getElementById('avatarInput').click();
+  }
+
+  function handleAvatarSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select an image file', 'warning');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image must be less than 5MB', 'warning');
+      return;
+    }
+
+    avatarFile = file;
+
+    // Preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const preview = document.getElementById('avatarPreview');
+      const placeholder = document.getElementById('avatarPlaceholder');
+      if (preview) {
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+      }
+      if (placeholder) {
+        placeholder.style.display = 'none';
+      }
+    };
+    reader.readAsDataURL(file);
+
+    showToast('Avatar selected. Save to apply changes.', 'info');
+  }
+
+  // =============================================
+  // SAVE PROFILE
+  // =============================================
+  async function saveProfile() {
+    if (isSaving) return;
+    
+    const saveBtn = document.getElementById('saveBtn');
+    const fullName = document.getElementById('fullName').value.trim();
+    const phoneNumber = document.getElementById('phoneNumber').value.trim();
+    const bloodGroup = document.getElementById('bloodGroup').value;
+    const district = document.getElementById('district').value;
+    const bio = document.getElementById('bio').value.trim();
+    
+    // Get gender from radio
+    const genderRadio = document.querySelector('input[name="gender"]:checked');
+    const gender = genderRadio ? genderRadio.value : '';
+    
+    const isDonor = document.getElementById('isDonor').checked;
+
+    // Validation
+    if (!fullName) {
+      showToast('Full name is required', 'warning');
+      document.getElementById('fullName').focus();
+      document.getElementById('fullName').classList.add('error');
+      return;
+    }
+
+    if (bio.length > 200) {
+      showToast('Bio must be under 200 characters', 'warning');
+      return;
+    }
+
+    isSaving = true;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    try {
+      const updateData = {
+        fullName,
+        phoneNumber,
+        bloodGroup,
+        district,
+        gender,
+        bio,
+        isDonor,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      // Upload avatar if changed
+      if (avatarFile) {
+        showToast('Uploading avatar...', 'info');
+        const avatarUrl = await uploadImage(avatarFile);
+        updateData.profilePic = avatarUrl;
+      }
+
+      await db.collection('users').doc(currentUser.uid).update(updateData);
+      
+      // Update local profile
+      userProfile = { ...userProfile, ...updateData };
+      if (updateData.profilePic) {
+        userProfile.profilePic = updateData.profilePic;
+      }
+
+      showToast('Profile updated successfully! 🎉', 'success');
+      
+      // Reset avatar file
+      avatarFile = null;
+      
+      // Re-render form with updated data
+      renderEditForm();
+      
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      showToast('Failed to save profile: ' + error.message, 'error');
+    } finally {
+      isSaving = false;
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+    }
+  }
+
+  // =============================================
+  // RESET FORM
+  // =============================================
+  function resetForm() {
+    if (!confirm('Reset all changes? Unsaved changes will be lost.')) return;
+    
+    avatarFile = null;
+    document.getElementById('avatarInput').value = '';
+    
+    // Reload profile data from Firestore
+    loadProfile();
+    showToast('Form reset', 'info');
+  }
+
+  // =============================================
+  // INIT
+  // =============================================
+  document.addEventListener('DOMContentLoaded', () => {
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        currentUser = user;
+        loadProfile();
+      } else {
+        const container = document.getElementById('editProfileContainer');
+        container.innerHTML = `
+          <div class="edit-card" style="text-align:center; padding:60px;">
+            <i class="fas fa-user-slash" style="font-size:48px; color:#999;"></i>
+            <h3 style="margin-top:16px; color:#1c1e21;">Please Login</h3>
+            <p style="color:#65676b; margin-bottom:20px;">You need to be logged in to edit your profile.</p>
+            <button onclick="window.location.href='index.html'" class="btn btn-primary" style="padding:12px 32px;">
+              <i class="fas fa-sign-in-alt"></i> Go to Dashboard
+            </button>
+          </div>
+        `;
+      }
+    });
+  });
+
+  // =============================================
+  // EXPOSE FUNCTIONS GLOBALLY
+  // =============================================
+  window.goHome = goHome;
+  window.goBack = goBack;
+  window.logout = logout;
+  window.showToast = showToast;
+  window.saveProfile = saveProfile;
+  window.resetForm = resetForm;
+  window.selectGender = selectGender;
+  window.triggerAvatarUpload = triggerAvatarUpload;
+  window.handleAvatarSelect = handleAvatarSelect;
+</script>
+</body>
+</html>
