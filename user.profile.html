@@ -376,8 +376,8 @@
     .post-comment-input button { background:#b71c1c; color:white; border:none; padding:8px 18px; border-radius:40px; font-weight:600; cursor:pointer; transition:0.2s; font-size:13px; }
     .post-comment-input button:hover { background:#8b0000; }
 
-    /* Modal */
-    .post-modal {
+    /* Modals */
+    .modal-overlay {
       position:fixed;
       top:0; left:0; right:0; bottom:0;
       background:rgba(0,0,0,0.6);
@@ -388,8 +388,8 @@
       padding:20px;
       backdrop-filter:blur(4px);
     }
-    .post-modal.active { display:flex; }
-    .post-modal-content {
+    .modal-overlay.active { display:flex; }
+    .modal-content {
       background:white;
       border-radius:20px;
       max-width:560px;
@@ -400,17 +400,17 @@
       animation:scaleIn 0.25s ease;
     }
     @keyframes scaleIn { from { transform:scale(0.92); opacity:0; } to { transform:scale(1); opacity:1; } }
-    .post-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-    .post-modal-header h3 { font-size:20px; font-weight:700; }
-    .post-modal-close { background:#f0f2f5; border:none; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-    .post-modal-close:hover { background:#e4e6eb; }
-    .post-modal textarea { width:100%; min-height:120px; border:none; resize:vertical; font-size:16px; font-family:inherit; padding:8px 0; outline:none; }
-    .post-modal textarea::placeholder { color:#999; }
-    .post-image-preview { margin:12px 0; border-radius:12px; overflow:hidden; position:relative; display:none; background:#f0f2f5; max-height:400px; }
-    .post-image-preview img { width:100%; height:auto; max-height:400px; object-fit:contain; }
-    .post-image-preview .remove-image { position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.7); color:white; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; }
-    .post-modal-footer { display:flex; justify-content:space-between; align-items:center; padding-top:16px; border-top:1px solid #e4e6eb; flex-wrap:wrap; gap:10px; }
-    .post-modal-footer .btn { padding:8px 24px; border-radius:40px; font-weight:600; border:none; cursor:pointer; }
+    .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    .modal-header h3 { font-size:20px; font-weight:700; }
+    .modal-close { background:#f0f2f5; border:none; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .modal-close:hover { background:#e4e6eb; }
+    .modal-body textarea { width:100%; min-height:120px; border:none; resize:vertical; font-size:16px; font-family:inherit; padding:8px 0; outline:none; }
+    .modal-body textarea::placeholder { color:#999; }
+    .image-preview { margin:12px 0; border-radius:12px; overflow:hidden; position:relative; display:none; background:#f0f2f5; max-height:400px; }
+    .image-preview img { width:100%; height:auto; max-height:400px; object-fit:contain; }
+    .image-preview .remove-image { position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.7); color:white; border:none; width:32px; height:32px; border-radius:50%; cursor:pointer; }
+    .modal-footer { display:flex; justify-content:space-between; align-items:center; padding-top:16px; border-top:1px solid #e4e6eb; flex-wrap:wrap; gap:10px; }
+    .modal-footer .btn { padding:8px 24px; border-radius:40px; font-weight:600; border:none; cursor:pointer; }
     .btn-post { background:#b71c1c; color:white; }
     .btn-post:hover { background:#8b0000; }
     .poll-option-input { display:flex; gap:10px; align-items:center; margin-bottom:8px; }
@@ -419,6 +419,7 @@
     .remove-option { background:none; border:none; color:#d32f2f; cursor:pointer; font-size:18px; padding:4px; }
     .add-poll-option { background:none; border:none; color:#b71c1c; font-weight:600; cursor:pointer; padding:8px 0; font-size:14px; }
     .add-poll-option:hover { text-decoration:underline; }
+    .post-actions-admin { display:flex; gap:8px; margin-left:auto; }
 
     .empty-state { text-align:center; padding:60px 20px; color:#65676b; }
     .empty-state i { font-size:48px; opacity:0.3; margin-bottom:16px; }
@@ -441,7 +442,7 @@
       .profile-actions .btn { padding:6px 16px; font-size:13px; }
       .stats-bar { gap:16px; }
       .stats-bar .stat-number { font-size:16px; }
-      .post-modal-content { padding:16px; margin:0 8px; }
+      .modal-content { padding:16px; margin:0 8px; }
       .cover-upload-btn { padding:6px 14px; font-size:12px; }
       .cover-upload-btn span { display:none; }
       .composer-tools button span { display:none; }
@@ -470,12 +471,12 @@
 <!-- PROFILE CONTAINER -->
 <div class="profile-container" id="profileContainer"></div>
 
-<!-- POST MODAL -->
-<div class="post-modal" id="postModal">
-  <div class="post-modal-content">
-    <div class="post-modal-header">
+<!-- POST MODAL (Create/Edit) -->
+<div class="modal-overlay" id="postModal">
+  <div class="modal-content">
+    <div class="modal-header">
       <h3 id="postModalTitle">Create Post</h3>
-      <button class="post-modal-close" onclick="closePostModal()"><i class="fas fa-times"></i></button>
+      <button class="modal-close" onclick="closePostModal()"><i class="fas fa-times"></i></button>
     </div>
     <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
       <img id="modalUserAvatar" src="" alt="Avatar" style="width:36px; height:36px; border-radius:50%; object-fit:cover;">
@@ -490,39 +491,41 @@
         </div>
       </div>
     </div>
-    <textarea id="postTextInput" placeholder="What's on your mind?"></textarea>
-    <div class="post-image-preview" id="postImagePreview">
-      <img id="postPreviewImg" src="" alt="Preview">
-      <button class="remove-image" onclick="removePostImage()"><i class="fas fa-times"></i></button>
-    </div>
-    <div id="pollOptionsContainer" style="display:none; margin:12px 0; padding:12px; background:#f0f2f5; border-radius:12px;">
-      <div style="font-weight:600; margin-bottom:8px;">Poll Options</div>
-      <div id="pollOptionList">
-        <div class="poll-option-input">
-          <input type="text" placeholder="Option 1" class="poll-option" data-index="0">
-          <button class="remove-option" onclick="removePollOption(this)" style="display:none;"><i class="fas fa-times"></i></button>
+    <div class="modal-body">
+      <textarea id="postTextInput" placeholder="What's on your mind?"></textarea>
+      <div class="image-preview" id="postImagePreview">
+        <img id="postPreviewImg" src="" alt="Preview">
+        <button class="remove-image" onclick="removePostImage()"><i class="fas fa-times"></i></button>
+      </div>
+      <div id="pollOptionsContainer" style="display:none; margin:12px 0; padding:12px; background:#f0f2f5; border-radius:12px;">
+        <div style="font-weight:600; margin-bottom:8px;">Poll Options</div>
+        <div id="pollOptionList">
+          <div class="poll-option-input">
+            <input type="text" placeholder="Option 1" class="poll-option" data-index="0">
+            <button class="remove-option" onclick="removePollOption(this)" style="display:none;"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="poll-option-input">
+            <input type="text" placeholder="Option 2" class="poll-option" data-index="1">
+            <button class="remove-option" onclick="removePollOption(this)" style="display:none;"><i class="fas fa-times"></i></button>
+          </div>
         </div>
-        <div class="poll-option-input">
-          <input type="text" placeholder="Option 2" class="poll-option" data-index="1">
-          <button class="remove-option" onclick="removePollOption(this)" style="display:none;"><i class="fas fa-times"></i></button>
+        <button class="add-poll-option" onclick="addPollOption()"><i class="fas fa-plus"></i> Add Option</button>
+        <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:12px;">
+          <label style="font-size:13px; color:#65676b; display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" id="pollMultiple"> Multiple choices
+          </label>
+          <label style="font-size:13px; color:#65676b; display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="number" id="pollDuration" value="7" min="1" max="30" style="width:60px; padding:4px 8px; border:1px solid #e4e6eb; border-radius:8px;"> days
+          </label>
         </div>
       </div>
-      <button class="add-poll-option" onclick="addPollOption()"><i class="fas fa-plus"></i> Add Option</button>
-      <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:12px;">
-        <label style="font-size:13px; color:#65676b; display:flex; align-items:center; gap:8px; cursor:pointer;">
-          <input type="checkbox" id="pollMultiple"> Multiple choices
-        </label>
-        <label style="font-size:13px; color:#65676b; display:flex; align-items:center; gap:8px; cursor:pointer;">
-          <input type="number" id="pollDuration" value="7" min="1" max="30" style="width:60px; padding:4px 8px; border:1px solid #e4e6eb; border-radius:8px;"> days
-        </label>
+      <div style="display:flex; gap:8px; padding:8px 0; border-top:1px solid #e4e6eb; margin-top:8px; flex-wrap:wrap;">
+        <button onclick="triggerImageUpload()" style="background:none; border:none; cursor:pointer; padding:6px 12px; border-radius:8px; display:flex; align-items:center; gap:6px; color:#45bd62; font-weight:600;"><i class="fas fa-image"></i> Photo</button>
+        <button onclick="togglePollMode()" style="background:none; border:none; cursor:pointer; padding:6px 12px; border-radius:8px; display:flex; align-items:center; gap:6px; color:#f7b928; font-weight:600;"><i class="fas fa-poll"></i> Poll</button>
+        <input type="file" id="postImageInput" accept="image/*" style="display:none;" onchange="handlePostImageSelect(event)">
       </div>
     </div>
-    <div style="display:flex; gap:8px; padding:8px 0; border-top:1px solid #e4e6eb; margin-top:8px; flex-wrap:wrap;">
-      <button onclick="triggerImageUpload()" style="background:none; border:none; cursor:pointer; padding:6px 12px; border-radius:8px; display:flex; align-items:center; gap:6px; color:#45bd62; font-weight:600;"><i class="fas fa-image"></i> Photo</button>
-      <button onclick="togglePollMode()" style="background:none; border:none; cursor:pointer; padding:6px 12px; border-radius:8px; display:flex; align-items:center; gap:6px; color:#f7b928; font-weight:600;"><i class="fas fa-poll"></i> Poll</button>
-      <input type="file" id="postImageInput" accept="image/*" style="display:none;" onchange="handlePostImageSelect(event)">
-    </div>
-    <div class="post-modal-footer">
+    <div class="modal-footer">
       <span id="postCharCount">0 characters</span>
       <button class="btn btn-post" id="postSubmitBtn" onclick="submitPost()"><i class="fas fa-paper-plane"></i> Post</button>
     </div>
@@ -551,6 +554,7 @@
   // ===== STATE =====
   let currentUser = null, userProfile = null, viewedUserId = null, viewedUserProfile = null, isOwnProfile = false;
   let posts = [], selectedImageFile = null, isPollMode = false, isFollowing = false, userCache = {};
+  let editingPostId = null; // Track if we're editing a post
 
   // ===== TOAST =====
   function showToast(msg, type='info') {
@@ -600,6 +604,13 @@
     if(!currentUser) return showToast('Please login to send message','warning');
     if(userId===currentUser.uid) return showToast('You cannot message yourself','warning');
     window.location.href = `dm.donor.html?userId=${userId}`;
+  }
+
+  // ===== CHECK IF USER IS ADMIN =====
+  function isAdmin(user) {
+    if (!user) return false;
+    const role = user.role || userProfile?.role || '';
+    return role === 'main_admin' || role === 'admin';
   }
 
   // ===== LOAD PROFILE =====
@@ -658,7 +669,7 @@
     const enriched=[];
     for(const p of posts) {
       const u = await getUserData(p.userId);
-      enriched.push({ ...p, userProfilePic: u?.profilePic || p.userAvatar || null, userGender: u?.gender || p.gender || 'male', userFullName: u?.fullName || p.userName || 'Unknown', userPhone: u?.phoneNumber || p.phoneNumber || null, userBloodGroup: u?.bloodGroup || p.bloodGroup || null, userDistrict: u?.district || p.district || null, isDonor: u?.isDonor || p.isDonor || false });
+      enriched.push({ ...p, userProfilePic: u?.profilePic || p.userAvatar || null, userGender: u?.gender || p.gender || 'male', userFullName: u?.fullName || p.userName || 'Unknown', userPhone: u?.phoneNumber || p.phoneNumber || null, userBloodGroup: u?.bloodGroup || p.bloodGroup || null, userDistrict: u?.district || p.district || null, isDonor: u?.isDonor || p.isDonor || false, userRole: u?.role || p.role || '' });
     }
     posts = enriched;
   }
@@ -738,6 +749,8 @@
     const phone = p.userPhone||p.phoneNumber||null;
     const bloodGroup = p.userBloodGroup||p.bloodGroup||null;
     const district = p.userDistrict||p.district||null;
+    // Check if user can edit/delete this post
+    const canEditDelete = isOwnProfile || isAdmin(userProfile);
     let pollHTML = '';
     if(p.poll) pollHTML = renderPoll(p);
     let imageHTML = p.imageUrl ? `<img src="${p.imageUrl}" alt="Post image" class="post-image" loading="lazy" onclick="openImageModal('${p.imageUrl}')">` : '';
@@ -749,7 +762,12 @@
             <div class="post-author-name">${authorName} ${isDonor?`<span class="badge-donor">🩸 Donor</span>`:''} ${phone?`<button class="contact-donor-btn" onclick="event.stopPropagation(); contactDonor('${p.userId}','${phone}','${authorName}')"><i class="fab fa-whatsapp"></i> Contact</button>`:''}</div>
             <div class="post-time"><span>${timeAgo}</span> <span>·</span> <span>${p.visibility==='private'?'🔒 Only me':p.visibility==='friends'?'👥 Friends':'🌍 Public'}</span> ${district?`<span class="post-location"><i class="fas fa-map-marker-alt"></i> ${district}</span>`:''} ${bloodGroup?`<span class="post-blood">🩸 ${bloodGroup}</span>`:''}</div>
           </div>
-          ${isOwnProfile?`<button onclick="deletePost('${p.id}')" style="background:none;border:none;color:#999;cursor:pointer;padding:4px 8px;border-radius:8px;" onmouseenter="this.style.color='#d32f2f';this.style.background='#ffebee';" onmouseleave="this.style.color='#999';this.style.background='transparent';"><i class="fas fa-trash"></i></button>`:''}
+          ${canEditDelete ? `
+            <div class="post-actions-admin">
+              <button onclick="event.stopPropagation(); openEditPostModal('${p.id}')" style="background:none;border:none;color:#999;cursor:pointer;padding:4px 8px;border-radius:8px;" onmouseenter="this.style.color='#1976d2';this.style.background='#e3f2fd';" onmouseleave="this.style.color='#999';this.style.background='transparent';"><i class="fas fa-edit"></i></button>
+              <button onclick="event.stopPropagation(); deletePost('${p.id}')" style="background:none;border:none;color:#999;cursor:pointer;padding:4px 8px;border-radius:8px;" onmouseenter="this.style.color='#d32f2f';this.style.background='#ffebee';" onmouseleave="this.style.color='#999';this.style.background='transparent';"><i class="fas fa-trash"></i></button>
+            </div>
+          ` : ''}
         </div>
         ${p.text?`<div class="post-text">${p.text}</div>`:''}
         ${imageHTML}
@@ -790,27 +808,50 @@
   // ===== POST CRUD =====
   async function submitPost() {
     const text=document.getElementById('postTextInput').value.trim(), visibility=document.getElementById('postVisibility').value;
-    const btn=document.getElementById('postSubmitBtn'); btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Posting...';
+    const btn=document.getElementById('postSubmitBtn'); btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> ' + (editingPostId ? 'Updating...' : 'Posting...');
     try {
       let pollData=null;
       if(isPollMode) {
         const opts=document.querySelectorAll('.poll-option');
         const optionTexts=[]; opts.forEach(inp=>{ if(inp.value.trim()) optionTexts.push(inp.value.trim()); });
-        if(optionTexts.length<2) { showToast('Add at least 2 poll options','warning'); btn.disabled=false; btn.innerHTML='<i class="fas fa-paper-plane"></i> Post'; return; }
+        if(optionTexts.length<2) { showToast('Add at least 2 poll options','warning'); btn.disabled=false; btn.innerHTML='<i class="fas fa-paper-plane"></i> ' + (editingPostId ? 'Update' : 'Post'); return; }
         const multiple=document.getElementById('pollMultiple').checked, duration=parseInt(document.getElementById('pollDuration').value)||7;
         pollData={ question:text||'What do you think?', options:optionTexts.map(t=>({text:t,votes:0,voters:[]})), multiple, duration, voters:[] };
       }
       let imageUrl=null;
       if(selectedImageFile) imageUrl=await uploadImage(selectedImageFile);
-      const postData={ userId:currentUser.uid, userName:userProfile?.fullName||'Anonymous', userAvatar:userProfile?.profilePic||null, gender:userProfile?.gender||'male', isDonor:userProfile?.isDonor||false, phoneNumber:userProfile?.phoneNumber||null, bloodGroup:userProfile?.bloodGroup||null, district:userProfile?.district||null, text:text||(pollData?'':''), imageUrl, poll:pollData, visibility:visibility||'public', likes:0, likedBy:[], comments:[], createdAt:firebase.firestore.FieldValue.serverTimestamp() };
-      const ref=await db.collection('userPosts').add(postData);
-      const newPost={id:ref.id,...postData};
-      posts.unshift(newPost);
+
+      if (editingPostId) {
+        // Update existing post
+        const updateData = { text: text || '', visibility };
+        if (imageUrl) updateData.imageUrl = imageUrl;
+        if (pollData) updateData.poll = pollData;
+        else if (document.getElementById('pollOptionsContainer').style.display === 'none') {
+          // If poll was removed during edit
+          updateData.poll = null;
+        }
+        await db.collection('userPosts').doc(editingPostId).update(updateData);
+        showToast('Post updated! ✅','success');
+        editingPostId = null;
+      } else {
+        // Create new post
+        const postData={ userId:currentUser.uid, userName:userProfile?.fullName||'Anonymous', userAvatar:userProfile?.profilePic||null, gender:userProfile?.gender||'male', isDonor:userProfile?.isDonor||false, phoneNumber:userProfile?.phoneNumber||null, bloodGroup:userProfile?.bloodGroup||null, district:userProfile?.district||null, text:text||(pollData?'':''), imageUrl, poll:pollData, visibility:visibility||'public', likes:0, likedBy:[], comments:[], createdAt:firebase.firestore.FieldValue.serverTimestamp() };
+        const ref=await db.collection('userPosts').add(postData);
+        const newPost={id:ref.id,...postData};
+        posts.unshift(newPost);
+        showToast('Post created! 🎉','success');
+      }
       closePostModal();
-      showToast('Post created! 🎉','success');
+      await loadPosts();
       document.getElementById('feedContainer').innerHTML=renderPosts();
       updateStats();
-    } catch(e) { showToast('Failed: '+e.message,'error'); } finally { btn.disabled=false; btn.innerHTML='<i class="fas fa-paper-plane"></i> Post'; }
+    } catch(e) { 
+      showToast('Failed: '+e.message,'error'); 
+      console.error(e);
+    } finally { 
+      btn.disabled=false; 
+      btn.innerHTML='<i class="fas fa-paper-plane"></i> ' + (editingPostId ? 'Update' : 'Post');
+    }
   }
 
   async function uploadImage(file) {
@@ -854,9 +895,68 @@
 
   async function deletePost(id) {
     if(!confirm('Delete this post?')) return;
-    try { await db.collection('userPosts').doc(id).delete(); posts=posts.filter(p=>p.id!==id); document.getElementById('feedContainer').innerHTML=renderPosts(); updateStats(); showToast('Post deleted','success'); } catch(e) { showToast('Error deleting','error'); }
+    try { 
+      await db.collection('userPosts').doc(id).delete(); 
+      posts=posts.filter(p=>p.id!==id); 
+      document.getElementById('feedContainer').innerHTML=renderPosts(); 
+      updateStats(); 
+      showToast('Post deleted','success'); 
+    } catch(e) { showToast('Error deleting','error'); }
   }
 
+  // ===== EDIT POST FUNCTIONALITY =====
+  function openEditPostModal(postId) {
+    const post = posts.find(p => p.id === postId);
+    if (!post) return showToast('Post not found','error');
+    
+    editingPostId = postId;
+    document.getElementById('postModalTitle').textContent = 'Edit Post';
+    document.getElementById('postTextInput').value = post.text || '';
+    document.getElementById('postVisibility').value = post.visibility || 'public';
+    document.getElementById('postCharCount').textContent = (post.text || '').length + ' characters';
+    
+    // Handle image
+    if (post.imageUrl) {
+      document.getElementById('postPreviewImg').src = post.imageUrl;
+      document.getElementById('postImagePreview').style.display = 'block';
+      // We need to keep the existing image if user doesn't change it
+      // selectedImageFile remains null unless they upload a new one
+    } else {
+      document.getElementById('postImagePreview').style.display = 'none';
+      selectedImageFile = null;
+    }
+    
+    // Handle poll
+    if (post.poll && post.poll.options && post.poll.options.length >= 2) {
+      isPollMode = true;
+      document.getElementById('pollOptionsContainer').style.display = 'block';
+      const list = document.getElementById('pollOptionList');
+      list.innerHTML = '';
+      post.poll.options.forEach((opt, idx) => {
+        const div = document.createElement('div');
+        div.className = 'poll-option-input';
+        div.innerHTML = `
+          <input type="text" placeholder="Option ${idx+1}" class="poll-option" data-index="${idx}" value="${opt.text}">
+          <button class="remove-option" onclick="removePollOption(this)" ${idx < 2 ? 'style="display:none;"' : ''}><i class="fas fa-times"></i></button>
+        `;
+        list.appendChild(div);
+      });
+      document.getElementById('pollMultiple').checked = post.poll.multiple || false;
+      document.getElementById('pollDuration').value = post.poll.duration || 7;
+    } else {
+      isPollMode = false;
+      document.getElementById('pollOptionsContainer').style.display = 'none';
+    }
+    
+    // Change submit button text
+    document.getElementById('postSubmitBtn').innerHTML = '<i class="fas fa-paper-plane"></i> Update';
+    
+    // Show modal
+    document.getElementById('postModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  // ===== POLL VOTING =====
   async function votePoll(postId, idx) {
     if(!currentUser) return showToast('Login to vote','warning');
     try {
@@ -904,9 +1004,21 @@
   }
 
   // ===== UI HELPERS =====
-  function openPostModal() { document.getElementById('postModal').classList.add('active'); document.body.style.overflow='hidden'; document.getElementById('postModalTitle').textContent='Create Post'; document.getElementById('postTextInput').value=''; document.getElementById('postCharCount').textContent='0 characters'; document.getElementById('postImagePreview').style.display='none'; document.getElementById('pollOptionsContainer').style.display='none'; isPollMode=false; selectedImageFile=null; }
-  function openPollModal() { openPostModal(); document.getElementById('postModalTitle').textContent='Create Poll'; document.getElementById('pollOptionsContainer').style.display='block'; isPollMode=true; }
-  function closePostModal() { document.getElementById('postModal').classList.remove('active'); document.body.style.overflow=''; }
+  function openPostModal() { 
+    editingPostId = null;
+    document.getElementById('postModalTitle').textContent = 'Create Post';
+    document.getElementById('postTextInput').value = '';
+    document.getElementById('postCharCount').textContent = '0 characters';
+    document.getElementById('postImagePreview').style.display = 'none';
+    document.getElementById('pollOptionsContainer').style.display = 'none';
+    isPollMode = false;
+    selectedImageFile = null;
+    document.getElementById('postSubmitBtn').innerHTML = '<i class="fas fa-paper-plane"></i> Post';
+    document.getElementById('postModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function openPollModal() { openPostModal(); document.getElementById('postModalTitle').textContent = 'Create Poll'; document.getElementById('pollOptionsContainer').style.display = 'block'; isPollMode=true; }
+  function closePostModal() { document.getElementById('postModal').classList.remove('active'); document.body.style.overflow = ''; editingPostId = null; }
   function togglePollMode() { const c=document.getElementById('pollOptionsContainer'); if(c.style.display==='block'){c.style.display='none';isPollMode=false;}else{c.style.display='block';isPollMode=true;} }
   function triggerImageUpload() { document.getElementById('postImageInput').click(); }
   function handlePostImageSelect(e) {
@@ -975,6 +1087,7 @@
   window.deletePost=deletePost; window.votePoll=votePoll; window.toggleFollow=toggleFollow; window.toggleComments=toggleComments; window.loadAllComments=loadAllComments;
   window.sharePost=sharePost; window.goToUserProfile=goToUserProfile; window.openImageModal=openImageModal; window.contactDonor=contactDonor; window.uploadAvatar=uploadAvatar;
   window.uploadCoverPhoto=uploadCoverPhoto; window.goToPrivateDM=goToPrivateDM; window.goToEditProfile=goToEditProfile; window.showToast=showToast;
+  window.openEditPostModal=openEditPostModal;
 </script>
 </body>
 </html>
