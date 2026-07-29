@@ -1855,16 +1855,17 @@ function findNearbyHospitals() {
           </div>
         </div>
         <div class="footer-section">
-          <h4>Quick Links</h4>
-          <ul>
-            <li><a href="#" data-page="home" onclick="router.navigate('home'); return false;">Home</a></li>
-            <li><a href="#" data-page="about" onclick="router.navigate('about'); return false;">About Us</a></li>
-            <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors'); return false;">Find Donors</a></li>
-            <li><a href="#" data-page="contact" onclick="router.navigate('contact'); return false;">Contact</a></li>
-            <li><a href="terms.conditions.html">Terms & conditions</a></li>
-            <li><a href="privacy.policy.html">Privacy Policy</a></li>
-          </ul>
-        </div>
+  <h4>Quick Links</h4>
+  <ul>
+    <li><a href="#" data-page="home" onclick="router.navigate('home'); return false;">Home</a></li>
+    <li><a href="#" data-page="about" onclick="router.navigate('about'); return false;">About Us</a></li>
+    <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors'); return false;">Find Donors</a></li>
+    <li><a href="#" data-page="contact" onclick="router.navigate('contact'); return false;">Contact</a></li>
+    <li><a href="verifydonorid.input.html">Verify Donor ID</a></li>
+    <li><a href="terms.conditions.html">Terms & conditions</a></li>
+    <li><a href="privacy.policy.html">Privacy Policy</a></li>
+  </ul>
+</div>
         <div class="footer-section">
           <h4>Emergency</h4>
           <p><i class="fas fa-phone"></i> +8801612018221 (Blood Bank)</p>
@@ -2422,52 +2423,58 @@ window.initNotices = initNotices;
     const result = await auth.createUserWithEmailAndPassword(userData.email, userData.password);
     const isDonorType = userData.userType === 'donor';
     
+    // ✅ এখানে ডোনার আইডি তৈরি করুন
+    if (isDonorType) {
+      userData.donorId = generateDonorId();
+    }
+    
     const profile = {
-  uid: result.user.uid,
-  email: userData.email,
-  fullName: userData.fullName,
-  phoneNumber: userData.phoneNumber,
-  bloodGroup: userData.bloodGroup || null,
-  nidNumber: userData.nidNumber || '',
-  birthday: userData.birthday || '',
-  weight: userData.weight || null,
-  userType: userData.userType,
-  isDonor: isDonorType,
-  isSeeker: !isDonorType,
-  district: userData.district || '',
-  upazila: userData.upazila || '',
-  address: userData.address || '',
-  profilePic: userData.profilePic || null,
-  gender: userData.gender || 'male',  // ✅ ADD THIS LINE
-  createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-  isVerified: false,
-  approvalStatus: isDonorType ? 'pending' : 'approved',
-  role: 'user',
-  certificates: []
-};
+      uid: result.user.uid,
+      email: userData.email,
+      fullName: userData.fullName,
+      phoneNumber: userData.phoneNumber,
+      bloodGroup: userData.bloodGroup || null,
+      nidNumber: userData.nidNumber || '',
+      birthday: userData.birthday || '',
+      weight: userData.weight || null,
+      userType: userData.userType,
+      isDonor: isDonorType,
+      isSeeker: !isDonorType,
+      district: userData.district || '',
+      upazila: userData.upazila || '',
+      address: userData.address || '',
+      profilePic: userData.profilePic || null,
+      gender: userData.gender || 'male',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      isVerified: false,
+      approvalStatus: isDonorType ? 'pending' : 'approved',
+      role: 'user',
+      certificates: [],
+      donorId: userData.donorId || null
+    };
     
     await db.collection('users').doc(result.user.uid).set(profile);
-          userProfile = profile;
-          currentUser = result.user;
-          
-          if (isDonorType) {
-            Toast.show('Registration submitted! Your application is pending admin approval.', 'success');
-          } else {
-            Toast.show('Registration successful! Welcome to Blood Donor BD.', 'success');
-          }
-          
-          router.navigate('dashboard');
-          return true;
-        } catch (error) {
-          console.error('Registration error:', error);
-          let message = 'Registration failed';
-          if (error.code === 'auth/email-already-in-use') message = 'Email already registered';
-          else if (error.code === 'auth/weak-password') message = 'Password should be at least 6 characters';
-          else message = error.message;
-          Toast.show(message, 'error');
-          return false;
-        }
-      },
+    userProfile = profile;
+    currentUser = result.user;
+    
+    if (isDonorType) {
+      Toast.show(`Registration submitted! Your Donor ID: ${userData.donorId || 'N/A'}`, 'success');
+    } else {
+      Toast.show('Registration successful! Welcome to Blood Donor BD.', 'success');
+    }
+    
+    router.navigate('dashboard');
+    return true;
+  } catch (error) {
+    console.error('Registration error:', error);
+    let message = 'Registration failed';
+    if (error.code === 'auth/email-already-in-use') message = 'Email already registered';
+    else if (error.code === 'auth/weak-password') message = 'Password should be at least 6 characters';
+    else message = error.message;
+    Toast.show(message, 'error');
+    return false;
+  }
+},
       
       async logout() {
         try {
@@ -6333,24 +6340,24 @@ function updateNavigation() {
   if (currentUser) {
     // When user is logged in - Show all menu items including Logout
     navMenu.innerHTML = `
-      <li><a href="#" data-page="home" onclick="router.navigate('home');return false;"><i class="fas fa-home"></i> Home</a></li>
-      <li><a href="#" data-page="dashboard" onclick="router.navigate('dashboard');return false;"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
-      <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors');return false;"><i class="fas fa-search"></i> Find</a></li>
-      <li><a href="#" data-page="request-blood" onclick="router.navigate('request-blood');return false;"><i class="fas fa-tint"></i> Request</a></li>
-      <li><a href="#" data-page="success-stories" onclick="router.navigate('success-stories');return false;"><i class="fas fa-heart"></i> Stories</a></li>
-      <li><a href="#" data-page="dm-donor" onclick="router.navigate('dm-donor');return false;"><i class="fas fa-comments"></i> DM</a></li>
-      <li><a href="#" data-page="profile" onclick="router.navigate('profile');return false;"><i class="fas fa-user"></i> Profile</a></li>
-     <li><a href="user.profile.html" style="display: block; width: 100%; padding: 12px 16px; text-decoration: none; color: var(--dark); font-weight: 500; border-radius: var(--radius); transition: var(--transition); cursor: pointer; font-size: 15px;">
+  <li><a href="#" data-page="home" onclick="router.navigate('home');return false;"><i class="fas fa-home"></i> Home</a></li>
+  <li><a href="#" data-page="dashboard" onclick="router.navigate('dashboard');return false;"><i class="fas fa-chart-pie"></i> Dashboard</a></li>
+  <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors');return false;"><i class="fas fa-search"></i> Find</a></li>
+  <li><a href="#" data-page="request-blood" onclick="router.navigate('request-blood');return false;"><i class="fas fa-tint"></i> Request</a></li>
+  <li><a href="#" data-page="success-stories" onclick="router.navigate('success-stories');return false;"><i class="fas fa-heart"></i> Stories</a></li>
+  <li><a href="#" data-page="dm-donor" onclick="router.navigate('dm-donor');return false;"><i class="fas fa-comments"></i> DM</a></li>
+  <li><a href="#" data-page="profile" onclick="router.navigate('profile');return false;"><i class="fas fa-user"></i> Profile</a></li>
+  <li><a href="user.profile.html" style="display: block; width: 100%; padding: 12px 16px; text-decoration: none; color: var(--dark); font-weight: 500; border-radius: var(--radius); transition: var(--transition); cursor: pointer; font-size: 15px;">
     <i class="fas fa-user-circle" style="width: 20px; margin-right: 10px; text-align: center;"></i> My Profile
-</a></li>
-
-<li><a href="public.feed.html" style="display: block; width: 100%; padding: 12px 16px; text-decoration: none; color: var(--dark); font-weight: 500; border-radius: var(--radius); transition: var(--transition); cursor: pointer; font-size: 15px;">
+  </a></li>
+  <li><a href="public.feed.html" style="display: block; width: 100%; padding: 12px 16px; text-decoration: none; color: var(--dark); font-weight: 500; border-radius: var(--radius); transition: var(--transition); cursor: pointer; font-size: 15px;">
     <i class="fas fa-rss" style="width: 20px; margin-right: 10px; text-align: center;"></i> Public Feed
-</a></li>
-      <li><a href="#" onclick="authSystem.logout();return false;" style="color: #d32f2f; border-top: 1px solid #eee; margin-top: 4px; padding-top: 12px;">
-        <i class="fas fa-sign-out-alt" style="color: #d32f2f;"></i> Logout
-      </a></li>
-    `;
+  </a></li>
+  <li><a href="verifydonorid.input.html"><i class="fas fa-id-card"></i> Verify Donor ID</a></li>
+  <li><a href="#" onclick="authSystem.logout();return false;" style="color: #d32f2f; border-top: 1px solid #eee; margin-top: 4px; padding-top: 12px;">
+    <i class="fas fa-sign-out-alt" style="color: #d32f2f;"></i> Logout
+  </a></li>
+`;
     
     // Profile avatar
     const profilePicUrl = userProfile?.profilePic || null;
@@ -6376,17 +6383,14 @@ function updateNavigation() {
     
   } else {
     // When user is NOT logged in
-    navMenu.innerHTML = `
-      <li><a href="#" data-page="home" onclick="router.navigate('home');return false;">Home</a></li>
-      <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors');return false;">Find Donors</a></li>
-      <li><a href="#" data-page="about" onclick="router.navigate('about');return false;">About</a></li>
-      <li><a href="#" data-page="contact" onclick="router.navigate('contact');return false;">Contact</a></li>
-    `;
-    
-    userInfo.innerHTML = `
-      <button onclick="router.navigate('login')" class="btn btn-outline" style="font-size: 0.65rem;">Login</button>
-      <button onclick="router.navigate('register')" class="btn btn-primary" style="font-size: 0.65rem;">Register</button>
-    `;
+    // Inside the non-logged-in menu block
+navMenu.innerHTML = `
+  <li><a href="#" data-page="home" onclick="router.navigate('home');return false;">Home</a></li>
+  <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors');return false;">Find Donors</a></li>
+  <li><a href="verifydonorid.input.html"><i class="fas fa-id-card"></i> Verify Donor ID</a></li>
+  <li><a href="#" data-page="about" onclick="router.navigate('about');return false;">About</a></li>
+  <li><a href="#" data-page="contact" onclick="router.navigate('contact');return false;">Contact</a></li>
+`;
   }
 }
 
