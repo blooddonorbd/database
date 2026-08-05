@@ -133,6 +133,420 @@ img[src*="imgbb"],
     -webkit-user-select: none;
     user-select: none;
 }
+
+/* ============================================
+   BIOMETRIC LOCK SYSTEM - COMPLETE STYLES
+   ============================================ */
+
+/* ----- Toggle Switch ----- */
+.biometric-toggle {
+    position: relative;
+    width: 50px;
+    height: 26px;
+    appearance: none;
+    background: #ccc;
+    border-radius: 13px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    outline: none;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.biometric-toggle:checked {
+    background: #b71c1c !important;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.biometric-toggle::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    top: 3px;
+    left: 3px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.biometric-toggle:checked::before {
+    left: 27px;
+}
+
+/* ----- Biometric Section ----- */
+.biometric-section {
+    background: white;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-top: 20px;
+    margin-bottom: 20px;
+    border-top: 4px solid #1565c0;
+    border-left: 4px solid #1565c0;
+    transition: all 0.3s ease;
+}
+
+.biometric-section .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.biometric-section .header i {
+    font-size: 28px;
+    color: #1565c0;
+}
+
+.biometric-section .header h3 {
+    margin: 0;
+    color: #1565c0;
+    font-size: 20px;
+}
+
+.biometric-section .header .status-badge {
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 14px;
+    border-radius: 20px;
+    background: #f5f5f5;
+    color: #999;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.biometric-section .header .status-badge.active {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.biometric-section .header .status-badge.active i {
+    color: #2e7d32;
+}
+
+.biometric-section .info-text {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 16px;
+    line-height: 1.6;
+}
+
+.biometric-section .actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.biometric-section .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.biometric-section .btn-test {
+    padding: 8px 16px;
+    font-size: 13px;
+    border: 2px solid #b71c1c;
+    background: transparent;
+    color: #b71c1c;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: none;
+    align-items: center;
+    gap: 6px;
+}
+
+.biometric-section .btn-test:hover {
+    background: #b71c1c;
+    color: white;
+}
+
+.biometric-section .btn-remove {
+    padding: 8px 16px;
+    font-size: 13px;
+    border: 2px solid #d32f2f;
+    background: transparent;
+    color: #d32f2f;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: none;
+    align-items: center;
+    gap: 6px;
+}
+
+.biometric-section .btn-remove:hover {
+    background: #d32f2f;
+    color: white;
+}
+
+.biometric-section .status-info {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #666;
+    padding: 10px 14px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+}
+
+.biometric-section .status-info.show {
+    display: flex;
+}
+
+.biometric-section .status-info i {
+    color: #1565c0;
+}
+
+.biometric-section .device-info {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #999;
+    padding: 6px 12px;
+    background: #fafafa;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ----- Mobile Responsive ----- */
+@media (max-width: 480px) {
+    .biometric-section {
+        padding: 16px;
+        border-radius: 12px;
+        margin-top: 12px;
+        border-top: 3px solid #1565c0;
+        border-left: 3px solid #1565c0;
+    }
+
+    .biometric-section .header i {
+        font-size: 22px;
+    }
+
+    .biometric-section .header h3 {
+        font-size: 16px;
+    }
+
+    .biometric-section .header .status-badge {
+        font-size: 11px;
+        padding: 2px 10px;
+    }
+
+    .biometric-section .info-text {
+        font-size: 13px;
+    }
+
+    .biometric-toggle {
+        width: 42px;
+        height: 22px;
+    }
+
+    .biometric-toggle::before {
+        width: 16px;
+        height: 16px;
+        top: 3px;
+        left: 3px;
+    }
+
+    .biometric-toggle:checked::before {
+        left: 23px;
+    }
+
+    .biometric-section .btn-test,
+    .biometric-section .btn-remove {
+        padding: 4px 12px;
+        font-size: 12px;
+    }
+}
+
+/* ----- Lock Screen ----- */
+.biometric-lock-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100000;
+    animation: fadeIn 0.5s ease;
+    padding: 20px;
+}
+
+.biometric-lock-screen .lock-icon {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+    padding: 30px;
+    display: inline-block;
+    margin-bottom: 24px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.biometric-lock-screen .lock-icon i {
+    font-size: 64px;
+    color: #fff;
+    opacity: 0.9;
+}
+
+.biometric-lock-screen h2 {
+    color: #fff;
+    margin-bottom: 8px;
+}
+
+.biometric-lock-screen .sub-text {
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 24px;
+    font-size: 16px;
+    text-align: center;
+}
+
+.biometric-lock-screen .user-info {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+}
+
+.biometric-lock-screen .unlock-btn {
+    width: 100%;
+    max-width: 400px;
+    padding: 16px;
+    background: linear-gradient(135deg, #b71c1c, #d32f2f);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.biometric-lock-screen .unlock-btn:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 30px rgba(183, 28, 28, 0.4);
+}
+
+.biometric-lock-screen .unlock-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.biometric-lock-screen .logout-btn {
+    margin-top: 16px;
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 12px 24px;
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.biometric-lock-screen .logout-btn:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.biometric-lock-screen .unlock-status {
+    margin-top: 16px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+    text-align: center;
+}
+
+.biometric-lock-screen .unlock-status.success {
+    color: #4caf50;
+}
+
+.biometric-lock-screen .unlock-status.error {
+    color: #f44336;
+}
+
+/* ----- Animations ----- */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse-red {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
     
     /* Private DM Styles */
   .dm-container {
@@ -1963,6 +2377,735 @@ const IMGBB_API_KEY = '54ffbc26529e5d05fa5cffad23712429';
     let userProfile = null;
     let currentPage = 'home';
     
+// ============================================
+// 🔐 BIOMETRIC LOCK SYSTEM - COMPLETE
+// ============================================
+
+// ----- STATE -----
+let biometricLockEnabled = false;
+let lastActivityTime = Date.now();
+let lockCheckInterval = null;
+const LOCK_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+
+// ============================================
+// CHECK IF BIOMETRIC IS SUPPORTED
+// ============================================
+
+/**
+ * Check if browser supports WebAuthn (biometric authentication)
+ */
+function isBiometricSupported() {
+    return window.PublicKeyCredential !== undefined;
+}
+
+/**
+ * Check if device has biometric sensor available
+ */
+async function isBiometricAvailable() {
+    if (!isBiometricSupported()) return false;
+    try {
+        return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    } catch (e) {
+        return false;
+    }
+}
+
+// ============================================
+// GET BIOMETRIC DEVICE NAME
+// ============================================
+
+/**
+ * Detect and return the biometric device name
+ */
+async function getBiometricDeviceName() {
+    try {
+        const available = await isBiometricAvailable();
+        if (!available) return '❌ Not Available';
+
+        const ua = navigator.userAgent;
+        if (/android/i.test(ua)) {
+            return '🔒 Android Fingerprint / Face Unlock';
+        } else if (/iPhone|iPad|iPod/i.test(ua)) {
+            return '🔒 Face ID / Touch ID';
+        } else if (/Windows/i.test(ua)) {
+            return '🔒 Windows Hello';
+        } else if (/Mac/i.test(ua)) {
+            return '🔒 Touch ID';
+        }
+        return '🔒 Biometric Available';
+    } catch (e) {
+        return '❌ Not Available';
+    }
+}
+
+// ============================================
+// REGISTER BIOMETRIC
+// ============================================
+
+/**
+ * Register biometric (fingerprint/face) for the current user
+ */
+async function registerBiometric() {
+    if (!currentUser) {
+        Toast.show('Please login first', 'warning');
+        return false;
+    }
+
+    if (!isBiometricSupported()) {
+        Toast.show('This browser does not support biometrics. Please use Chrome on Android.', 'error');
+        return false;
+    }
+
+    const available = await isBiometricAvailable();
+    if (!available) {
+        Toast.show('No biometric sensor found. Set up fingerprint/face unlock in device settings first.', 'warning');
+        return false;
+    }
+
+    try {
+        Toast.show('🔐 Please place your finger or look at your device...', 'info');
+
+        const challenge = new Uint8Array(32);
+        crypto.getRandomValues(challenge);
+
+        const options = {
+            publicKey: {
+                rp: {
+                    id: window.location.hostname,
+                    name: 'Blood Donor BD'
+                },
+                user: {
+                    id: new TextEncoder().encode(currentUser.uid),
+                    name: userProfile.email || currentUser.uid,
+                    displayName: userProfile.fullName || 'Blood Donor'
+                },
+                challenge: challenge,
+                pubKeyCredParams: [
+                    { alg: -7, type: 'public-key' },
+                    { alg: -257, type: 'public-key' }
+                ],
+                authenticatorSelection: {
+                    authenticatorAttachment: 'platform',
+                    residentKey: 'preferred',
+                    userVerification: 'required'
+                },
+                timeout: 60000,
+                attestation: 'none'
+            }
+        };
+
+        const credential = await navigator.credentials.create(options);
+
+        await db.collection('users').doc(currentUser.uid).update({
+            biometricCredentialId: credential.id,
+            biometricRegisteredAt: firebase.firestore.FieldValue.serverTimestamp(),
+            biometricDevice: 'android_biometric'
+        });
+
+        localStorage.setItem('biometricRegistered', 'true');
+        localStorage.setItem('biometricUserId', currentUser.uid);
+
+        Toast.show('✅ Biometric registered successfully!', 'success');
+        updateBiometricLockUI();
+        return true;
+
+    } catch (error) {
+        console.error('Registration error:', error);
+        if (error.name === 'NotAllowedError') {
+            Toast.show('❌ Registration cancelled', 'error');
+        } else if (error.name === 'NotSupportedError') {
+            Toast.show('❌ Biometric not supported on this device', 'error');
+        } else {
+            Toast.show('❌ Registration failed: ' + error.message, 'error');
+        }
+        return false;
+    }
+}
+
+// ============================================
+// VERIFY BIOMETRIC
+// ============================================
+
+/**
+ * Verify biometric (fingerprint/face) for the current user
+ */
+async function verifyBiometric() {
+    if (!currentUser) {
+        Toast.show('Please login first', 'warning');
+        return false;
+    }
+
+    if (!isBiometricSupported()) {
+        Toast.show('Browser does not support biometrics.', 'error');
+        return false;
+    }
+
+    const hasBiometric = localStorage.getItem('biometricRegistered') === 'true' &&
+        localStorage.getItem('biometricUserId') === currentUser.uid;
+
+    if (!hasBiometric) {
+        Toast.show('Please register biometric first', 'warning');
+        return false;
+    }
+
+    try {
+        const userDoc = await db.collection('users').doc(currentUser.uid).get();
+        const userData = userDoc.data();
+
+        if (!userData.biometricCredentialId) {
+            Toast.show('Biometric not found. Please register again.', 'warning');
+            return false;
+        }
+
+        const challenge = new Uint8Array(32);
+        crypto.getRandomValues(challenge);
+
+        const options = {
+            publicKey: {
+                challenge: challenge,
+                allowCredentials: [{
+                    id: Uint8Array.from(atob(userData.biometricCredentialId), c => c.charCodeAt(0)),
+                    type: 'public-key'
+                }],
+                timeout: 60000,
+                userVerification: 'required',
+                rpId: window.location.hostname
+            }
+        };
+
+        await navigator.credentials.get(options);
+
+        Toast.show('✅ Biometric verified!', 'success');
+        sessionStorage.setItem('biometricVerified', 'true');
+        sessionStorage.setItem('biometricVerifiedTime', Date.now().toString());
+        lastActivityTime = Date.now();
+
+        showBiometricSuccess();
+        return true;
+
+    } catch (error) {
+        console.error('Verification error:', error);
+        if (error.name === 'NotAllowedError') {
+            Toast.show('❌ Verification cancelled', 'error');
+        } else {
+            Toast.show('❌ Verification failed', 'error');
+        }
+        return false;
+    }
+}
+
+// ============================================
+// TOGGLE BIOMETRIC LOCK
+// ============================================
+
+/**
+ * Enable or disable biometric lock
+ */
+async function toggleBiometricLock() {
+    const toggle = document.getElementById('biometricLockToggle');
+    const label = document.getElementById('lockToggleLabel');
+    const status = document.getElementById('biometricLockStatus');
+    const info = document.getElementById('biometricLockInfo');
+    const message = document.getElementById('biometricLockMessage');
+    const testBtn = document.getElementById('testBiometricBtn');
+    const removeBtn = document.getElementById('removeBiometricLockBtn');
+
+    if (!currentUser) {
+        Toast.show('Please login first', 'warning');
+        toggle.checked = false;
+        return;
+    }
+
+    const available = await isBiometricAvailable();
+    if (!available) {
+        Toast.show('❌ No biometric sensor found on this device. Please set up fingerprint/face unlock in device settings.', 'error');
+        toggle.checked = false;
+        return;
+    }
+
+    const isEnabling = toggle.checked;
+
+    if (isEnabling) {
+        const hasBiometric = localStorage.getItem('biometricRegistered') === 'true' &&
+            localStorage.getItem('biometricUserId') === currentUser.uid;
+
+        if (!hasBiometric) {
+            Toast.show('🔐 Please register your fingerprint/face first', 'info');
+            const registered = await registerBiometric();
+            if (!registered) {
+                toggle.checked = false;
+                return;
+            }
+        }
+
+        Toast.show('🔐 Please verify to enable biometric lock', 'info');
+        const verified = await verifyBiometric();
+        if (!verified) {
+            toggle.checked = false;
+            return;
+        }
+
+        biometricLockEnabled = true;
+        localStorage.setItem('biometricLockEnabled', 'true');
+        localStorage.setItem('biometricLockUserId', currentUser.uid);
+        lastActivityTime = Date.now();
+
+        label.textContent = '✅ Biometric Lock Enabled';
+        status.innerHTML = '<i class="fas fa-circle" style="font-size: 8px; color: #2e7d32;"></i> Active';
+        status.className = 'status-badge active';
+        info.className = 'status-info show';
+        message.textContent = '🔒 Your account is protected. You\'ll need biometric verification after 5 minutes of inactivity.';
+        testBtn.style.display = 'inline-flex';
+        removeBtn.style.display = 'inline-flex';
+
+        startLockChecker();
+
+        Toast.show('✅ Biometric Lock Enabled!', 'success');
+
+    } else {
+        if (!confirm('Disable biometric lock? Your account will no longer require biometric verification.')) {
+            toggle.checked = true;
+            return;
+        }
+
+        biometricLockEnabled = false;
+        localStorage.removeItem('biometricLockEnabled');
+        localStorage.removeItem('biometricLockUserId');
+        sessionStorage.removeItem('biometricVerified');
+        sessionStorage.removeItem('biometricVerifiedTime');
+
+        label.textContent = 'Enable Biometric Lock';
+        status.innerHTML = '<i class="fas fa-circle" style="font-size: 8px; color: #999;"></i> Inactive';
+        status.className = 'status-badge';
+        info.className = 'status-info';
+        testBtn.style.display = 'none';
+        removeBtn.style.display = 'none';
+
+        if (lockCheckInterval) {
+            clearInterval(lockCheckInterval);
+            lockCheckInterval = null;
+        }
+
+        Toast.show('🔓 Biometric Lock Disabled', 'info');
+    }
+}
+
+// ============================================
+// START LOCK CHECKER
+// ============================================
+
+/**
+ * Start checking for inactivity and lock the app if needed
+ */
+function startLockChecker() {
+    if (lockCheckInterval) {
+        clearInterval(lockCheckInterval);
+    }
+
+    lockCheckInterval = setInterval(() => {
+        if (!biometricLockEnabled) return;
+        if (!currentUser) return;
+
+        const now = Date.now();
+        const elapsed = now - lastActivityTime;
+
+        if (elapsed >= LOCK_TIMEOUT) {
+            const verified = sessionStorage.getItem('biometricVerified') === 'true';
+            const verifiedTime = parseInt(sessionStorage.getItem('biometricVerifiedTime') || '0');
+            const verifiedElapsed = now - verifiedTime;
+
+            if (!verified || verifiedElapsed > LOCK_TIMEOUT) {
+                showBiometricLockScreen();
+            }
+        }
+    }, 10000);
+}
+
+// ============================================
+// SHOW BIOMETRIC LOCK SCREEN
+// ============================================
+
+/**
+ * Show the biometric lock screen overlay
+ */
+function showBiometricLockScreen() {
+    if (document.getElementById('biometricLockScreen')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'biometricLockScreen';
+    overlay.className = 'biometric-lock-screen';
+
+    overlay.innerHTML = `
+        <div style="text-align: center; max-width: 400px; width: 100%;">
+            <div class="lock-icon">
+                <i class="fas fa-fingerprint"></i>
+            </div>
+
+            <h2>🔒 Account Locked</h2>
+            <p class="sub-text">Verify your identity to continue</p>
+
+            <div class="user-info">
+                <span><i class="fas fa-user"></i> ${userProfile?.fullName || 'User'}</span>
+                <span><i class="fas fa-clock"></i> Locked for inactivity</span>
+            </div>
+
+            <button onclick="unlockWithBiometric()" id="unlockBiometricBtn" class="unlock-btn">
+                <i class="fas fa-fingerprint"></i> Verify with Fingerprint / Face
+            </button>
+
+            <button onclick="logoutFromLockScreen()" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Logout Instead
+            </button>
+
+            <div id="unlockStatus" class="unlock-status">
+                <i class="fas fa-spinner fa-spin"></i> Waiting for biometric verification...
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    // Auto-trigger biometric verification
+    setTimeout(() => {
+        unlockWithBiometric();
+    }, 500);
+}
+
+// ============================================
+// UNLOCK WITH BIOMETRIC
+// ============================================
+
+/**
+ * Attempt to unlock using biometric verification
+ */
+async function unlockWithBiometric() {
+    const btn = document.getElementById('unlockBiometricBtn');
+    const status = document.getElementById('unlockStatus');
+
+    if (!btn || !status) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+    status.innerHTML = '🔐 Please place your finger or look at your device...';
+    status.className = 'unlock-status';
+
+    try {
+        const verified = await verifyBiometric();
+
+        if (verified) {
+            status.innerHTML = '✅ Verified! Unlocking...';
+            status.className = 'unlock-status success';
+
+            lastActivityTime = Date.now();
+            sessionStorage.setItem('biometricVerified', 'true');
+            sessionStorage.setItem('biometricVerifiedTime', Date.now().toString());
+
+            setTimeout(() => {
+                const screen = document.getElementById('biometricLockScreen');
+                if (screen) {
+                    screen.style.opacity = '0';
+                    screen.style.transition = 'opacity 0.5s ease';
+                    setTimeout(() => screen.remove(), 500);
+                }
+                Toast.show('🔓 Unlocked successfully!', 'success');
+            }, 500);
+
+        } else {
+            status.innerHTML = '❌ Verification failed. Please try again.';
+            status.className = 'unlock-status error';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-fingerprint"></i> Try Again';
+            btn.onclick = () => unlockWithBiometric();
+        }
+
+    } catch (error) {
+        console.error('Unlock error:', error);
+        status.innerHTML = '❌ Error: ' + error.message;
+        status.className = 'unlock-status error';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-fingerprint"></i> Try Again';
+        btn.onclick = () => unlockWithBiometric();
+    }
+}
+
+// ============================================
+// LOGOUT FROM LOCK SCREEN
+// ============================================
+
+/**
+ * Logout from the lock screen
+ */
+function logoutFromLockScreen() {
+    if (confirm('Logout from your account?')) {
+        const screen = document.getElementById('biometricLockScreen');
+        if (screen) screen.remove();
+        if (typeof authSystem !== 'undefined' && authSystem.logout) {
+            authSystem.logout();
+        }
+    }
+}
+
+// ============================================
+// TEST BIOMETRIC LOCK
+// ============================================
+
+/**
+ * Test the biometric lock by triggering it manually
+ */
+function testBiometricLock() {
+    if (!biometricLockEnabled) {
+        Toast.show('Please enable biometric lock first', 'warning');
+        return;
+    }
+
+    Toast.show('🔐 Lock test triggered! You\'ll be locked in 5 seconds.', 'info');
+    lastActivityTime = Date.now() - LOCK_TIMEOUT + 5000;
+
+    setTimeout(() => {
+        showBiometricLockScreen();
+    }, 5000);
+}
+
+// ============================================
+// REMOVE BIOMETRIC LOCK
+// ============================================
+
+/**
+ * Remove biometric lock and delete biometric data
+ */
+async function removeBiometricLock() {
+    if (!currentUser) return;
+
+    if (!confirm('Remove biometric lock and fingerprint data from your account?')) return;
+
+    try {
+        await db.collection('users').doc(currentUser.uid).update({
+            biometricCredentialId: firebase.firestore.FieldValue.delete(),
+            biometricRegisteredAt: firebase.firestore.FieldValue.delete(),
+            biometricDevice: firebase.firestore.FieldValue.delete()
+        });
+
+        localStorage.removeItem('biometricRegistered');
+        localStorage.removeItem('biometricUserId');
+        localStorage.removeItem('biometricLockEnabled');
+        localStorage.removeItem('biometricLockUserId');
+        sessionStorage.removeItem('biometricVerified');
+        sessionStorage.removeItem('biometricVerifiedTime');
+
+        biometricLockEnabled = false;
+
+        if (lockCheckInterval) {
+            clearInterval(lockCheckInterval);
+            lockCheckInterval = null;
+        }
+
+        const toggle = document.getElementById('biometricLockToggle');
+        if (toggle) toggle.checked = false;
+
+        Toast.show('✅ Biometric lock removed', 'success');
+        updateBiometricLockUI();
+
+    } catch (error) {
+        Toast.show('❌ Failed to remove: ' + error.message, 'error');
+    }
+}
+
+// ============================================
+// UPDATE BIOMETRIC LOCK UI
+// ============================================
+
+/**
+ * Update the biometric lock UI based on current state
+ */
+function updateBiometricLockUI() {
+    const toggle = document.getElementById('biometricLockToggle');
+    const label = document.getElementById('lockToggleLabel');
+    const status = document.getElementById('biometricLockStatus');
+    const info = document.getElementById('biometricLockInfo');
+    const message = document.getElementById('biometricLockMessage');
+    const testBtn = document.getElementById('testBiometricBtn');
+    const removeBtn = document.getElementById('removeBiometricLockBtn');
+    const deviceName = document.getElementById('biometricDeviceName');
+
+    if (!toggle) return;
+
+    const isEnabled = localStorage.getItem('biometricLockEnabled') === 'true' &&
+        localStorage.getItem('biometricLockUserId') === currentUser?.uid;
+
+    if (isEnabled && currentUser) {
+        biometricLockEnabled = true;
+        toggle.checked = true;
+        label.textContent = '✅ Biometric Lock Enabled';
+        status.innerHTML = '<i class="fas fa-circle" style="font-size: 8px; color: #2e7d32;"></i> Active';
+        status.className = 'status-badge active';
+        info.className = 'status-info show';
+        message.textContent = '🔒 Your account is protected. You\'ll need biometric verification after 5 minutes of inactivity.';
+        testBtn.style.display = 'inline-flex';
+        removeBtn.style.display = 'inline-flex';
+        startLockChecker();
+    } else {
+        biometricLockEnabled = false;
+        toggle.checked = false;
+        label.textContent = 'Enable Biometric Lock';
+        status.innerHTML = '<i class="fas fa-circle" style="font-size: 8px; color: #999;"></i> Inactive';
+        status.className = 'status-badge';
+        info.className = 'status-info';
+        testBtn.style.display = 'none';
+        removeBtn.style.display = 'none';
+        if (lockCheckInterval) {
+            clearInterval(lockCheckInterval);
+            lockCheckInterval = null;
+        }
+    }
+
+    if (deviceName) {
+        getBiometricDeviceName().then(name => {
+            deviceName.textContent = name;
+        });
+    }
+}
+
+// ============================================
+// SHOW BIOMETRIC SUCCESS ANIMATION
+// ============================================
+
+/**
+ * Show a success animation after biometric verification
+ */
+function showBiometricSuccess() {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(46, 125, 50, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999;
+        animation: fadeIn 0.3s ease;
+    `;
+    overlay.innerHTML = `
+        <div style="text-align: center; color: white;">
+            <i class="fas fa-fingerprint" style="font-size: 80px; animation: pulse 1s ease-in-out infinite;"></i>
+            <h2 style="margin-top: 20px;">✅ Verified!</h2>
+            <p>Biometric authentication successful</p>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    setTimeout(() => {
+        overlay.style.opacity = '0';
+        overlay.style.transition = 'opacity 0.5s ease';
+        setTimeout(() => overlay.remove(), 500);
+    }, 1500);
+}
+
+// ============================================
+// TRACK USER ACTIVITY
+// ============================================
+
+/**
+ * Track user activity to reset the inactivity timer
+ */
+function trackUserActivity() {
+    if (biometricLockEnabled && currentUser) {
+        lastActivityTime = Date.now();
+    }
+}
+
+// Attach activity listeners
+document.addEventListener('click', trackUserActivity);
+document.addEventListener('scroll', trackUserActivity);
+document.addEventListener('keydown', trackUserActivity);
+document.addEventListener('touchstart', trackUserActivity);
+
+// ============================================
+// INITIALIZE BIOMETRIC LOCK
+// ============================================
+
+/**
+ * Initialize the biometric lock system
+ */
+function initBiometricLock() {
+    const wasEnabled = localStorage.getItem('biometricLockEnabled') === 'true' &&
+        localStorage.getItem('biometricLockUserId') === currentUser?.uid;
+
+    if (wasEnabled && currentUser) {
+        biometricLockEnabled = true;
+
+        const verified = sessionStorage.getItem('biometricVerified') === 'true';
+        const verifiedTime = parseInt(sessionStorage.getItem('biometricVerifiedTime') || '0');
+        const elapsed = Date.now() - verifiedTime;
+
+        if (!verified || elapsed > LOCK_TIMEOUT) {
+            setTimeout(() => {
+                showBiometricLockScreen();
+            }, 1000);
+        } else {
+            lastActivityTime = Date.now();
+            startLockChecker();
+        }
+    }
+
+    setTimeout(updateBiometricLockUI, 500);
+}
+
+// ============================================
+// EXPOSE FUNCTIONS TO GLOBAL SCOPE
+// ============================================
+
+// Make all functions globally accessible
+window.registerBiometric = registerBiometric;
+window.verifyBiometric = verifyBiometric;
+window.toggleBiometricLock = toggleBiometricLock;
+window.unlockWithBiometric = unlockWithBiometric;
+window.logoutFromLockScreen = logoutFromLockScreen;
+window.testBiometricLock = testBiometricLock;
+window.removeBiometricLock = removeBiometricLock;
+window.initBiometricLock = initBiometricLock;
+window.updateBiometricLockUI = updateBiometricLockUI;
+window.isBiometricAvailable = isBiometricAvailable;
+window.isBiometricSupported = isBiometricSupported;
+window.getBiometricDeviceName = getBiometricDeviceName;
+window.showBiometricLockScreen = showBiometricLockScreen;
+
+// ============================================
+// AUTO-INITIALIZE ON LOAD
+// ============================================
+
+// Initialize after Firebase auth is ready
+if (typeof auth !== 'undefined') {
+    const originalOnAuthStateChanged = auth.onAuthStateChanged;
+
+    auth.onAuthStateChanged = async function(callback) {
+        originalOnAuthStateChanged.call(auth, async (user) => {
+            await callback(user);
+            if (user) {
+                setTimeout(initBiometricLock, 1000);
+            }
+        });
+    };
+}
+
+// Also try to initialize on DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        if (typeof currentUser !== 'undefined' && currentUser) {
+            initBiometricLock();
+        }
+    }, 2000);
+});
+
+console.log('🔐 Biometric Lock System Loaded!');
+console.log('📌 Commands:');
+console.log('  - registerBiometric() - Register fingerprint/face');
+console.log('  - verifyBiometric() - Verify biometric');
+console.log('  - toggleBiometricLock() - Toggle lock on/off');
+console.log('  - testBiometricLock() - Test the lock');
+console.log('  - removeBiometricLock() - Remove biometric data');
     
     // ============================================
 // GLOBAL IMAGE CROPPER ENGINE
@@ -3477,6 +4620,7 @@ setTimeout(() => {
     </div>
   </div>
   
+  
   <div style="display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;">
           <span class="badge" style="background: ${userProfile?.isDonor ? '#b71c1c' : '#1565c0'}; color: white; padding: 6px 16px; border-radius: 20px;">
             <i class="fas fa-${userProfile?.isDonor ? 'heart' : 'search'}"></i> ${userTypeLabel}
@@ -3783,7 +4927,61 @@ setTimeout(() => {
     <p><strong>District:</strong> ${userProfile?.district || '-'}, ${userProfile?.upazila || ''}</p>
     <p><strong>Registered:</strong> ${userProfile?.createdAt ? new Date(userProfile.createdAt.toDate()).toLocaleDateString() : '-'}</p>
     ${userProfile?.donorId ? `<p><strong>Donor ID:</strong> ${userProfile?.donorId}</p>` : ''}
-  </div>
+  </div><!-- ============================================ -->
+<!-- 🔐 BIOMETRIC LOCK SECTION - HTML UI           -->
+<!-- ============================================ -->
+
+<div id="biometricSection" class="biometric-section">
+    <!-- Header -->
+    <div class="header">
+        <i class="fas fa-fingerprint"></i>
+        <h3>🔐 Biometric Lock</h3>
+        <span id="biometricLockStatus" class="status-badge">
+            <i class="fas fa-circle" style="font-size: 8px; color: #999;"></i> Inactive
+        </span>
+    </div>
+
+    <!-- Info Text -->
+    <p class="info-text">
+        Secure your account with <strong>fingerprint or face unlock</strong>.
+        You'll need to verify when returning to the app after 5 minutes of inactivity.
+    </p>
+
+    <!-- Actions -->
+    <div class="actions">
+        <!-- Toggle Switch -->
+        <label class="toggle-label">
+            <input type="checkbox" id="biometricLockToggle" class="biometric-toggle" onchange="toggleBiometricLock()">
+            <span id="lockToggleLabel">Enable Biometric Lock</span>
+        </label>
+
+        <!-- Test Button -->
+        <button id="testBiometricBtn" class="btn-test" onclick="testBiometricLock()">
+            <i class="fas fa-vial"></i> Test Lock
+        </button>
+
+        <!-- Remove Button -->
+        <button id="removeBiometricLockBtn" class="btn-remove" onclick="removeBiometricLock()">
+            <i class="fas fa-trash"></i> Remove
+        </button>
+    </div>
+
+    <!-- Status Info -->
+    <div id="biometricLockInfo" class="status-info">
+        <i class="fas fa-info-circle"></i>
+        <span id="biometricLockMessage">You'll need biometric verification after 5 minutes of inactivity.</span>
+    </div>
+
+    <!-- Device Info -->
+    <div class="device-info">
+        <i class="fas fa-microchip"></i>
+        Device: <span id="biometricDeviceName">Checking...</span>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- END BIOMETRIC LOCK SECTION                    -->
+<!-- ============================================ -->
 </div>
           
           <div style="background: white; padding: 24px; border-radius: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px 0;">
@@ -4185,6 +5383,61 @@ setTimeout(() => {
           <i class="fas fa-exchange-alt"></i> Switch to ${userProfile?.isDonor ? 'Donor Seeker' : 'Blood Donor'}
         </button>
       </div>
+      <!-- ============================================ -->
+<!-- 🔐 BIOMETRIC LOCK SECTION - HTML UI           -->
+<!-- ============================================ -->
+
+<div id="biometricSection" class="biometric-section">
+    <!-- Header -->
+    <div class="header">
+        <i class="fas fa-fingerprint"></i>
+        <h3>🔐 Biometric Lock</h3>
+        <span id="biometricLockStatus" class="status-badge">
+            <i class="fas fa-circle" style="font-size: 8px; color: #999;"></i> Inactive
+        </span>
+    </div>
+
+    <!-- Info Text -->
+    <p class="info-text">
+        Secure your account with <strong>fingerprint or face unlock</strong>.
+        You'll need to verify when returning to the app after 5 minutes of inactivity.
+    </p>
+
+    <!-- Actions -->
+    <div class="actions">
+        <!-- Toggle Switch -->
+        <label class="toggle-label">
+            <input type="checkbox" id="biometricLockToggle" class="biometric-toggle" onchange="toggleBiometricLock()">
+            <span id="lockToggleLabel">Enable Biometric Lock</span>
+        </label>
+
+        <!-- Test Button -->
+        <button id="testBiometricBtn" class="btn-test" onclick="testBiometricLock()">
+            <i class="fas fa-vial"></i> Test Lock
+        </button>
+
+        <!-- Remove Button -->
+        <button id="removeBiometricLockBtn" class="btn-remove" onclick="removeBiometricLock()">
+            <i class="fas fa-trash"></i> Remove
+        </button>
+    </div>
+
+    <!-- Status Info -->
+    <div id="biometricLockInfo" class="status-info">
+        <i class="fas fa-info-circle"></i>
+        <span id="biometricLockMessage">You'll need biometric verification after 5 minutes of inactivity.</span>
+    </div>
+
+    <!-- Device Info -->
+    <div class="device-info">
+        <i class="fas fa-microchip"></i>
+        Device: <span id="biometricDeviceName">Checking...</span>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- END BIOMETRIC LOCK SECTION                    -->
+<!-- ============================================ -->
       
       <form id="profileForm" class="profile-form">
         <div class="form-group"><label>Full Name</label><input type="text" id="profileFullName" value="${userProfile?.fullName || ''}" required></div>
