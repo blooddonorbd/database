@@ -3801,24 +3801,24 @@ function updateLiveLocation() {
           <h1 style="font-size: 48px; margin-bottom: 20px;">Donate Blood, Save Lives</h1>
           <p style="font-size: 20px; margin-bottom: 32px;">Join the community of life-savers. Every drop counts.</p>
           ${!currentUser ?
-            `
-            <div style="display: flex; gap: 16px; justify-content: center;">
-              <button onclick="router.navigate('register')" class="btn btn-primary" style="background: white; color: #b71c1c;">Become a Donor</button>
-              <button onclick="router.navigate('find-donors')" class="btn btn-outline" style="border-color: white; color: white;">Find Donors</button>
-            </div>
-          ` : `
-            <div style="display: flex; gap: 16px; justify-content: center;">
-              <button onclick="router.navigate('request-blood')" class="btn btn-primary" style="background: white; color: #b71c1c;">Request Blood</button>
-              <button onclick="router.navigate('find-donors')" class="btn btn-outline" style="border-color: white; color: white;">Find Donors</button>
-              <button onclick="router.navigate('dm-donor')" class="btn btn-outline" style="border-color: white; color: white;"><i class="fas fa-comments"></i> DM Donors</button>
-              ${hasAdminAccess() ?
-              `
-                <a href="admin.html" class="btn btn-outline" style="border-color: #ffd700; color: #ffd700;">
-                  <i class="fas fa-shield-alt"></i> Admin Panel
-                </a>
-              ` : ''}
-            </div>
-          `}
+  `
+  <div style="display: flex; gap: 16px; justify-content: center;">
+    <a href="auth.html?mode=register" class="btn btn-primary" style="background: white; color: #b71c1c; text-decoration: none;">Become a Donor</a>
+    <a href="auth.html?mode=login" class="btn btn-outline" style="border-color: white; color: white; text-decoration: none;">Find Donors</a>
+  </div>
+` : `
+  <div style="display: flex; gap: 16px; justify-content: center;">
+    <button onclick="router.navigate('request-blood')" class="btn btn-primary" style="background: white; color: #b71c1c;">Request Blood</button>
+    <button onclick="router.navigate('find-donors')" class="btn btn-outline" style="border-color: white; color: white;">Find Donors</button>
+    <button onclick="router.navigate('dm-donor')" class="btn btn-outline" style="border-color: white; color: white;"><i class="fas fa-comments"></i> DM Donors</button>
+    ${hasAdminAccess() ?
+    `
+      <a href="admin.html" class="btn btn-outline" style="border-color: #ffd700; color: #ffd700;">
+        <i class="fas fa-shield-alt"></i> Admin Panel
+      </a>
+    ` : ''}
+  </div>
+`}
         </div>
         
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 32px; margin-top: 48px;">
@@ -7636,32 +7636,31 @@ function updateNavigation() {
     
   } else {
     // ❌ লগইন না থাকলে - Login ও Registration দেখাবে
-    navMenu.innerHTML = `
-      <li><a href="#" data-page="home" onclick="router.navigate('home');return false;"><i class="fas fa-home"></i> Home</a></li>
-      <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors');return false;"><i class="fas fa-search"></i> Find Donors</a></li>
-      <li><a href="public.feed.html">
-        <i class="fas fa-rss"></i> Public Feed
-      </a></li>
-      <li><a href="verifydonorid.input.html"><i class="fas fa-id-card"></i> Verify Donor ID</a></li>
-      <li><a href="#" data-page="about" onclick="router.navigate('about');return false;"><i class="fas fa-info-circle"></i> About</a></li>
-      <li><a href="#" data-page="contact" onclick="router.navigate('contact');return false;"><i class="fas fa-envelope"></i> Contact</a></li>
-      <li><a href="#" data-page="login" onclick="router.navigate('login');return false;">
-        <i class="fas fa-sign-in-alt"></i> Login
-      </a></li>
-      <li><a href="#" data-page="register" onclick="router.navigate('register');return false;">
-        <i class="fas fa-user-plus"></i> Register
-      </a></li>
-    `;
+    // ✅ লগইন না থাকলে - auth.html এ রিডাইরেক্ট করবে
+navMenu.innerHTML = `
+  <li><a href="#" data-page="home" onclick="router.navigate('home');return false;"><i class="fas fa-home"></i> Home</a></li>
+  <li><a href="#" data-page="find-donors" onclick="router.navigate('find-donors');return false;"><i class="fas fa-search"></i> Find Donors</a></li>
+  <li><a href="public.feed.html"><i class="fas fa-rss"></i> Public Feed</a></li>
+  <li><a href="verifydonorid.input.html"><i class="fas fa-id-card"></i> Verify Donor ID</a></li>
+  <li><a href="#" data-page="about" onclick="router.navigate('about');return false;"><i class="fas fa-info-circle"></i> About</a></li>
+  <li><a href="#" data-page="contact" onclick="router.navigate('contact');return false;"><i class="fas fa-envelope"></i> Contact</a></li>
+  <li><a href="auth.html?mode=login">
+  <i class="fas fa-sign-in-alt"></i> Login
+  </a></li>
+  <li><a href="auth.html?mode=register">
+  <i class="fas fa-user-plus"></i> Register
+  </a></li>
+`;
     
-    // Login না থাকলে userInfo খালি রাখুন বা লগইন বাটন দেখান
-    userInfo.innerHTML = `
-      <a href="#" onclick="router.navigate('login');return false;" class="btn btn-primary" style="padding: 5px 12px; font-size: 13px; border-radius: 5px; text-decoration: none; color: white; background: #b71c1c;">
-        <i class="fas fa-sign-in-alt"></i> Login
-      </a>
-      <a href="#" onclick="router.navigate('register');return false;" class="btn btn-outline" style="padding: 5px 12px; font-size: 13px; border-radius: 5px; text-decoration: none; border: 2px solid #b71c1c; color: #b71c1c; margin-left: 1px;">
-        Register
-      </a>
-    `;
+    // ✅ Login না থাকলে auth.html এ রিডাইরেক্ট করবে
+userInfo.innerHTML = `
+  <a href="auth.html?mode=login"  class="btn btn-primary" style="padding: 5px 12px; font-size: 13px; border-radius: 5px; text-decoration: none; color: white; background: #b71c1c;">
+    <i class="fas fa-sign-in-alt"></i> Login
+  </a>
+  <a href="auth.html?mode=register" class="btn btn-outline" style="padding: 5px 12px; font-size: 13px; border-radius: 5px; text-decoration: none; border: 2px solid #b71c1c; color: #b71c1c; margin-left: 1px;">
+    Register
+  </a>
+`;
   }
 }
 
