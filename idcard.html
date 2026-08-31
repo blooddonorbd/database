@@ -196,7 +196,7 @@
             justify-content:center;
         }
         .donor-name {
-            font-size:4.0mm; font-weight:700; color:#0b1a26;
+            font-size:3.6mm; font-weight:700; color:#0b1a26;
             line-height:1.1;
             margin-bottom:0.2mm;
             white-space:nowrap;
@@ -207,7 +207,7 @@
             display:flex;
             align-items:center;
             gap:0.8mm;
-            font-size:2.3mm;
+            font-size:2.2mm;
             color:#25313d;
             padding:0.1mm 0;
             border-bottom:0.3px dashed #eef1f5;
@@ -217,14 +217,14 @@
         .row i {
             width:3.4mm;
             color:#b71c1c;
-            font-size:2.2mm;
+            font-size:2.1mm;
             text-align:center;
             flex-shrink:0;
         }
         .row .val {
             font-weight:500;
             color:#0d1c2b;
-            font-size:2.2mm;
+            font-size:2.1mm;
             white-space:nowrap;
             overflow:hidden;
             text-overflow:ellipsis;
@@ -254,7 +254,7 @@
         .qr-box {
             background:#fafcff;
             padding:0.6mm;
-            border-radius:2.4mm;
+            border-radius: 2px;
             border:0.5px solid #dfe3e8;
             width:7.2mm;
             height:7.2mm;
@@ -550,7 +550,7 @@
                 </div>
                 <div class="info-col">
                     <div class="donor-name">${escapeHtml(data.fullName || 'Unknown Donor')}</div>
-                    <div class="row"><i class="fas fa-id-badge"></i><span class="val did">${donorId}</span></div>
+                    <div class="row" style=" margin-top: 10px;"><i class="fas fa-id-badge"></i><span class="val did">${donorId}</span></div>
                     <div class="row"><i class="fas fa-location-dot"></i><span class="val">${escapeHtml(addressVal)}</span></div>
                     <div class="row"><i class="fas fa-phone-alt"></i><span class="val">${escapeHtml(phoneVal)}</span></div>
                     <div class="row"><i class="fas fa-envelope"></i><span class="val">${escapeHtml(emailVal)}</span></div>
@@ -562,7 +562,7 @@
                     <div class="qr-text"><b>Scan profile</b><small>${PROFILE_PAGE}?id=${data.id.slice(0,10)}…</small></div>
                 </div>
                 <div class="extra-pill">
-                    <span><i class="fas fa-calendar-check"></i> ${lastDonation}</span>
+                    <span><i class="fas fa-droplet"></i> ${lastDonation}</span>
                     <span><i class="fas fa-user-clock"></i> ${memberSince}</span>
                 </div>
             </div>
