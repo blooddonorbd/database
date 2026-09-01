@@ -1911,6 +1911,122 @@ img[src*="imgbb"],
     .text-2xl { font-size: 24px; }
     .text-3xl { font-size: 30px; }
   </style>
+  <style>
+    /* ============================================
+       AMBITIONS POPUP - STYLES
+       (content lives in ambitions.popup.html)
+       ============================================ */
+    .ambition-popup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 999999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .ambition-popup-overlay.show {
+      opacity: 1;
+    }
+
+    .ambition-popup-box {
+      position: relative;
+      background: #ffffff;
+      color: #1a1a1a;
+      width: 100%;
+      max-width: 460px;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      overflow: hidden;
+      transform: translateY(20px) scale(0.96);
+      transition: transform 0.3s ease;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ambition-popup-overlay.show .ambition-popup-box {
+      transform: translateY(0) scale(1);
+    }
+
+    .ambition-popup-logo {
+      width: 100%;
+      background: #ffffff;
+      padding: 24px 24px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ambition-popup-logo img {
+      max-width: 180px;
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+    }
+
+    .ambition-popup-content {
+      padding: 8px 28px 28px;
+      overflow-y: auto;
+      text-align: center;
+    }
+
+    .ambition-popup-content h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 12px;
+    }
+
+    .ambition-popup-content p {
+      font-size: 0.95rem;
+      line-height: 1.7;
+      color: #1a1a1a;
+      margin-bottom: 20px;
+    }
+
+    .ambition-popup-btn {
+      background: #b71c1c;
+      color: #ffffff;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .ambition-popup-btn:hover {
+      background: #8b0000;
+    }
+
+    .ambition-popup-close {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      background: none;
+      border: none;
+      font-size: 26px;
+      line-height: 1;
+      color: #999;
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .ambition-popup-close:hover {
+      color: #b71c1c;
+    }
+
+    @media (max-width: 480px) {
+      .ambition-popup-content h2 { font-size: 1.05rem; }
+      .ambition-popup-content p { font-size: 0.9rem; }
+    }
+  </style>
 </head>
 <body>
   <div id="readingProgress" style="
@@ -11681,6 +11797,53 @@ window.PushNotificationManager = PushNotificationManager;
       console.log('Speech synthesis not supported in this browser');
     }
   });
+</script>
+<script>
+  // ============================================
+  // AMBITIONS POPUP LOADER
+  // কনটেন্ট আসে ambitions.popup.html থেকে,
+  // এই ফাইলে শুধু show/hide করার লজিক।
+  // ============================================
+
+  function closeAmbitionPopup() {
+    const overlay = document.getElementById('ambitionPopupOverlay');
+    if (!overlay) return;
+    overlay.classList.remove('show');
+    setTimeout(() => overlay.remove(), 300);
+  }
+  window.closeAmbitionPopup = closeAmbitionPopup;
+
+  function initAmbitionPopup() {
+    fetch('ambitions.popup.html')
+      .then(res => {
+        if (!res.ok) throw new Error('ambitions.popup.html not found');
+        return res.text();
+      })
+      .then(html => {
+        const overlay = document.createElement('div');
+        overlay.id = 'ambitionPopupOverlay';
+        overlay.className = 'ambition-popup-overlay';
+        overlay.innerHTML = html;
+
+        // Click outside the box closes the popup
+        overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) closeAmbitionPopup();
+        });
+
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add('show'));
+      })
+      .catch(err => {
+        console.warn('Ambition popup could not be loaded:', err);
+      });
+  }
+
+  // ESC key closes the popup
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeAmbitionPopup();
+  });
+
+  document.addEventListener('DOMContentLoaded', initAmbitionPopup);
 </script>
 </body>
 </html>
