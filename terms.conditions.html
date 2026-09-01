@@ -4,7 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Terms & Conditions · Blood Donor BD</title>
-  <link rel="icon" type="image/png" href="https://i.ibb.co/fd3zk65t/1000018685.jpg">
+  
+  <!-- ✅ DYNAMIC FAVICON -->
+  <link id="dynamicFavicon" rel="icon" type="image/png" href="">
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
@@ -161,7 +168,8 @@
 <div class="container">
   <!-- Header -->
   <div class="header">
-    <img src="https://i.ibb.co/S4NpN5F5/1000010374.png" alt="Blood Donor BD Logo">
+    <!-- ✅ DYNAMIC LOGO -->
+    <img id="termsLogo" src="" alt="Blood Donor BD Logo">
     <div>
       <h1><i class="fas fa-file-contract"></i> Terms & Conditions</h1>
       <span class="tag"><i class="fas fa-check-circle"></i> v2.0 · Effective 2025</span>
@@ -283,15 +291,71 @@
   </div>
 </div>
 
-<!-- Simple script to handle back navigation if history is empty -->
 <script>
+  // Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyCnky8bzx3KuFoujU5DSlLRYSZgiAF8840",
+    authDomain: "blood-donor-bd-2025.firebaseapp.com",
+    projectId: "blood-donor-bd-2025",
+    storageBucket: "blood-donor-bd-2025.firebasestorage.app",
+    messagingSenderId: "271945142840",
+    appId: "1:271945142840:web:b0edefddb55cac5f604ccd"
+  };
+  
+  // Initialize Firebase only if available
+  let db = null;
+  try {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    console.log('✅ Firebase initialized on terms page');
+  } catch (e) {
+    console.warn('Firebase not available:', e);
+  }
+
+  // =============================================
+  // LOAD WEBSITE SETTINGS (Logo & Favicon)
+  // =============================================
+  async function loadWebsiteSettings() {
+    if (!db) {
+      console.warn('Firestore not available, using default logo');
+      return;
+    }
+    
+    try {
+      const settingsDoc = await db.collection('settings').doc('website').get();
+      if (settingsDoc.exists) {
+        const settings = settingsDoc.data();
+        
+        // Update logo
+        if (settings.logoUrl) {
+          const termsLogo = document.getElementById('termsLogo');
+          if (termsLogo) termsLogo.src = settings.logoUrl;
+        }
+        
+        // Update favicon
+        if (settings.faviconUrl) {
+          const favicon = document.getElementById('dynamicFavicon');
+          if (favicon) favicon.href = settings.faviconUrl;
+        }
+        
+        console.log('✅ Website settings loaded on terms page:', settings);
+      }
+    } catch (e) {
+      console.warn('Could not load website settings:', e);
+    }
+  }
+
+  // Call on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(loadWebsiteSettings, 500);
+  });
+
+  // Simple script to handle back navigation if history is empty
   (function() {
-    // If there's no history or user came directly, provide fallback
     const backBtn = document.querySelector('.btn-back');
     if (backBtn) {
       backBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        // try to go back, if fails (no history), go to home
         try {
           window.history.back();
         } catch {
