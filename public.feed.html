@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#b71c1c">
   
   <title>Community Feed - Blood Donor BD</title>
-  
+  <link id="dynamicFavicon" rel="icon" type="image/png" href="">
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -588,7 +588,7 @@
   <nav class="navbar">
     <div class="nav-container">
       <a class="nav-brand" onclick="goHome()">
-        <img src="https://i.ibb.co/RTdtn0RG/1000018751.png" alt="Logo">
+        <img id="navbarLogo" src="" alt="Logo">
         Blood Donor BD
       </a>
       <div class="nav-actions">
@@ -750,6 +750,33 @@
         return null;
       }
     }
+    // =============================================
+// LOAD WEBSITE SETTINGS (Logo & Favicon)
+// =============================================
+async function loadWebsiteSettings() {
+  try {
+    const settingsDoc = await db.collection('settings').doc('website').get();
+    if (settingsDoc.exists) {
+      const settings = settingsDoc.data();
+      
+      // Update navbar logo
+      if (settings.logoUrl) {
+        const navbarLogo = document.getElementById('navbarLogo');
+        if (navbarLogo) navbarLogo.src = settings.logoUrl;
+      }
+      
+      // Update favicon
+      if (settings.faviconUrl) {
+        const favicon = document.getElementById('dynamicFavicon');
+        if (favicon) favicon.href = settings.faviconUrl;
+      }
+      
+      console.log('✅ Website settings loaded on public feed page:', settings);
+    }
+  } catch (e) {
+    console.warn('Could not load website settings:', e);
+  }
+}
 
     // =============================================
     // LOAD PUBLIC FEED - FIXED
@@ -1542,16 +1569,19 @@
     // INIT
     // =============================================
     document.addEventListener('DOMContentLoaded', () => {
-      auth.onAuthStateChanged((user) => {
-        if (user) {
-          currentUser = user;
-          console.log('👤 User logged in:', user.uid);
-        } else {
-          console.log('👤 No user logged in');
-        }
-        loadFeed();
-      });
-    });
+  auth.onAuthStateChanged(async (user) => {
+    // ✅ Load website settings first
+    await loadWebsiteSettings();
+    
+    if (user) {
+      currentUser = user;
+      console.log('👤 User logged in:', user.uid);
+    } else {
+      console.log('👤 No user logged in');
+    }
+    loadFeed();
+  });
+});
 
     // =============================================
     // KEYBOARD SHORTCUTS
