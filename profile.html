@@ -9,7 +9,7 @@
   <meta name="theme-color" content="#b71c1c">
   
   <title>Edit Profile - Blood Donor BD</title>
-  
+  <link id="dynamicFavicon" rel="icon" type="image/png" href="">
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -400,7 +400,7 @@
 <nav class="navbar">
   <div class="nav-container">
     <a class="nav-brand" onclick="goHome()">
-      <img src="https://i.ibb.co/RTdtn0RG/1000018751.png" alt="Logo">
+      <img id="navbarLogo" src="" alt="Logo">
       Blood Donor BD
     </a>
     <div class="nav-actions">
@@ -525,6 +525,33 @@
     }
     return 'https://i.ibb.co/WNH98LbN/1000020379.png';
   }
+  // =============================================
+// LOAD WEBSITE SETTINGS (Logo & Favicon)
+// =============================================
+async function loadWebsiteSettings() {
+  try {
+    const settingsDoc = await db.collection('settings').doc('website').get();
+    if (settingsDoc.exists) {
+      const settings = settingsDoc.data();
+      
+      // Update navbar logo
+      if (settings.logoUrl) {
+        const navbarLogo = document.getElementById('navbarLogo');
+        if (navbarLogo) navbarLogo.src = settings.logoUrl;
+      }
+      
+      // Update favicon
+      if (settings.faviconUrl) {
+        const favicon = document.getElementById('dynamicFavicon');
+        if (favicon) favicon.href = settings.faviconUrl;
+      }
+      
+      console.log('✅ Website settings loaded on profile page:', settings);
+    }
+  } catch (e) {
+    console.warn('Could not load website settings:', e);
+  }
+}
 
   // =============================================
   // LOAD PROFILE DATA
@@ -931,25 +958,27 @@
   // INIT
   // =============================================
   document.addEventListener('DOMContentLoaded', () => {
-    auth.onAuthStateChanged((user) => {
-      if (user) {
-        currentUser = user;
-        loadProfile();
-      } else {
-        const container = document.getElementById('editProfileContainer');
-        container.innerHTML = `
-          <div class="edit-card" style="text-align:center; padding:60px;">
-            <i class="fas fa-user-slash" style="font-size:48px; color:#999;"></i>
-            <h3 style="margin-top:16px; color:#1c1e21;">Please Login</h3>
-            <p style="color:#65676b; margin-bottom:20px;">You need to be logged in to edit your profile.</p>
-            <button onclick="window.location.href='index.html'" class="btn btn-primary" style="padding:12px 32px;">
-              <i class="fas fa-sign-in-alt"></i> Go to Dashboard
-            </button>
-          </div>
-        `;
-      }
-    });
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      currentUser = user;
+      // ✅ Load website settings first
+      await loadWebsiteSettings();
+      loadProfile();
+    } else {
+      const container = document.getElementById('editProfileContainer');
+      container.innerHTML = `
+        <div class="edit-card" style="text-align:center; padding:60px;">
+          <i class="fas fa-user-slash" style="font-size:48px; color:#999;"></i>
+          <h3 style="margin-top:16px; color:#1c1e21;">Please Login</h3>
+          <p style="color:#65676b; margin-bottom:20px;">You need to be logged in to edit your profile.</p>
+          <button onclick="window.location.href='index.html'" class="btn btn-primary" style="padding:12px 32px;">
+            <i class="fas fa-sign-in-alt"></i> Go to Dashboard
+          </button>
+        </div>
+      `;
+    }
   });
+});
 
   // =============================================
   // EXPOSE FUNCTIONS GLOBALLY
