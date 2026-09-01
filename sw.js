@@ -1,7 +1,7 @@
 // sw.js - Service Worker for Web Push Notifications
 
 // Cache name for static assets
-const CACHE_NAME = 'blood-donor-bd-v1';
+const CACHE_NAME = 'blood-donor-bd-v2';
 
 // Install event - cache static assets
 self.addEventListener('install', function(event) {
@@ -95,8 +95,8 @@ self.addEventListener('push', function(event) {
   // Extract notification details
   const title = data.title || data.notification?.title || 'Blood Donor BD';
   const body = data.body || data.notification?.body || 'You have a new notification.';
-  const icon = data.icon || data.notification?.icon || 'https://i.ibb.co/fd3zk65t/1000018685.jpg';
-  const badge = data.badge || data.notification?.badge || 'https://i.ibb.co/fd3zk65t/1000018685.jpg';
+  const icon = data.icon || data.notification?.icon || 'https://i.ibb.co/Xxz4SyDX/1000022502.png';
+  const badge = data.badge || data.notification?.badge || 'https://i.ibb.co/Xxz4SyDX/1000022502.png';
   const url = data.url || data.data?.url || '/';
   const tag = data.tag || data.data?.tag || 'blood-donor-notification';
   
@@ -114,7 +114,7 @@ self.addEventListener('push', function(event) {
       {
         action: 'open',
         title: 'Open App',
-        icon: 'https://i.ibb.co/fd3zk65t/1000018685.jpg'
+        icon: 'https://i.ibb.co/Xxz4SyDX/1000022502.png'
       },
       {
         action: 'close',
@@ -158,7 +158,7 @@ self.addEventListener('notificationclick', function(event) {
       // Check if there's already a client open
       for (let i = 0; i < clientList.length; i++) {
         const client = clientList[i];
-        if (client.url.includes('blooddonor') || client.url.includes('bh.html')) {
+        if (client.url.includes('blooddonor') || client.url.includes('index.html')) {
           // Focus the existing client
           client.focus();
           // Navigate to the URL
@@ -210,8 +210,8 @@ self.addEventListener('message', function(event) {
     const { title, body, icon, url } = event.data.payload;
     self.registration.showNotification(title, {
       body: body,
-      icon: icon || 'https://i.ibb.co/fd3zk65t/1000018685.jpg',
-      badge: icon || 'https://i.ibb.co/fd3zk65t/1000018685.jpg',
+      icon: icon || 'https://i.ibb.co/Xxz4SyDX/1000022502.png',
+      badge: icon || 'https://i.ibb.co/Xxz4SyDX/1000022502.png',
       data: { url: url || '/' }
     });
   }
