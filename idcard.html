@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Blood Donor BD" />
   <meta name="theme-color" content="#b71c1c" />
   <title>My ID Card · Blood Donor BD</title>
-  <link rel="icon" type="image/png" href="https://i.ibb.co/Xxz4SyDX/1000022502.png">
+  <link id="dynamicFavicon" rel="icon" type="image/png" href="">
 
   <!-- Firebase + other libs -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -20,6 +20,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style>
+    /* ... আপনার CSS ঠিক আছে, পরিবর্তন নেই ... */
     * { margin:0; padding:0; box-sizing:border-box; }
     body {
       font-family: 'Poppins', sans-serif;
@@ -409,7 +410,7 @@
 <nav class="navbar">
   <div class="nav-container">
     <a class="nav-brand" onclick="goHome()">
-      <img src="https://i.ibb.co/Xxz4SyDX/1000022502.png" alt="Blood Donor BD" crossorigin="anonymous">
+      <img id="navbarLogo" src="" alt="Blood Donor BD" crossorigin="anonymous">
       Blood Donor BD
     </a>
     <div class="nav-actions">
@@ -441,9 +442,50 @@
   const SITE_BASE_URL = "https://blooddonorbd.github.io/database/";
   const PROFILE_PAGE  = "user.profile.html";
   function profileUrlFor(uid){ return `${SITE_BASE_URL}${PROFILE_PAGE}?id=${uid}`; }
-  const ORG_LOGO = "https://i.ibb.co/Xxz4SyDX/1000022502.png";
+  
+  // ✅ DEFAULT LOGO (will be updated from settings)
+  let ORG_LOGO_URL = "https://i.ibb.co/Xxz4SyDX/1000022502.png";
 
   let currentUser = null, myProfile = null, viewedDoc = null, isOwnerView = false;
+
+  // =============================================
+  // LOAD WEBSITE SETTINGS (Logo & Favicon)
+  // =============================================
+  async function loadWebsiteSettings() {
+    try {
+      const settingsDoc = await db.collection('settings').doc('website').get();
+      if (settingsDoc.exists) {
+        const settings = settingsDoc.data();
+        
+        // Update ORG_LOGO_URL for future card renders
+        if (settings.logoUrl) {
+          ORG_LOGO_URL = settings.logoUrl;
+        }
+        
+        // Update navbar logo
+        if (settings.logoUrl) {
+          const navbarLogo = document.getElementById('navbarLogo');
+          if (navbarLogo) navbarLogo.src = settings.logoUrl;
+        }
+        
+        // ✅ Update card logo (if card is already rendered)
+        const cardLogo = document.getElementById('cardLogo');
+        if (cardLogo && settings.logoUrl) {
+          cardLogo.src = settings.logoUrl;
+        }
+        
+        // Update favicon
+        if (settings.faviconUrl) {
+          const favicon = document.getElementById('dynamicFavicon');
+          if (favicon) favicon.href = settings.faviconUrl;
+        }
+        
+        console.log('✅ Website settings loaded on ID card page:', settings);
+      }
+    } catch (e) {
+      console.warn('Could not load website settings:', e);
+    }
+  }
 
   function showToast(msg, type='info'){
     const c = document.getElementById('toastContainer');
@@ -521,7 +563,8 @@
     idCard.innerHTML = `
       <div class="cardhead">
         <div class="brand">
-          <img src="${ORG_LOGO}" crossorigin="anonymous" alt="logo">
+          <!-- ✅ Use ORG_LOGO_URL for dynamic logo -->
+          <img id="cardLogo" src="${ORG_LOGO_URL}" crossorigin="anonymous" alt="logo">
           <div class="brand-text">
             <div class="t1">Blood Donor <span style="color:#b71c1c;">BD</span></div>
             <div class="t2">OFFICIAL DONOR ID</div>
@@ -653,9 +696,16 @@
       .finally(()=>{ btn.disabled=false; btn.innerHTML=original; });
   }
 
+  // =============================================
+  // AUTH STATE CHANGED - UPDATED
+  // =============================================
   auth.onAuthStateChanged(async (user) => {
     currentUser = user;
     if(!user){ renderLoginGate(); return; }
+    
+    // ✅ Load website settings first
+    await loadWebsiteSettings();
+    
     try{
       const doc = await db.collection('users').doc(user.uid).get();
       myProfile = doc.exists ? { id: doc.id, ...doc.data() } : null;
