@@ -117,7 +117,61 @@
       overflow:hidden;
       border:1px solid #eceff2;
       flex-shrink:0;
+      transition: all 0.2s ease;
     }
+    /* ----- ROLE-BASED THEMES (CARD BORDER & ACCENT) ----- */
+    #idCard.role-administrator {
+      border: 2.5px solid #d4af37;
+      box-shadow: 0 0 0 1px #f5e7b0, 0 6px 18px rgba(212, 175, 55, 0.25);
+      background: linear-gradient(145deg, #fffcf0, #fef9e6);
+    }
+    #idCard.role-administrator .bg-badge {
+      background: #d4af37;
+      box-shadow: 0 2px 8px rgba(212,175,55,0.4);
+    }
+    #idCard.role-administrator .verified-pill.yes {
+      background: #f5e7b0;
+      color: #7a6217;
+    }
+
+    #idCard.role-admin {
+      border: 2.5px solid #1a73e8;
+      box-shadow: 0 0 0 1px #c5d9f7, 0 6px 18px rgba(26, 115, 232, 0.2);
+      background: linear-gradient(145deg, #f4f9ff, #e9f0fc);
+    }
+    #idCard.role-admin .bg-badge {
+      background: #1a73e8;
+      box-shadow: 0 2px 8px rgba(26,115,232,0.4);
+    }
+    #idCard.role-admin .verified-pill.yes {
+      background: #c5d9f7;
+      color: #0b3d7a;
+    }
+
+    #idCard.role-moderator {
+      border: 2.5px solid #2e7d32;
+      box-shadow: 0 0 0 1px #b8e0b8, 0 6px 18px rgba(46, 125, 50, 0.2);
+      background: linear-gradient(145deg, #f2fcf2, #e4f5e4);
+    }
+    #idCard.role-moderator .bg-badge {
+      background: #2e7d32;
+      box-shadow: 0 2px 8px rgba(46,125,50,0.4);
+    }
+    #idCard.role-moderator .verified-pill.yes {
+      background: #b8e0b8;
+      color: #1b4a1b;
+    }
+
+    /* default donor */
+    #idCard.role-donor {
+      border: 1px solid #e0e4e8;
+      background: #fff;
+    }
+    #idCard.role-donor .bg-badge {
+      background: #b71c1c;
+      box-shadow: 0 2px 8px rgba(183,28,28,0.25);
+    }
+
     #idCard.empty { align-items:center; justify-content:center; }
     .empty-hint { text-align:center; color:#9aa2ac; font-size:11px; }
     .empty-hint i { font-size:22px; display:block; margin-bottom:8px; opacity:0.4; }
@@ -177,10 +231,9 @@
       box-shadow:0 1px 6px rgba(0,0,0,0.1);
     }
     .bg-badge {
-      background:#b71c1c; color:#fff; font-weight:700;
+      color:#fff; font-weight:700;
       font-size:3.0mm; padding:0.3mm 2.6mm; border-radius:30px;
       display:flex; align-items:center; gap:0.8mm;
-      box-shadow:0 2px 5px rgba(183,28,28,0.25);
       border:0.8px solid #fff;
     }
     .bg-badge i { font-size:2.4mm; }
@@ -418,28 +471,32 @@
   }
   function buildAddress(data){ const parts = [data.address, data.upazila, data.district].filter(Boolean); return parts.length ? parts.join(', ') : 'N/A'; }
   function escapeHtml(str){ return String(str ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-  function maskPhone(p){ if(!p) return 'N/A'; const s=String(p); return s.length>4 ? s.slice(0,-6).padEnd(s.length-4,'•')+s.slice(-4) : '••••'; }
+  function maskPhone(p){ if(!p) return 'N/A'; const s=String(p); return s.length>1 ? s.slice(0,-7).padEnd(s.length-1,'•')+s.slice(-1) : '••••'; }
   function maskEmail(e){ if(!e || !e.includes('@')) return 'N/A'; const [u,d]=e.split('@'); return `${u.slice(0,2)}${'•'.repeat(Math.max(1,u.length-2))}@${d}`; }
 
-  // --- NEW: role display logic ---
-  function getRoleDisplay(data) {
-    const isDonor = data?.isDonor === true;
-    const role = data?.role || 'user';
-    if (!isDonor) return null; // not a donor, hide role pill? we'll handle in card foot
-
-    // role mapping
-    const map = {
-      'main_admin': { label: 'Administrator', icon: 'fa-crown' },
-      'admin': { label: 'Admin', icon: 'fa-user-shield' },
-      'moderator': { label: 'Moderator', icon: 'fa-users-gear' },
-      'user': { label: 'Donor', icon: 'fa-droplet' }
-    };
-    const key = role.toLowerCase();
-    const entry = map[key] || map['user'];
-    return entry;
+  // --- role detection & theming ---
+  function getRoleKey(data) {
+    if (!data || data.isDonor !== true) return null;
+    const role = (data.role || 'user').toLowerCase();
+    if (role === 'main_admin') return 'administrator';
+    if (role === 'admin') return 'admin';
+    if (role === 'moderator') return 'moderator';
+    return 'donor';
   }
 
-  // --- render card with role instead of lastDonation ---
+  function getRoleDisplay(data) {
+    const key = getRoleKey(data);
+    if (!key) return { label: 'Donor', icon: 'fa-droplet' };
+    const map = {
+      'administrator': { label: 'Administrator', icon: 'fa-crown' },
+      'admin': { label: 'Admin', icon: 'fa-user-shield' },
+      'moderator': { label: 'Moderator', icon: 'fa-users-gear' },
+      'donor': { label: 'Donor', icon: 'fa-droplet' }
+    };
+    return map[key] || map['donor'];
+  }
+
+  // --- render card with role theming ---
   function renderCard(data, isOwner){
     const idCard = document.getElementById('idCard');
     if(!data){ clearCard(); return; }
@@ -453,27 +510,13 @@
     const emailVal = isOwner ? (data.email || 'N/A') : maskEmail(data.email);
     const addressVal = isOwner ? buildAddress(data) : location;
 
-    // get role display
+    const roleKey = getRoleKey(data);
     const roleDisplay = getRoleDisplay(data);
-    // determine which pill to show: if roleDisplay exists, show role; else fallback to "Donor" if isDonor
-    let roleLabel = 'Donor';
-    let roleIcon = 'fa-droplet';
-    if (roleDisplay) {
-      roleLabel = roleDisplay.label;
-      roleIcon = roleDisplay.icon;
-    } else {
-      // if isDonor is true but no role (fallback)
-      if (data.isDonor === true) {
-        roleLabel = 'Donor';
-        roleIcon = 'fa-droplet';
-      } else {
-        // not a donor? maybe show nothing or a dash
-        roleLabel = '—';
-        roleIcon = 'fa-circle';
-      }
-    }
 
-    idCard.classList.remove('empty');
+    // Remove previous role classes
+    idCard.classList.remove('role-administrator', 'role-admin', 'role-moderator', 'role-donor', 'empty');
+    if (roleKey) idCard.classList.add(`role-${roleKey}`);
+
     idCard.innerHTML = `
       <div class="cardhead">
         <div class="brand">
@@ -506,7 +549,7 @@
           <div class="qr-text"><b>Scan profile</b><small>${PROFILE_PAGE}?id=${data.id.slice(0,10)}…</small></div>
         </div>
         <div class="extra-pill">
-          <span><i class="fas ${roleIcon}"></i> ${roleLabel}</span>
+          <span><i class="fas ${roleDisplay.icon}"></i> ${roleDisplay.label}</span>
           <span><i class="fas fa-user-clock"></i> ${memberSince}</span>
         </div>
       </div>
@@ -530,6 +573,7 @@
     const idCard = document.getElementById('idCard');
     if(!idCard) return;
     idCard.classList.add('empty');
+    idCard.classList.remove('role-administrator', 'role-admin', 'role-moderator', 'role-donor');
     idCard.innerHTML = `<div class="empty-hint"><i class="fas fa-id-card"></i>No card loaded</div>`;
     const label = document.getElementById('cardStatusLabel');
     if(label){ label.textContent='No card loaded'; label.style.color='#65676b'; }
@@ -567,10 +611,6 @@
     const photo=getAvatarUrl(data);
     const verified = !!(data.isDonor && data.approvalStatus === 'approved');
     const roleDisplay = getRoleDisplay(data);
-    let roleText = 'Donor';
-    if (roleDisplay) roleText = roleDisplay.label;
-    else if (data.isDonor === true) roleText = 'Donor';
-    else roleText = '—';
 
     box.innerHTML = `
       <div class="profile-preview">
@@ -580,9 +620,12 @@
       <div class="detail-grid">
         <div><strong>Phone:</strong> ${isOwner ? (data.phoneNumber||'N/A') : maskPhone(data.phoneNumber)}</div>
         <div><strong>Email:</strong> ${isOwner ? (data.email||'N/A') : maskEmail(data.email)}</div>
-        <div><strong>District:</strong> ${data.district||'N/A'}</div>
+        <div>
+  <strong>Location:</strong> 
+  ${[data.upazila, data.district].filter(Boolean).join(', ') || 'N/A'}
+</div>
         <div><strong>Status:</strong> <span style="color:${verified?'#2e7d32':'#a65a1a'};">${verified?'✅ Verified':'⏳ Pending'}</span></div>
-        <div><strong>Role:</strong> <span style="color:#b71c1c;"><i class="fas ${roleDisplay ? roleDisplay.icon : 'fa-droplet'}"></i> ${roleText}</span></div>
+        <div><strong>Role:</strong> <span style="color:#b71c1c;"><i class="fas ${roleDisplay.icon}"></i> ${roleDisplay.label}</span></div>
       </div>
       ${isOwner ? `<div class="notice owner"><i class="fas fa-check-circle"></i> This is your own card. You can download and print it.</div>`
                 : `<div class="notice viewer"><i class="fas fa-info-circle"></i> Public preview — full contact details and download only for card owner.</div>`}
@@ -702,7 +745,7 @@
   }
 
   window.goHome=goHome; window.goBack=goBack; window.logout=logout;
-  console.log('🩸 Blood Donor BD — ID Card ready (fixed 86x54mm) with role badge');
+  console.log('🩸 Blood Donor BD — ID Card ready (fixed 86x54mm) with role-based theming (Gold/Blue/Green)');
 </script>
 </body>
 </html>
