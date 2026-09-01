@@ -23,7 +23,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   
-  <link rel="icon" type="image/png" href="https://i.ibb.co/fd3zk65t/1000018685.jpg">
+  <link id="dynamicFavicon" rel="icon" type="image/png" href="">
   
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -35,7 +35,6 @@
 <script src="https://elfsightcdn.com/platform.js" async></script>
 <!-- ADD THESE TWO LINES -->
 <link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="https://i.ibb.co/fd3zk65t/1000018685.jpg">
   
   <style>
     /* ============================================
@@ -2167,7 +2166,7 @@ window.addEventListener('scroll', () => {
     <nav id="navbar" class="navbar">
       <div class="nav-container">
         <div class="nav-brand">
-  <img src="https://i.ibb.co/RTdtn0RG/1000018751.png" alt="Logo" style="width: 55px; height: 55px; border-radius: 50%; margin-right: 8px;">
+  <img id="navbarLogo" src="" alt="Logo" style="width: 55px; height: 55px; border-radius: 50%; margin-right: 8px;">
           <span style="margin-right: 1px;">Blood Donor BD</span>
 </div>
         
@@ -7538,6 +7537,26 @@ auth.onAuthStateChanged(async (user) => {
     updateLiveLocation();
     
     updateNavigation();
+    // ✅ Load website settings (logo and favicon) from Firestore
+try {
+  const settingsDoc = await db.collection('settings').doc('website').get();
+  if (settingsDoc.exists) {
+    const settings = settingsDoc.data();
+    // Update navbar logo
+    if (settings.logoUrl) {
+      const navbarLogo = document.getElementById('navbarLogo');
+      if (navbarLogo) navbarLogo.src = settings.logoUrl;
+    }
+    // Update favicon
+    if (settings.faviconUrl) {
+      const favicon = document.getElementById('dynamicFavicon');
+      if (favicon) favicon.href = settings.faviconUrl;
+    }
+    console.log('✅ Website settings loaded:', settings);
+  }
+} catch (e) {
+  console.warn('Could not load website settings:', e);
+}
     
     // ✅ ADD THIS LINE HERE - Setup private message listener
     setupPrivateMessageListener();
