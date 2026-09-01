@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Blood Donor BD">
   <meta name="theme-color" content="#b71c1c">
   <title>Direct Message - Blood Donor BD</title>
-  
+  <link id="dynamicFavicon" rel="icon" type="image/png" href="">
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -464,7 +464,7 @@
   <nav class="navbar">
     <div class="nav-container">
       <a class="nav-brand" onclick="goHome()">
-        <img src="https://i.ibb.co/RTdtn0RG/1000018751.png" alt="Logo">
+        <img id="navbarLogo" src="" alt="Logo">
         Blood Donor BD
       </a>
       <div class="nav-actions">
@@ -1208,27 +1208,52 @@
     // INITIALIZATION
     // =============================================
     auth.onAuthStateChanged((user) => {
-      if (user) {
-        currentUser = user;
-        db.collection('users').doc(user.uid).get().then(doc => {
-          if (doc.exists) {
-            userProfile = doc.data();
-            loadPrivateConversations();
+  if (user) {
+    currentUser = user;
+    db.collection('users').doc(user.uid).get().then(async doc => {
+      if (doc.exists) {
+        userProfile = doc.data();
+        
+        // ✅✅✅ Load website settings (logo & favicon) ✅✅✅
+        try {
+          const settingsDoc = await db.collection('settings').doc('website').get();
+          if (settingsDoc.exists) {
+            const settings = settingsDoc.data();
+            
+            // Update navbar logo
+            if (settings.logoUrl) {
+              const navbarLogo = document.getElementById('navbarLogo');
+              if (navbarLogo) navbarLogo.src = settings.logoUrl;
+            }
+            
+            // Update favicon
+            if (settings.faviconUrl) {
+              const favicon = document.getElementById('dynamicFavicon');
+              if (favicon) favicon.href = settings.faviconUrl;
+            }
+            
+            console.log('✅ Website settings loaded on DM page:', settings);
           }
-        });
-      } else {
-        document.getElementById('dmContainer').innerHTML = `
-          <div style="text-align:center; padding:60px; background:white; border-radius:12px; max-width:500px; margin:20px auto;">
-            <i class="fas fa-user-slash" style="font-size:48px; color:#999;"></i>
-            <h3 style="margin-top:16px; color:#666;">Please Login</h3>
-            <p style="color:#999; margin-bottom:20px;">You need to be logged in to send messages.</p>
-            <button onclick="window.location.href='index.html'" class="btn btn-primary" style="padding:12px 32px;">
-              <i class="fas fa-sign-in-alt"></i> Go to Dashboard
-            </button>
-          </div>
-        `;
+        } catch (e) {
+          console.warn('Could not load website settings:', e);
+        }
+        
+        loadPrivateConversations();
       }
     });
+  } else {
+    document.getElementById('dmContainer').innerHTML = `
+      <div style="text-align:center; padding:60px; background:white; border-radius:12px; max-width:500px; margin:20px auto;">
+        <i class="fas fa-user-slash" style="font-size:48px; color:#999;"></i>
+        <h3 style="margin-top:16px; color:#666;">Please Login</h3>
+        <p style="color:#999; margin-bottom:20px;">You need to be logged in to send messages.</p>
+        <button onclick="window.location.href='index.html'" class="btn btn-primary" style="padding:12px 32px;">
+          <i class="fas fa-sign-in-alt"></i> Go to Dashboard
+        </button>
+      </div>
+    `;
+  }
+});
 
     // =============================================
     // SEARCH INPUT LISTENER
