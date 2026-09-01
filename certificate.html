@@ -5,483 +5,436 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>View Certificate · Blood Donor BD</title>
   <link id="dynamicFavicon" rel="icon" type="image/png" href="">
-  
+
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-  
+
   <!-- html2canvas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  
+
+  <!-- jsPDF (for true A4 PDF export) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <!-- QRCode.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  
+
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  
+
+  <!-- Google Fonts: Playfair Display (ceremonial serif) + Poppins (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    body { 
-      margin: 0; 
-      padding: 20px; 
-      background: #c9b3b3; 
-      display: flex; 
-      justify-content: center; 
-      align-items: center; 
-      min-height: 100vh; 
-      font-family: 'Poppins', 'Segoe UI', sans-serif;
+    :root{
+      --maroon:#6f0c0c;
+      --red:#8f1414;
+      --red-soft:#a83232;
+      --gold:#b3872f;
+      --gold-light:#e3cd94;
+      --gold-dark:#8a681f;
+      --paper:#fdf8ef;
+      --paper-edge:#f6ead2;
+      --ink:#2a1a12;
+      --muted:#7c6656;
+      --hairline:#d9c391;
     }
-    
-    .certificate-container { 
-      max-width: 1150px; 
-      width: 100%; 
-      text-align: center;
+
+    *{ margin:0; padding:0; box-sizing:border-box; }
+
+    body{
+      margin:0;
+      padding:28px 16px;
+      background:#3a2020;
+      background-image:
+        radial-gradient(circle at 20% 15%, rgba(255,255,255,0.04), transparent 45%),
+        radial-gradient(circle at 80% 85%, rgba(255,255,255,0.03), transparent 45%),
+        linear-gradient(160deg,#41201f,#2a1414 70%);
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      min-height:100vh;
+      font-family:'Poppins','Segoe UI',sans-serif;
     }
-    
-    .certificate-preview {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 18px 30px rgba(130, 20, 20, 0.2);
-      overflow: hidden;
-      margin-bottom: 20px;
+
+    .certificate-container{ max-width:1180px; width:100%; text-align:center; }
+
+    /* ---------- On-page chrome (not part of the printed certificate) ---------- */
+    .certificate-info{
+      background:var(--paper);
+      padding:22px 26px;
+      border-radius:14px 14px 0 0;
+      text-align:left;
+      border-bottom:1px solid var(--hairline);
     }
-    
-    .certificate-content { 
-      padding: 20px; 
-      display: flex;
-      justify-content: center;
+    .certificate-info h3{
+      color:var(--maroon);
+      margin-bottom:14px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-weight:600;
+      font-size:1.05rem;
     }
-    
-    .btn { 
-      display: inline-block; 
-      margin: 10px; 
-      padding: 14px 30px; 
-      background: #b71c1c; 
-      color: white; 
-      border: none; 
-      border-radius: 60px; 
-      font-size: 1.1rem; 
-      font-weight: 700; 
-      cursor: pointer;
-      transition: background 0.3s;
-      text-decoration: none;
+    .info-row{ display:flex; padding:8px 0; border-bottom:1px solid #f0e4c9; font-size:0.92rem; }
+    .info-row:last-child{ border-bottom:none; }
+    .info-label{ width:150px; font-weight:600; color:var(--muted); }
+    .info-value{ flex:1; color:var(--ink); }
+
+    .certificate-preview{
+      background:#2a1414;
+      border-radius:0 0 14px 14px;
+      overflow:hidden;
+      margin-bottom:18px;
+      padding:26px 18px;
+      box-shadow:0 24px 48px rgba(0,0,0,0.35);
     }
-    
-    .btn:hover { background: #8f1717; }
-    
-    .btn-outline {
-      background: transparent;
-      color: #962d2d;
-      border: 2.5px solid #c26565;
+    .certificate-content{ display:flex; justify-content:center; }
+
+    .action-buttons{
+      display:flex;
+      justify-content:center;
+      gap:14px;
+      padding:6px 20px 4px;
+      flex-wrap:wrap;
     }
-    
-    .btn-outline:hover { background: #962d2d; color: white; }
-    
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:9px;
+      margin:6px;
+      padding:13px 26px;
+      background:linear-gradient(135deg,var(--maroon),var(--red));
+      color:#fdf3e4;
+      border:none;
+      border-radius:8px;
+      font-family:'Poppins',sans-serif;
+      font-size:0.98rem;
+      font-weight:600;
+      letter-spacing:0.2px;
+      cursor:pointer;
+      transition:transform .15s ease, box-shadow .15s ease;
+      text-decoration:none;
+      box-shadow:0 10px 22px rgba(0,0,0,0.35);
     }
-    
-    .error { 
-      text-align: center; 
-      color: #721c24; 
-      background: #f8d7da; 
-      padding: 40px; 
-      border-radius: 12px;
-      border-left: 4px solid #b71c1c;
+    .btn:hover{ transform:translateY(-2px); box-shadow:0 14px 26px rgba(0,0,0,0.4); }
+    .btn:disabled{ opacity:0.55; cursor:not-allowed; transform:none; }
+
+    .btn-outline{
+      background:transparent;
+      color:var(--gold-light);
+      border:1.5px solid var(--gold-dark);
+      box-shadow:none;
     }
-    
-    .loading {
-      text-align: center;
-      color: #5e3535;
-      padding: 40px;
-      font-size: 1.2rem;
+    .btn-outline:hover{ background:rgba(179,135,47,0.12); }
+
+    .loading{ text-align:center; color:#e9d9c4; padding:60px; font-size:1.1rem; }
+
+    .error{
+      text-align:left;
+      color:#4a1414;
+      background:#fbe9e4;
+      padding:34px;
+      border-radius:14px;
+      border-left:5px solid var(--maroon);
     }
-    
-    .certificate-info {
-      background: white;
-      padding: 20px;
-      border-radius: 12px 12px 0 0;
-      text-align: left;
-      border-bottom: 2px solid #b71c1c;
+    .error h2{ margin-bottom:10px; font-size:1.2rem; }
+    .error p{ margin-bottom:16px; }
+
+    /* ============================================================ */
+    /*                THE CERTIFICATE ITSELF (A4 landscape)          */
+    /* ============================================================ */
+
+    .certificate-a4{
+      width:1123px;
+      height:794px;
+      flex-shrink:0;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(179,135,47,0.07), transparent 40%),
+        radial-gradient(circle at 90% 92%, rgba(143,20,20,0.05), transparent 42%),
+        var(--paper);
+      position:relative;
+      font-family:'Poppins',sans-serif;
+      color:var(--ink);
+      overflow:hidden;
+      box-shadow:0 30px 60px rgba(0,0,0,0.45);
     }
-    
-    .certificate-info h3 {
-      color: #941c1c;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+
+    /* double hairline frame */
+    .cert-frame{
+      position:absolute;
+      inset:18px;
+      border:2px solid var(--maroon);
+      pointer-events:none;
     }
-    
-    .info-row {
-      display: flex;
-      padding: 8px 0;
-      border-bottom: 1px solid #eee;
+    .cert-frame::after{
+      content:"";
+      position:absolute;
+      inset:8px;
+      border:1px solid var(--gold);
     }
-    
-    .info-label {
-      width: 150px;
-      font-weight: 600;
-      color: #5e3535;
+
+    /* faint centred watermark: shield + drop */
+    .cert-watermark{
+      position:absolute;
+      top:50%; left:50%;
+      width:520px; height:520px;
+      transform:translate(-50%,-50%);
+      opacity:0.045;
+      pointer-events:none;
+      z-index:0;
     }
-    
-    .info-value {
-      flex: 1;
-      color: #281010;
+
+    /* corner flourishes */
+    .corner{ position:absolute; width:64px; height:64px; z-index:2; pointer-events:none; }
+    .corner svg{ width:100%; height:100%; }
+    .corner-tl{ top:26px; left:26px; }
+    .corner-tr{ top:26px; right:26px; transform:scaleX(-1); }
+    .corner-br{ bottom:26px; right:26px; transform:scale(-1,-1); }
+    .corner-bl{ bottom:26px; left:26px; transform:scaleY(-1); }
+
+    .cert-inner{
+      position:relative;
+      z-index:2;
+      height:100%;
+      padding:46px 78px 34px;
+      display:flex;
+      flex-direction:column;
     }
-    
-    .action-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 15px;
-      padding: 20px;
-      background: white;
-      border-radius: 0 0 12px 12px;
-      flex-wrap: wrap;
+
+    /* ---- letterhead row ---- */
+    .letterhead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:6px;
     }
-    
-    /* A4 LANDSCAPE CERTIFICATE - 1123px x 794px */
-    .certificate-a4 {
-      width: 1123px;
-      min-height: 794px;
-      background: #fffbfb;
-      border: 10px double #b34a4a;
-      border-radius: 12px;
-      padding: 25px 35px;
-      font-family: 'Poppins', 'Segoe UI', sans-serif;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      box-sizing: border-box;
+    .brand-mini{ display:flex; align-items:center; gap:10px; }
+    .brand-mini img{
+      width:34px; height:34px; object-fit:contain; border-radius:50%;
+      border:1px solid var(--gold);
+      background:#fff;
     }
-    
-    .certificate-a4::before {
-      content: "🩸";
-      font-size: 200px;
-      position: absolute;
-      bottom: 30px;
-      right: 40px;
-      opacity: 0.04;
-      color: #8b2a2a;
-      transform: rotate(5deg);
-      pointer-events: none;
-      z-index: 0;
+    .brand-mini span{
+      font-family:'Playfair Display',serif;
+      font-weight:700;
+      color:var(--maroon);
+      font-size:0.95rem;
+      letter-spacing:0.5px;
     }
-    
-    .certificate-a4 > * { position: relative; z-index: 2; }
-    
-    .cert-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 4px solid #b33c3c;
-      padding-bottom: 15px;
-      margin-bottom: 15px;
+    .cert-meta{ text-align:right; font-size:0.72rem; color:var(--muted); line-height:1.5; }
+    .cert-meta b{ color:var(--ink); font-weight:600; }
+
+    /* ---- emblem + title block ---- */
+    .emblem-block{ text-align:center; margin-top:2px; }
+    .emblem-icon{ width:56px; height:56px; margin:0 auto 6px; }
+
+    .cert-eyebrow{
+      font-size:0.68rem;
+      color:var(--gold-dark);
+      font-variant:small-caps;
+      letter-spacing:3px;
+      font-weight:600;
     }
-    
-    .logo-area {
-      display: flex;
-      align-items: center;
-      gap: 15px;
+
+    .cert-title{
+      font-family:'Playfair Display',serif;
+      font-weight:800;
+      font-size:2.15rem;
+      color:var(--maroon);
+      letter-spacing:1px;
+      margin-top:2px;
+      text-transform:uppercase;
     }
-    
-    .logo-img {
-      width: 65px;
-      height: 65px;
-      object-fit: contain;
-      background: white;
-      border-radius: 50%;
-      box-shadow: 0 4px 12px rgba(140, 0, 0, 0.15);
-      border: 2px solid #b71c1c;
+
+    .rule-orn{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      margin:8px auto 4px;
+      width:340px;
     }
-    
-    .logo-text { text-align: left; }
-    
-    .logo-bd {
-      font-size: 2rem;
-      font-weight: 800;
-      color: #941c1c;
-      letter-spacing: 3px;
-      line-height: 1.1;
+    .rule-orn .line{ flex:1; height:1px; background:linear-gradient(90deg,transparent,var(--gold),transparent); }
+    .rule-orn svg{ width:14px; height:14px; flex-shrink:0; }
+
+    .cert-sub{
+      font-size:0.78rem;
+      color:var(--muted);
+      font-variant:small-caps;
+      letter-spacing:2.5px;
     }
-    
-    .logo-bd small {
-      font-size: 0.8rem;
-      font-weight: 400;
-      color: #633737;
-      display: block;
+
+    /* ---- body / recipient ---- */
+    .body-block{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:6px 40px 0;
     }
-    
-    .title-area { text-align: right; }
-    
-    .cert-title {
-      font-size: 2rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: #a11f1f;
-      text-shadow: 2px 2px 0 #fad1d1;
-      line-height: 1.1;
+
+    .presented-to{
+      font-family:'Playfair Display',serif;
+      font-style:italic;
+      font-size:1.05rem;
+      color:var(--muted);
+      margin-bottom:6px;
     }
-    
-    .cert-sub {
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: #683b3b;
-      letter-spacing: 5px;
+
+    .donor-name{
+      font-family:'Playfair Display',serif;
+      font-weight:700;
+      font-size:3rem;
+      color:var(--maroon);
+      line-height:1.15;
+      margin:2px 0 14px;
+      word-break:break-word;
+      max-width:100%;
     }
-    
-    .content-row {
-      display: flex;
-      gap: 25px;
-      margin: 10px 0;
-      flex: 1;
+
+    .narrative{
+      max-width:640px;
+      font-size:1rem;
+      line-height:1.75;
+      color:#3d2a1f;
     }
-    
-    .left-col { flex: 1.2; }
-    .right-col { flex: 0.9; position: relative; }
-    
-    .recipient-block { margin-bottom: 10px; }
-    
-    .presented-to {
-      font-size: 1rem;
-      color: #5e3535;
-      margin-bottom: 5px;
+    .narrative .accent{
+      color:var(--maroon);
+      font-weight:700;
     }
-    
-    .donor-name {
-      font-size: 2.5rem;
-      font-weight: 800;
-      color: #a12222 !important;
-      margin: 5px 0 8px;
-      line-height: 1.2;
-      letter-spacing: -0.5px;
-      word-break: break-word;
+
+    /* ---- verification strip ---- */
+    .verify-strip{
+      margin:22px auto 0;
+      display:flex;
+      align-items:stretch;
+      justify-content:center;
+      gap:0;
+      border-top:1px solid var(--hairline);
+      border-bottom:1px solid var(--hairline);
+      padding:12px 0;
+      max-width:780px;
     }
-    
-    .reg-badge {
-      background: #b71c1c;
-      color: white;
-      display: inline-block;
-      padding: 6px 20px;
-      border-radius: 50px;
-      font-weight: 700;
-      font-size: 1rem;
-      box-shadow: 0 4px 10px rgba(170, 30, 30, 0.3);
-      margin-top: 5px;
+    .verify-item{
+      padding:0 22px;
+      border-right:1px solid var(--hairline);
+      text-align:center;
     }
-    
-    .message-box {
-      font-style: italic;
-      color: #613d3d;
-      font-weight: 500;
-      font-size: 1rem;
-      border-top: 1px solid #dba5a5;
-      padding-top: 12px;
-      margin-top: 8px;
+    .verify-item:last-child{ border-right:none; }
+    .verify-label{
+      font-size:0.62rem;
+      color:var(--gold-dark);
+      font-variant:small-caps;
+      letter-spacing:1.5px;
+      font-weight:700;
+      margin-bottom:3px;
     }
-    
-    .qr-section {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 2px solid #dba5a5;
-      display: flex;
-      align-items: center;
-      gap: 15px;
+    .verify-value{
+      font-size:0.98rem;
+      font-weight:700;
+      color:var(--ink);
     }
-    
-    .qr-container {
-      background: white;
-      padding: 6px;
-      border-radius: 10px;
-      box-shadow: 0 3px 10px rgba(140, 0, 0, 0.12);
-      display: inline-block;
-      min-width: 95px;
-      min-height: 95px;
+    .verify-value.ok{ color:#3c6b2f; }
+    .verify-value.blood{ color:var(--maroon); font-family:'Playfair Display',serif; font-size:1.15rem; }
+
+    /* ---- signature + seal + QR row ---- */
+    .foot-row{
+      margin-top:26px;
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:20px;
     }
-    
-    #qrcode, #qrcode-download { width: 83px; height: 83px; }
-    #qrcode img, #qrcode-download img { width: 83px; height: 83px; }
-    
-    .qr-info { flex: 1; }
-    
-    .qr-title {
-      font-weight: 700;
-      color: #941c1c;
-      font-size: 0.85rem;
-      margin-bottom: 3px;
+
+    .qr-block{ display:flex; align-items:center; gap:12px; width:230px; }
+    .qr-container{
+      background:#fff;
+      padding:5px;
+      border:1px solid var(--gold);
+      border-radius:6px;
+      width:74px; height:74px;
+      flex-shrink:0;
     }
-    
-    .qr-desc { font-size: 0.7rem; color: #5e3535; margin-bottom: 3px; }
-    
-    .qr-verify {
-      font-size: 0.65rem;
-      color: #782e2e;
-      font-weight: 600;
-      background: rgba(183, 28, 28, 0.08);
-      padding: 3px 8px;
-      border-radius: 20px;
-      display: inline-block;
+    #qrcode{ width:64px; height:64px; }
+    #qrcode img{ width:64px !important; height:64px !important; }
+    .qr-info{ text-align:left; }
+    .qr-title{ font-size:0.72rem; font-weight:700; color:var(--maroon); margin-bottom:2px; }
+    .qr-desc{ font-size:0.63rem; color:var(--muted); line-height:1.4; }
+
+    .signature{
+      text-align:center;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      width:230px;
     }
-    
-    .details-panel {
-      background: rgba(225, 170, 170, 0.08);
-      border-radius: 30px;
-      padding: 18px 16px;
-      backdrop-filter: blur(4px);
-      border: 1px dashed #bc6a6a;
-      margin-top: 5px;
+    .e-signature-img{
+      max-width:118px;
+      height:auto;
+      margin-bottom:-4px;
+      pointer-events:none;
+      -webkit-user-drag:none;
+      user-select:none;
     }
-    
-    .detail-row {
-      display: flex;
-      align-items: center;
-      margin-bottom: 14px;
+    .sig-line{ width:170px; height:1px; background:var(--ink); margin:6px 0 6px; opacity:0.55; }
+    .founder-name{ font-weight:700; font-size:0.85rem; color:var(--ink); }
+    .founder-title{ font-size:0.7rem; color:var(--muted); }
+
+    .seal-block{ width:230px; display:flex; flex-direction:column; align-items:center; }
+    .seal-ring{
+      width:82px; height:82px;
+      border-radius:50%;
+      border:2px solid var(--gold);
+      outline:1px solid var(--gold-light);
+      outline-offset:3px;
+      display:flex; align-items:center; justify-content:center;
+      background:#fff;
     }
-    
-    .detail-icon { width: 30px; font-size: 1.4rem; }
-    .detail-content { flex: 1; text-align: left; }
-    
-    .detail-label {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      font-weight: 700;
-      color: #782e2e;
+    .e-seal-img{
+      width:66px; height:66px;
+      object-fit:contain;
+      border-radius:50%;
+      pointer-events:none;
+      -webkit-user-drag:none;
+      user-select:none;
     }
-    
-    .blood-group-badge {
-      background: #b71c1c;
-      color: white;
-      padding: 5px 18px;
-      border-radius: 40px;
-      font-size: 1.5rem;
-      font-weight: 800;
-      display: inline-block;
-      box-shadow: inset 0 -2px 0 #631010;
+    .seal-caption{ margin-top:6px; font-size:0.68rem; font-weight:600; color:var(--gold-dark); font-variant:small-caps; letter-spacing:1px; }
+
+    .footer-note{
+      margin-top:16px;
+      padding-top:10px;
+      border-top:1px solid var(--hairline);
+      text-align:center;
+      font-size:0.63rem;
+      letter-spacing:0.4px;
+      color:var(--muted);
     }
-    
-    .detail-value {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #281010;
-      line-height: 1.2;
+
+    @media (max-width: 1180px){
+      .certificate-a4{ transform-origin:top center; }
     }
-    
-    .detail-value-small {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #281010;
-      line-height: 1.2;
-    }
-    
-    .signature-area {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      margin-top: 15px;
-    }
-    
-    .signature {
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    
-    .e-signature-img {
-      max-width: 120px;
-      height: auto;
-      display: block;
-      margin-bottom: -5px;
-      opacity: 0.99;
-      pointer-events: none;             /* ড্রাগ করা যাবে না */
-      -webkit-user-drag: none;         /* ওয়েবকিট ব্রাউজারে ড্রাগ বন্ধ */
-      user-select: none;              /* সিলেক্ট করা যাবে না */
-    }
-    
-    .line {
-      width: 180px;
-      height: 1px;
-      background: #333;
-      margin: 8px 0;
-    }
-    
-    .founder-name {
-      font-weight: 700;
-      font-size: 14px;
-      color: #1a1a1a;
-      text-align: center;
-    }
-    
-    .founder-title {
-      font-size: 12px;
-      color: #666;
-      text-align: center;
-    }
-    
-    .seal-container { text-align: center; }
-    
-    .e-seal-img {
-      width: 70px;
-      height: 70px;
-      object-fit: contain;
-      border-radius: 50%;
-      background: #fcf3f3;
-      padding: 3px;
-      border: 2px solid #ac4949;
-      opacity: 0.99;
-      pointer-events: none;             /* ড্রাগ করা যাবে না */
-      -webkit-user-drag: none;         /* ওয়েবকিট ব্রাউজারে ড্রাগ বন্ধ */
-      user-select: none;              /* সিলেক্ট করা যাবে না */
-    }
-    
-    .footer-note {
-      font-size: 0.65rem;
-      color: #785757;
-      text-align: center;
-      margin-top: 10px;
-      border-top: 1px solid #d49f9f;
-      padding-top: 8px;
-    }
-    
-    .hero-symbol-img {
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 180px;
-      height: 180px;
-      object-fit: contain;
-      z-index: 1;
-      opacity: 0.06;
-      pointer-events: none;
-    }
-    
-    @media (max-width: 768px) {
-      .certificate-a4 { padding: 15px; width: 100%; }
-      .content-row { flex-direction: column; }
-      .cert-header { flex-direction: column; text-align: center; gap: 15px; }
-      .title-area { text-align: center; }
-      .signature-area { flex-direction: column; align-items: center; gap: 20px; }
-      .donor-name { font-size: 1.8rem; }
-      .action-buttons { flex-direction: column; }
-      .btn { width: 100%; margin: 5px 0; }
+
+    @media print{
+      @page{ size:A4 landscape; margin:0; }
+      body{ background:#fff; padding:0; }
+      .certificate-info, .action-buttons{ display:none !important; }
+      .certificate-preview{ box-shadow:none; padding:0; background:#fff; border-radius:0; }
+      .certificate-a4{ box-shadow:none; }
     }
   </style>
 </head>
 <body>
   <div class="certificate-container">
     <div id="certificateDisplay">
-      <div class="loading">
-        <i class="fas fa-spinner fa-spin"></i> Loading certificate...
-      </div>
+      <div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading certificate...</div>
     </div>
   </div>
-  
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCnky8bzx3KuFoujU5DSlLRYSZgiAF8840",
@@ -491,19 +444,16 @@
       messagingSenderId: "271945142840",
       appId: "1:271945142840:web:b0edefddb55cac5f604ccd"
     };
-    
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    
+
     const urlParams = new URLSearchParams(window.location.search);
     const certId = urlParams.get('id');
     const displayDiv = document.getElementById('certificateDisplay');
-    
-    // Store cert data globally
+
     let currentCert = null;
-    let currentFormattedDate = '';
-    let currentShortDonorId = '';
-    
+
     if (!certId) {
       displayDiv.innerHTML = `
         <div class="error">
@@ -515,271 +465,277 @@
     } else {
       loadCertificate(certId);
     }
-    
-    function generateCertificateHTML(cert, formattedDate, shortDonorId) {
+
+    // Reusable corner flourish SVG
+    const cornerSvg = `
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4,4 L4,46 Q4,64 22,64" stroke="#b3872f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M4,4 L46,4 Q64,4 64,22" stroke="#b3872f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <circle cx="4" cy="4" r="4.5" fill="#b3872f"/>
+      </svg>`;
+
+    // Shield + drop emblem
+    const emblemSvg = `
+      <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <path d="M32 4 L56 13 V29 C56 46 46 56.5 32 60.5 C18 56.5 8 46 8 29 V13 Z" fill="none" stroke="#b3872f" stroke-width="2.4"/>
+        <path d="M32 20 C24 32 19.5 38.5 19.5 44.5 C19.5 51.4 25.1 57 32 57 C38.9 57 44.5 51.4 44.5 44.5 C44.5 38.5 40 32 32 20 Z" fill="#6f0c0c"/>
+      </svg>`;
+
+    // Watermark version (bigger, on background)
+    const watermarkSvg = `
+      <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <path d="M32 4 L56 13 V29 C56 46 46 56.5 32 60.5 C18 56.5 8 46 8 29 V13 Z" fill="none" stroke="#6f0c0c" stroke-width="1.4"/>
+        <path d="M32 20 C24 32 19.5 38.5 19.5 44.5 C19.5 51.4 25.1 57 32 57 C38.9 57 44.5 51.4 44.5 44.5 C44.5 38.5 40 32 32 20 Z" fill="#6f0c0c"/>
+      </svg>`;
+
+    const diamondSvg = `<svg viewBox="0 0 10 10" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="8" height="8" fill="#b3872f" transform="rotate(45 5 5)"/></svg>`;
+
+    function generateCertificateHTML(cert, formattedDate, shortDonorId, donorId) {
       return `
         <div class="certificate-a4" id="certificateElement">
-          <div class="cert-header">
-            <div class="logo-area">
-              <img id="certLogo" src="" alt="Logo" class="logo-img" crossorigin="anonymous" />
-              <div class="logo-text">
-                <div class="logo-bd">BLOOD DONOR <small>BD</small></div>
+          <div class="cert-watermark">${watermarkSvg}</div>
+          <div class="cert-frame"></div>
+          <div class="corner corner-tl">${cornerSvg}</div>
+          <div class="corner corner-tr">${cornerSvg}</div>
+          <div class="corner corner-br">${cornerSvg}</div>
+          <div class="corner corner-bl">${cornerSvg}</div>
+
+          <div class="cert-inner">
+            <div class="letterhead">
+              <div class="brand-mini">
+                <img id="certLogo" src="" alt="Blood Donor BD" crossorigin="anonymous" />
+                <span>Blood Donor BD</span>
+              </div>
+              <div class="cert-meta">
+                Certificate No. <b>${cert.certificateId}</b><br>
+                Issued <b>${formattedDate}</b>
               </div>
             </div>
-            <div class="title-area">
+
+            <div class="emblem-block">
+              <div class="emblem-icon">${emblemSvg}</div>
+              <div class="cert-eyebrow">Blood Donor BD</div>
               <div class="cert-title">Certificate of Registration</div>
-              <div class="cert-sub">LIFE SAVER COMMUNITY</div>
+              <div class="rule-orn"><span class="line"></span>${diamondSvg}<span class="line"></span></div>
+              <div class="cert-sub">Life Saver Community</div>
             </div>
-          </div>
 
-          <div class="content-row">
-            <div class="left-col">
-              <div class="recipient-block">
-                <div class="presented-to">This certificate is proudly presented to</div>
-                <div class="donor-name">${cert.userName || 'Donor Name'}</div>
-                <div class="reg-badge">DONOR-${shortDonorId}</div>
+            <div class="body-block">
+              <div class="presented-to">This is to proudly certify that</div>
+              <div class="donor-name">${cert.userName || 'Donor Name'}</div>
+              <div class="narrative">
+                has registered as a voluntary blood donor with <span class="accent">Blood Donor BD</span>,
+                blood group <span class="accent">${cert.bloodGroup || 'N/A'}</span>, and joins a community of
+                life savers committed to giving the gift of life to those in need.
               </div>
-              <div class="message-box">
-                "Your selfless act gives the gift of life.<br>Thank you for being a hero."
-              </div>
-              
-              <div class="qr-section">
-                <div class="qr-container">
-                  <div id="qrcode"></div>
+
+              <div class="verify-strip">
+                <div class="verify-item">
+                  <div class="verify-label">Blood Group</div>
+                  <div class="verify-value blood">${cert.bloodGroup || 'N/A'}</div>
                 </div>
+                <div class="verify-item">
+                  <div class="verify-label">Donor ID</div>
+                  <div class="verify-value">${shortDonorId}</div>
+                </div>
+                <div class="verify-item">
+                  <div class="verify-label">Registered On</div>
+                  <div class="verify-value">${formattedDate}</div>
+                </div>
+                <div class="verify-item">
+                  <div class="verify-label">Status</div>
+                  <div class="verify-value ok"><i class="fas fa-check-circle"></i> Verified</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="foot-row">
+              <div class="qr-block">
+                <div class="qr-container"><div id="qrcode"></div></div>
                 <div class="qr-info">
-                  <div class="qr-title">🔐 Official Verification</div>
-                  <div class="qr-desc">Scan to verify authenticity</div>
-                  <div class="qr-verify">Blood Donor BD · Official</div>
+                  <div class="qr-title">Official Verification</div>
+                  <div class="qr-desc">Scan to verify authenticity<br>Blood Donor BD · Official Registry</div>
                 </div>
+              </div>
+
+              <div class="signature">
+                <img src="https://i.ibb.co/ynZ1skNd/1000010389.png" alt="E-Signature" class="e-signature-img" crossorigin="anonymous" />
+                <div class="sig-line"></div>
+                <div class="founder-name">Md. Ashfaqur Rahman Tanim</div>
+                <div class="founder-title">Founder, Blood Donor BD</div>
+              </div>
+
+              <div class="seal-block">
+                <div class="seal-ring">
+                  <img src="https://i.ibb.co/zhZRkpMG/1000010361.png" alt="Official Seal" class="e-seal-img" crossorigin="anonymous" />
+                </div>
+                <div class="seal-caption">Official e-Seal</div>
               </div>
             </div>
 
-            <div class="right-col">
-              <img src="https://i.ibb.co/DPmrhmKk/1000010381.png" alt="Hero Symbol" class="hero-symbol-img" crossorigin="anonymous" />
-              <div class="details-panel">
-                <div class="detail-row">
-                  <div class="detail-icon">🩸</div>
-                  <div class="detail-content">
-                    <div class="detail-label">Blood Group</div>
-                    <div><span class="blood-group-badge">${cert.bloodGroup || 'N/A'}</span></div>
-                  </div>
-                </div>
-                <div class="detail-row">
-                  <div class="detail-icon">📅</div>
-                  <div class="detail-content">
-                    <div class="detail-label">Registered on</div>
-                    <div class="detail-value">${formattedDate}</div>
-                  </div>
-                </div>
-                <div class="detail-row">
-                  <div class="detail-icon">🆔</div>
-                  <div class="detail-content">
-                    <div class="detail-label">Donor ID</div>
-                    <div class="detail-value-small">${shortDonorId}</div>
-                  </div>
-                </div>
-                <div class="detail-row">
-                  <div class="detail-icon">✅</div>
-                  <div class="detail-content">
-                    <div class="detail-label">Verification Status</div>
-                    <div class="detail-value-small" style="color:#2d7a2d;">✔ Verified by Blood Donor BD</div>
-                  </div>
-                </div>
-              </div>
+            <div class="footer-note">
+              Certificate ID: ${cert.certificateId} &nbsp;·&nbsp; Donor ID: ${donorId} &nbsp;·&nbsp; Blood Donor BD Official Registry
             </div>
-          </div>
-
-          <div class="signature-area">
-            <div class="signature">
-              <img src="https://i.ibb.co/ynZ1skNd/1000010389.png" alt="E-Signature" class="e-signature-img" crossorigin="anonymous" />
-              <div class="line"></div>
-              <div style="font-size:13px; margin-top: -5px;">e-Signature</div>
-              <div class="founder-name">Md. Ashfaqur Rahman Tanim</div>
-              <div class="founder-title">Founder, Blood Donor BD</div>
-            </div>
-            <div class="seal-container">
-              <img src="https://i.ibb.co/zhZRkpMG/1000010361.png" alt="E-Seal" class="e-seal-img" crossorigin="anonymous" />
-              <div style="margin-top:4px; font-weight:600; color:#5e2f2f;">Official e-Seal</div>
-            </div>
-          </div>
-          
-          <div class="footer-note">
-            Certificate ID: ${cert.certificateId} · Blood Donor BD
           </div>
         </div>
       `;
     }
-    
+
     async function loadCertificate(certId) {
-  try {
-    console.log('Loading certificate:', certId);
-    const doc = await db.collection('certificates').doc(certId).get();
-    
-    if (!doc.exists) {
-      displayDiv.innerHTML = `
-        <div class="error">
-          <h2><i class="fas fa-times-circle"></i> Certificate Not Found</h2>
-          <p>The certificate ID "${certId}" does not exist.</p>
-          <button class="btn btn-outline" onclick="window.location.href='index.html'">Go Home</button>
-        </div>
-      `;
-      return;
-    }
-    
-    const cert = doc.data();
-    currentCert = cert;
-    
-    const formattedDate = new Date(cert.issuedDate).toLocaleDateString('en-GB', { 
-      day: 'numeric', month: 'long', year: 'numeric' 
-    });
-    currentFormattedDate = formattedDate;
-    
-    const donorId = cert.donorId || cert.certificateId.slice(-8);
-    const shortDonorId = donorId.length > 12 ? donorId.slice(0, 12) : donorId;
-    currentShortDonorId = shortDonorId;
-    
-    const verifyUrl = window.location.href;
-    
-    const certHTML = `
-      <div class="certificate-info">
-        <h3><i class="fas fa-check-circle" style="color:#2e7d32;"></i> Verified Certificate</h3>
-        <div class="info-row"><span class="info-label">Certificate ID:</span><span class="info-value">${cert.certificateId}</span></div>
-        <div class="info-row"><span class="info-label">Donor Name:</span><span class="info-value">${cert.userName || 'N/A'}</span></div>
-        <div class="info-row"><span class="info-label">Donor ID:</span><span class="info-value">${donorId}</span></div>
-        <div class="info-row"><span class="info-label">Blood Group:</span><span class="info-value">${cert.bloodGroup || 'N/A'}</span></div>
-        <div class="info-row"><span class="info-label">Issued Date:</span><span class="info-value">${formattedDate}</span></div>
-        <div class="info-row"><span class="info-label">Issued By:</span><span class="info-value">${cert.issuedByName || 'Blood Donor BD'}</span></div>
-        <div class="info-row"><span class="info-label">Status:</span><span class="info-value"><span style="background:#e8f5e9;color:#2e7d32;padding:4px 12px;border-radius:20px;">✓ Valid</span></span></div>
-      </div>
-      
-      <div class="certificate-preview">
-        <div class="certificate-content">
-          ${generateCertificateHTML(cert, formattedDate, shortDonorId)}
-        </div>
-      </div>
-      
-      <div class="action-buttons">
-        <button class="btn" id="downloadBtn"><i class="fas fa-download"></i> Download PNG (A4 Landscape)</button>
-        <button class="btn btn-outline" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
-        <button class="btn btn-outline" onclick="window.location.href='index.html'"><i class="fas fa-home"></i> Home</button>
-      </div>
-    `;
-    
-    displayDiv.innerHTML = certHTML;
-    
-    // ✅✅✅ HTML রেন্ডার হওয়ার পর Logo & Favicon আপডেট করুন ✅✅✅
-    try {
-      const settingsDoc = await db.collection('settings').doc('website').get();
-      if (settingsDoc.exists) {
-        const settings = settingsDoc.data();
-        
-        // Update certificate logo
-        if (settings.logoUrl) {
-          const certLogo = document.getElementById('certLogo');
-          if (certLogo) certLogo.src = settings.logoUrl;
-        }
-        
-        // Update favicon
-        if (settings.faviconUrl) {
-          const favicon = document.getElementById('dynamicFavicon');
-          if (favicon) favicon.href = settings.faviconUrl;
-        }
-        
-        console.log('✅ Website settings loaded on certificate page:', settings);
-      }
-    } catch (e) {
-      console.warn('Could not load website settings:', e);
-    }
-    
-    // Generate QR Code
-    setTimeout(() => {
-      const qrContainer = document.getElementById('qrcode');
-      if (qrContainer) {
-        qrContainer.innerHTML = '';
-        try {
-          new QRCode(qrContainer, {
-            text: verifyUrl,
-            width: 83,
-            height: 83,
-            colorDark: "#941c1c",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-          });
-        } catch (e) {
-          console.error('QR Error:', e);
-          qrContainer.innerHTML = '<div style="width:83px;height:83px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;">QR</div>';
-        }
-      }
-    }, 300);
-    
+      try {
+        const doc = await db.collection('certificates').doc(certId).get();
 
-        
-        // Download function - captures the visible certificate
-        document.getElementById('downloadBtn').addEventListener('click', async function(e) {
-          const btn = e.target;
-          const originalText = btn.innerHTML;
-          
-          btn.disabled = true;
-          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
-          
-          try {
-            const element = document.getElementById('certificateElement');
-            
-            // Simple html2canvas with minimal options
-            const canvas = await html2canvas(element, {
-              scale: 2.5,
-              backgroundColor: '#fffbfb',
-              allowTaint: true,
-              useCORS: true,
-              logging: false,
-              windowWidth: 1123,
-              windowHeight: 794
-            });
-            
-            // Create download link
-            const link = document.createElement('a');
-            const safeName = (currentCert.userName || 'Donor').replace(/\s+/g, '_').replace(/\./g, '');
-            link.download = `BloodDonorBD_A4_${safeName}_${certId}.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-            
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-            
-            console.log('Download successful!');
-          } catch (error) {
-            console.error('Download error:', error);
-            
-            // Fallback: Try with different settings
-            try {
-              const element = document.getElementById('certificateElement');
-              const canvas = await html2canvas(element, {
-                scale: 2,
-                backgroundColor: '#ffffff',
-                allowTaint: true,
-                useCORS: false,
-                logging: false
-              });
-              
-              const link = document.createElement('a');
-              const safeName = (currentCert.userName || 'Donor').replace(/\s+/g, '_').replace(/\./g, '');
-              link.download = `BloodDonorBD_${safeName}_${certId}.png`;
-              link.href = canvas.toDataURL('image/png');
-              link.click();
-              
-              btn.disabled = false;
-              btn.innerHTML = originalText;
-              console.log('Download successful with fallback!');
-            } catch (fallbackError) {
-              console.error('Fallback error:', fallbackError);
-              alert('Download failed. Please use the Print option instead.');
-              btn.disabled = false;
-              btn.innerHTML = originalText;
+        if (!doc.exists) {
+          displayDiv.innerHTML = `
+            <div class="error">
+              <h2><i class="fas fa-times-circle"></i> Certificate Not Found</h2>
+              <p>The certificate ID "${certId}" does not exist.</p>
+              <button class="btn btn-outline" onclick="window.location.href='index.html'">Go Home</button>
+            </div>
+          `;
+          return;
+        }
+
+        const cert = doc.data();
+        currentCert = cert;
+
+        const formattedDate = new Date(cert.issuedDate).toLocaleDateString('en-GB', {
+          day: 'numeric', month: 'long', year: 'numeric'
+        });
+
+        const donorId = cert.donorId || cert.certificateId.slice(-8);
+        const shortDonorId = donorId.length > 12 ? donorId.slice(0, 12) : donorId;
+
+        const verifyUrl = window.location.href;
+
+        const certHTML = `
+          <div class="certificate-info">
+            <h3><i class="fas fa-check-circle" style="color:#3c6b2f;"></i> Verified Certificate</h3>
+            <div class="info-row"><span class="info-label">Certificate ID:</span><span class="info-value">${cert.certificateId}</span></div>
+            <div class="info-row"><span class="info-label">Donor Name:</span><span class="info-value">${cert.userName || 'N/A'}</span></div>
+            <div class="info-row"><span class="info-label">Donor ID:</span><span class="info-value">${donorId}</span></div>
+            <div class="info-row"><span class="info-label">Blood Group:</span><span class="info-value">${cert.bloodGroup || 'N/A'}</span></div>
+            <div class="info-row"><span class="info-label">Issued Date:</span><span class="info-value">${formattedDate}</span></div>
+            <div class="info-row"><span class="info-label">Issued By:</span><span class="info-value">${cert.issuedByName || 'Blood Donor BD'}</span></div>
+            <div class="info-row"><span class="info-label">Status:</span><span class="info-value"><span style="background:#e6f2df;color:#3c6b2f;padding:4px 12px;border-radius:20px;">✓ Valid</span></span></div>
+          </div>
+
+          <div class="certificate-preview">
+            <div class="certificate-content">
+              ${generateCertificateHTML(cert, formattedDate, shortDonorId, donorId)}
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button class="btn" id="downloadPngBtn"><i class="fas fa-image"></i> Download PNG (High Quality)</button>
+            <button class="btn" id="downloadPdfBtn"><i class="fas fa-file-pdf"></i> Download PDF (A4)</button>
+            <button class="btn btn-outline" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+            <button class="btn btn-outline" onclick="window.location.href='index.html'"><i class="fas fa-home"></i> Home</button>
+          </div>
+        `;
+
+        displayDiv.innerHTML = certHTML;
+
+        // Load dynamic logo / favicon from settings
+        try {
+          const settingsDoc = await db.collection('settings').doc('website').get();
+          if (settingsDoc.exists) {
+            const settings = settingsDoc.data();
+            if (settings.logoUrl) {
+              const certLogo = document.getElementById('certLogo');
+              if (certLogo) certLogo.src = settings.logoUrl;
+            }
+            if (settings.faviconUrl) {
+              const favicon = document.getElementById('dynamicFavicon');
+              if (favicon) favicon.href = settings.faviconUrl;
             }
           }
+        } catch (e) {
+          console.warn('Could not load website settings:', e);
+        }
+
+        // Generate QR code
+        setTimeout(() => {
+          const qrContainer = document.getElementById('qrcode');
+          if (qrContainer) {
+            qrContainer.innerHTML = '';
+            try {
+              new QRCode(qrContainer, {
+                text: verifyUrl,
+                width: 64,
+                height: 64,
+                colorDark: "#6f0c0c",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+              });
+            } catch (e) {
+              console.error('QR Error:', e);
+              qrContainer.innerHTML = '<div style="width:64px;height:64px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:10px;">QR</div>';
+            }
+          }
+        }, 300);
+
+        async function captureCertificate() {
+          if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready;
+          }
+          const element = document.getElementById('certificateElement');
+          return html2canvas(element, {
+            scale: 3,
+            backgroundColor: '#fdf8ef',
+            allowTaint: true,
+            useCORS: true,
+            logging: false,
+            windowWidth: 1123,
+            windowHeight: 794
+          });
+        }
+
+        const safeName = () => (currentCert.userName || 'Donor').replace(/\s+/g, '_').replace(/\./g, '');
+
+        // PNG download
+        document.getElementById('downloadPngBtn').addEventListener('click', async function (e) {
+          const btn = e.currentTarget;
+          const originalText = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+          try {
+            const canvas = await captureCertificate();
+            const link = document.createElement('a');
+            link.download = `BloodDonorBD_Certificate_${safeName()}_${certId}.png`;
+            link.href = canvas.toDataURL('image/png', 1.0);
+            link.click();
+          } catch (error) {
+            console.error('PNG download error:', error);
+            alert('Download failed. Please try the Print option instead.');
+          } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+          }
         });
-        
+
+        // PDF download (true A4 landscape, print-ready)
+        document.getElementById('downloadPdfBtn').addEventListener('click', async function (e) {
+          const btn = e.currentTarget;
+          const originalText = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+          try {
+            const canvas = await captureCertificate();
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            const imgData = canvas.toDataURL('image/png', 1.0);
+            pdf.addImage(imgData, 'PNG', 0, 0, 297, 210, undefined, 'FAST');
+            pdf.save(`BloodDonorBD_Certificate_${safeName()}_${certId}.pdf`);
+          } catch (error) {
+            console.error('PDF download error:', error);
+            alert('PDF generation failed. Please try the Print option instead.');
+          } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+          }
+        });
+
       } catch (error) {
         console.error('Error:', error);
         displayDiv.innerHTML = `
