@@ -12,7 +12,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <!-- Fonts & Icons -->
-  <link rel="icon" type="image/png" href="https://i.ibb.co/fd3zk65t/1000018685.jpg" />
+  <link id="dynamicFavicon" rel="icon" type="image/png" href="https://i.ibb.co/fd3zk65t/1000018685.jpg" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <style>
@@ -85,6 +85,7 @@
       border-radius: 28px;
       margin-bottom: 8px;
       box-shadow: 0 8px 16px rgba(220, 38, 38, 0.2);
+      object-fit: contain;
     }
 
     .sidebar-header h2 { font-size: 20px; font-weight: 700; }
@@ -755,7 +756,7 @@
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
-        <img src="https://i.ibb.co/S4NpN5F5/1000010374.png" alt="logo" class="logo" />
+        <img id="sidebarLogo" src="https://i.ibb.co/S4NpN5F5/1000010374.png" alt="logo" class="logo" />
         <h2>Blood Donor BD</h2>
         <p>Administration Panel</p>
       </div>
@@ -774,6 +775,7 @@
           <i class="fas fa-upload"></i> Bulk Register
         </li>
         <li class="nav-item" data-tab="roles" id="rolesNav"><i class="fas fa-shield-haltered"></i> Roles</li>
+        <li class="nav-item" data-tab="settings" id="settingsNav" style="display:none;"><i class="fas fa-cog"></i> Website Settings</li>
       </ul>
       <div class="sidebar-footer">
         <div class="admin-profile">
@@ -915,7 +917,7 @@
       }
 
       // ============================================
-      // LOAD TAB FUNCTION - UPDATED
+      // LOAD TAB FUNCTION
       // ============================================
       function loadTab(tab) {
         switch (tab) {
@@ -930,7 +932,293 @@
           case 'notices': loadNotices(); break;
           case 'bulk-email': loadBulkEmail(); break;
           case 'roles': loadRoles(); break;
+          case 'settings': loadWebsiteSettings(); break;
           default: document.getElementById('contentArea').innerHTML = '<p style="color:var(--danger);">Page not found.</p>';
+        }
+      }
+
+      // ============================================
+      // WEBSITE SETTINGS (Logo & Favicon)
+      // ============================================
+      async function loadWebsiteSettings() {
+        if (currentRole !== 'main_admin') {
+          document.getElementById('contentArea').innerHTML = '<p style="color:var(--danger);">Access denied. Only Super Administrators can manage website settings.</p>';
+          return;
+        }
+        
+        const area = document.getElementById('contentArea');
+        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading settings...</p>';
+        
+        try {
+          const settingsDoc = await db.collection('settings').doc('website').get();
+          const settings = settingsDoc.exists ? settingsDoc.data() : {};
+          const IMGBB_API_KEY = '54ffbc26529e5d05fa5cffad23712429';
+          const currentLogo = settings.logoUrl || 'https://i.ibb.co/S4NpN5F5/1000010374.png';
+          const currentFavicon = settings.faviconUrl || 'https://i.ibb.co/fd3zk65t/1000018685.jpg';
+          
+          area.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+              <h2 style="margin: 0;"><i class="fas fa-cog"></i> Website Settings</h2>
+              <span style="background:#fef2f2; color:#b71c1c; padding:6px 16px; border-radius:20px; font-size:13px; font-weight:600;">
+                👑 Super Admin Only
+              </span>
+            </div>
+            
+            <div class="grid-2">
+              <!-- Logo Settings -->
+              <div class="table-card" style="padding:24px;">
+                <h3 style="margin-bottom:16px;"><i class="fas fa-image"></i> Website Logo</h3>
+                
+                <div style="text-align:center; margin-bottom:16px;">
+                  <img src="${currentLogo}" alt="Current Logo" style="max-width:200px; max-height:80px; border-radius:12px; border:1px solid var(--border); padding:8px; background:white; object-fit:contain;">
+                  <p style="font-size:12px; color:var(--text-secondary); margin-top:8px;">Current Logo</p>
+                </div>
+                
+                <div class="upload-area" id="logoUploadArea" onclick="document.getElementById('logoFileInput').click()">
+                  <i class="fas fa-cloud-upload-alt" style="font-size:32px; color:var(--primary);"></i>
+                  <p style="margin-top:8px;"><strong>Click to upload new logo</strong></p>
+                  <p style="font-size:12px; color:var(--text-secondary);">PNG, JPG, SVG (Max 2MB)</p>
+                  <input type="file" id="logoFileInput" accept="image/*" style="display:none;" onchange="window._uploadLogo(event)">
+                </div>
+                
+                <div id="logoUploadProgress" style="display:none; margin-top:12px;">
+                  <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="logoProgressFill">0%</div>
+                  </div>
+                  <p id="logoUploadStatus" style="font-size:13px; color:var(--text-secondary);">Uploading...</p>
+                </div>
+                
+                <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">
+                  <button class="btn-secondary btn-sm" onclick="window._resetLogo()"><i class="fas fa-undo"></i> Reset to Default</button>
+                </div>
+              </div>
+              
+              <!-- Favicon Settings -->
+              <div class="table-card" style="padding:24px;">
+                <h3 style="margin-bottom:16px;"><i class="fas fa-address-card"></i> Website Favicon</h3>
+                
+                <div style="text-align:center; margin-bottom:16px;">
+                  <img src="${currentFavicon}" alt="Current Favicon" style="width:64px; height:64px; border-radius:12px; border:1px solid var(--border); padding:8px; background:white; object-fit:contain;">
+                  <p style="font-size:12px; color:var(--text-secondary); margin-top:8px;">Current Favicon</p>
+                </div>
+                
+                <div class="upload-area" id="faviconUploadArea" onclick="document.getElementById('faviconFileInput').click()">
+                  <i class="fas fa-cloud-upload-alt" style="font-size:32px; color:var(--primary);"></i>
+                  <p style="margin-top:8px;"><strong>Click to upload new favicon</strong></p>
+                  <p style="font-size:12px; color:var(--text-secondary);">PNG, ICO, JPG (Max 1MB)</p>
+                  <input type="file" id="faviconFileInput" accept="image/*" style="display:none;" onchange="window._uploadFavicon(event)">
+                </div>
+                
+                <div id="faviconUploadProgress" style="display:none; margin-top:12px;">
+                  <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="faviconProgressFill">0%</div>
+                  </div>
+                  <p id="faviconUploadStatus" style="font-size:13px; color:var(--text-secondary);">Uploading...</p>
+                </div>
+                
+                <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap;">
+                  <button class="btn-secondary btn-sm" onclick="window._resetFavicon()"><i class="fas fa-undo"></i> Reset to Default</button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="table-card" style="padding:20px; margin-top:16px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                <div>
+                  <h4 style="margin:0;"><i class="fas fa-info-circle"></i> Current Settings</h4>
+                  <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">
+                    Logo URL: <code style="background:#f1f5f9; padding:2px 8px; border-radius:4px; font-size:12px; word-break:break-all;">${currentLogo}</code>
+                  </p>
+                  <p style="font-size:13px; color:var(--text-secondary); margin-top:4px;">
+                    Favicon URL: <code style="background:#f1f5f9; padding:2px 8px; border-radius:4px; font-size:12px; word-break:break-all;">${currentFavicon}</code>
+                  </p>
+                </div>
+                <button class="btn-primary" onclick="window._previewWebsite()"><i class="fas fa-eye"></i> Preview Changes</button>
+              </div>
+            </div>
+          `;
+          
+          // --- Upload Logo Function ---
+          window._uploadLogo = async function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (file.size > 2 * 1024 * 1024) {
+              showToast('Logo file too large. Maximum 2MB allowed.', 'error');
+              event.target.value = '';
+              return;
+            }
+            
+            document.getElementById('logoUploadProgress').style.display = 'block';
+            document.getElementById('logoUploadStatus').textContent = 'Uploading to ImgBB...';
+            document.getElementById('logoProgressFill').style.width = '30%';
+            document.getElementById('logoProgressFill').textContent = '30%';
+            
+            try {
+              const formData = new FormData();
+              formData.append('image', file);
+              formData.append('key', IMGBB_API_KEY);
+              
+              document.getElementById('logoProgressFill').style.width = '60%';
+              document.getElementById('logoProgressFill').textContent = '60%';
+              
+              const response = await fetch('https://api.imgbb.com/1/upload', {
+                method: 'POST',
+                body: formData
+              });
+              
+              const data = await response.json();
+              
+              if (!data.success) {
+                throw new Error(data.error?.message || 'Upload failed');
+              }
+              
+              const imageUrl = data.data.url;
+              const displayUrl = data.data.display_url || imageUrl;
+              
+              document.getElementById('logoProgressFill').style.width = '90%';
+              document.getElementById('logoProgressFill').textContent = '90%';
+              document.getElementById('logoUploadStatus').textContent = 'Saving to database...';
+              
+              await db.collection('settings').doc('website').set({
+                logoUrl: displayUrl,
+                logoUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                logoUpdatedBy: currentUser.uid,
+                logoUpdatedByName: currentUser.fullName || 'Super Admin'
+              }, { merge: true });
+              
+              document.getElementById('logoProgressFill').style.width = '100%';
+              document.getElementById('logoProgressFill').textContent = '100%';
+              document.getElementById('logoUploadStatus').textContent = '✅ Logo updated successfully!';
+              
+              // Update sidebar logo immediately
+              const sidebarLogo = document.getElementById('sidebarLogo');
+              if (sidebarLogo) sidebarLogo.src = displayUrl;
+              
+              showToast('Website logo updated successfully!', 'success');
+              setTimeout(() => loadWebsiteSettings(), 1000);
+              
+            } catch (error) {
+              document.getElementById('logoUploadStatus').textContent = '❌ Error: ' + error.message;
+              document.getElementById('logoUploadStatus').style.color = 'var(--danger)';
+              showToast('Error uploading logo: ' + error.message, 'error');
+            }
+          };
+          
+          // --- Upload Favicon Function ---
+          window._uploadFavicon = async function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (file.size > 1 * 1024 * 1024) {
+              showToast('Favicon file too large. Maximum 1MB allowed.', 'error');
+              event.target.value = '';
+              return;
+            }
+            
+            document.getElementById('faviconUploadProgress').style.display = 'block';
+            document.getElementById('faviconUploadStatus').textContent = 'Uploading to ImgBB...';
+            document.getElementById('faviconProgressFill').style.width = '30%';
+            document.getElementById('faviconProgressFill').textContent = '30%';
+            
+            try {
+              const formData = new FormData();
+              formData.append('image', file);
+              formData.append('key', IMGBB_API_KEY);
+              
+              document.getElementById('faviconProgressFill').style.width = '60%';
+              document.getElementById('faviconProgressFill').textContent = '60%';
+              
+              const response = await fetch('https://api.imgbb.com/1/upload', {
+                method: 'POST',
+                body: formData
+              });
+              
+              const data = await response.json();
+              
+              if (!data.success) {
+                throw new Error(data.error?.message || 'Upload failed');
+              }
+              
+              const imageUrl = data.data.url;
+              const displayUrl = data.data.display_url || imageUrl;
+              
+              document.getElementById('faviconProgressFill').style.width = '90%';
+              document.getElementById('faviconProgressFill').textContent = '90%';
+              document.getElementById('faviconUploadStatus').textContent = 'Saving to database...';
+              
+              await db.collection('settings').doc('website').set({
+                faviconUrl: displayUrl,
+                faviconUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                faviconUpdatedBy: currentUser.uid,
+                faviconUpdatedByName: currentUser.fullName || 'Super Admin'
+              }, { merge: true });
+              
+              document.getElementById('faviconProgressFill').style.width = '100%';
+              document.getElementById('faviconProgressFill').textContent = '100%';
+              document.getElementById('faviconUploadStatus').textContent = '✅ Favicon updated successfully!';
+              
+              // Update favicon immediately
+              const favicon = document.getElementById('dynamicFavicon');
+              if (favicon) favicon.href = displayUrl;
+              
+              showToast('Website favicon updated successfully!', 'success');
+              setTimeout(() => loadWebsiteSettings(), 1000);
+              
+            } catch (error) {
+              document.getElementById('faviconUploadStatus').textContent = '❌ Error: ' + error.message;
+              document.getElementById('faviconUploadStatus').style.color = 'var(--danger)';
+              showToast('Error uploading favicon: ' + error.message, 'error');
+            }
+          };
+          
+          // --- Reset Logo ---
+          window._resetLogo = async function() {
+            if (!confirm('Reset logo to default?')) return;
+            try {
+              const defaultLogo = 'https://i.ibb.co/S4NpN5F5/1000010374.png';
+              await db.collection('settings').doc('website').set({
+                logoUrl: defaultLogo,
+                logoUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                logoUpdatedBy: currentUser.uid,
+                logoUpdatedByName: currentUser.fullName || 'Super Admin'
+              }, { merge: true });
+              const sidebarLogo = document.getElementById('sidebarLogo');
+              if (sidebarLogo) sidebarLogo.src = defaultLogo;
+              showToast('Logo reset to default', 'success');
+              loadWebsiteSettings();
+            } catch (error) {
+              showToast('Error resetting logo: ' + error.message, 'error');
+            }
+          };
+          
+          // --- Reset Favicon ---
+          window._resetFavicon = async function() {
+            if (!confirm('Reset favicon to default?')) return;
+            try {
+              const defaultFavicon = 'https://i.ibb.co/fd3zk65t/1000018685.jpg';
+              await db.collection('settings').doc('website').set({
+                faviconUrl: defaultFavicon,
+                faviconUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                faviconUpdatedBy: currentUser.uid,
+                faviconUpdatedByName: currentUser.fullName || 'Super Admin'
+              }, { merge: true });
+              const favicon = document.getElementById('dynamicFavicon');
+              if (favicon) favicon.href = defaultFavicon;
+              showToast('Favicon reset to default', 'success');
+              loadWebsiteSettings();
+            } catch (error) {
+              showToast('Error resetting favicon: ' + error.message, 'error');
+            }
+          };
+          
+          // --- Preview Website ---
+          window._previewWebsite = function() {
+            window.open('index.html', '_blank');
+          };
+          
+        } catch (error) {
+          area.innerHTML = `<p style="color:var(--danger);">Error loading settings: ${error.message}</p>`;
         }
       }
 
@@ -951,17 +1239,39 @@
           document.getElementById('adminEmail').textContent = user.email;
           document.getElementById('appContainer').style.display = 'flex';
 
+          // Show/Hide menu items based on role
           const bulkEmailNav = document.getElementById('bulkEmailNav');
           const bulkRegisterNav = document.getElementById('bulkRegisterNav');
           const rolesNav = document.getElementById('rolesNav');
+          const settingsNav = document.getElementById('settingsNav');
+          
           if (bulkEmailNav) bulkEmailNav.style.display = canBulkEmail() ? 'flex' : 'none';
           if (bulkRegisterNav) bulkRegisterNav.style.display = canBulkRegister() ? 'flex' : 'none';
           if (rolesNav) rolesNav.style.display = canManageRoles() ? 'flex' : 'none';
+          if (settingsNav) settingsNav.style.display = currentRole === 'main_admin' ? 'flex' : 'none';
+
+          // Load website settings (logo and favicon)
+          try {
+            const settingsDoc = await db.collection('settings').doc('website').get();
+            if (settingsDoc.exists) {
+              const settings = settingsDoc.data();
+              if (settings.logoUrl) {
+                const sidebarLogo = document.getElementById('sidebarLogo');
+                if (sidebarLogo) sidebarLogo.src = settings.logoUrl;
+              }
+              if (settings.faviconUrl) {
+                const favicon = document.getElementById('dynamicFavicon');
+                if (favicon) favicon.href = settings.faviconUrl;
+              }
+            }
+          } catch (e) {
+            console.warn('Could not load website settings:', e);
+          }
 
           await refreshBadges();
           setupNavigation();
           const hash = window.location.hash.substring(1);
-          const validTabs = ['dashboard','pending','donation-proofs','users','donors','requests','contact-reveal-logs','certificates','notices','bulk-email','roles'];
+          const validTabs = ['dashboard','pending','donation-proofs','users','donors','requests','contact-reveal-logs','certificates','notices','bulk-email','roles','settings'];
           const defaultTab = validTabs.includes(hash) ? hash : 'dashboard';
           loadTab(defaultTab);
 
@@ -979,7 +1289,13 @@
             if (!tab) return;
             document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
             item.classList.add('active');
-            const titleMap = { 'dashboard':'Dashboard','pending':'Pending Approvals','donation-proofs':'Donation Proofs','users':'All Users','donors':'Donors','requests':'Blood Requests','contact-reveal-logs':'Contact Reveals','certificates':'Certificates','notices':'Notices Management','bulk-email':'Bulk Email','roles':'Roles Management' };
+            const titleMap = { 
+              'dashboard':'Dashboard','pending':'Pending Approvals','donation-proofs':'Donation Proofs',
+              'users':'All Users','donors':'Donors','requests':'Blood Requests',
+              'contact-reveal-logs':'Contact Reveals','certificates':'Certificates',
+              'notices':'Notices Management','bulk-email':'Bulk Email',
+              'roles':'Roles Management','settings':'Website Settings'
+            };
             document.getElementById('pageTitle').textContent = titleMap[tab] || tab;
             loadTab(tab);
             if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
@@ -1052,263 +1368,252 @@
       }
 
       // ============================================
-// DONATION PROOFS MANAGEMENT (FIXED - No Index Required)
-// ============================================
-async function loadDonationProofs() {
-  if (!canManageDonationProofs()) {
-    document.getElementById('contentArea').innerHTML = '<p style="color:var(--danger);">Access denied. Only administrators and moderators can manage donation proofs.</p>';
-    return;
-  }
+      // DONATION PROOFS MANAGEMENT
+      // ============================================
+      async function loadDonationProofs() {
+        if (!canManageDonationProofs()) {
+          document.getElementById('contentArea').innerHTML = '<p style="color:var(--danger);">Access denied. Only administrators and moderators can manage donation proofs.</p>';
+          return;
+        }
 
-  const area = document.getElementById('contentArea');
-  area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading donation proofs...</p>';
+        const area = document.getElementById('contentArea');
+        area.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading donation proofs...</p>';
 
-  try {
-    // 🔥 FIX: Remove orderBy to avoid index requirement
-    // First get all users (or limit to recent ones)
-    const snap = await db.collection('users')
-      .where('lastDonationApprovalStatus', 'in', ['pending', 'approved', 'rejected'])
-      .get();
+        try {
+          const snap = await db.collection('users')
+            .where('lastDonationApprovalStatus', 'in', ['pending', 'approved', 'rejected'])
+            .get();
 
-    const proofs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          const proofs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    // 🔥 Sort in JavaScript instead of Firestore
-    proofs.sort((a, b) => {
-      const dateA = a.lastDonationSubmittedAt?.toDate?.() || new Date(0);
-      const dateB = b.lastDonationSubmittedAt?.toDate?.() || new Date(0);
-      return dateB - dateA;
-    });
+          proofs.sort((a, b) => {
+            const dateA = a.lastDonationSubmittedAt?.toDate?.() || new Date(0);
+            const dateB = b.lastDonationSubmittedAt?.toDate?.() || new Date(0);
+            return dateB - dateA;
+          });
 
-    // Filter: only users who have submitted donation proof
-    const pendingProofs = proofs.filter(u => u.lastDonationApprovalStatus === 'pending');
-    const approvedProofs = proofs.filter(u => u.lastDonationApprovalStatus === 'approved');
-    const rejectedProofs = proofs.filter(u => u.lastDonationApprovalStatus === 'rejected');
+          const pendingProofs = proofs.filter(u => u.lastDonationApprovalStatus === 'pending');
+          const approvedProofs = proofs.filter(u => u.lastDonationApprovalStatus === 'approved');
+          const rejectedProofs = proofs.filter(u => u.lastDonationApprovalStatus === 'rejected');
 
-    let html = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
-        <h2 style="margin: 0;"><i class="fas fa-image"></i> Donation Proofs Management</h2>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <span style="background:#f59e0b; color:white; padding:4px 14px; border-radius:20px; font-size:13px; font-weight:600;">⏳ Pending: ${pendingProofs.length}</span>
-          <span style="background:#10b981; color:white; padding:4px 14px; border-radius:20px; font-size:13px; font-weight:600;">✅ Approved: ${approvedProofs.length}</span>
-          <span style="background:#ef4444; color:white; padding:4px 14px; border-radius:20px; font-size:13px; font-weight:600;">❌ Rejected: ${rejectedProofs.length}</span>
-        </div>
-      </div>
-    `;
+          let html = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+              <h2 style="margin: 0;"><i class="fas fa-image"></i> Donation Proofs Management</h2>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <span style="background:#f59e0b; color:white; padding:4px 14px; border-radius:20px; font-size:13px; font-weight:600;">⏳ Pending: ${pendingProofs.length}</span>
+                <span style="background:#10b981; color:white; padding:4px 14px; border-radius:20px; font-size:13px; font-weight:600;">✅ Approved: ${approvedProofs.length}</span>
+                <span style="background:#ef4444; color:white; padding:4px 14px; border-radius:20px; font-size:13px; font-weight:600;">❌ Rejected: ${rejectedProofs.length}</span>
+              </div>
+            </div>
+          `;
 
-    if (proofs.length === 0) {
-      html += `
-        <div class="table-card" style="padding:40px; text-align:center;">
-          <i class="fas fa-image" style="font-size:48px; color:#ccc;"></i>
-          <h3 style="margin-top:16px;">No Donation Proofs Submitted</h3>
-          <p style="color:var(--text-secondary);">Donors haven't submitted any donation proofs yet.</p>
-        </div>
-      `;
-      area.innerHTML = html;
-      return;
-    }
-
-    html += `
-      <div class="table-card">
-        <div class="card-header">
-          <h3>All Donation Submissions (${proofs.length})</h3>
-          <div style="display:flex; gap:8px;">
-            <select id="proofFilter" class="form-select" style="padding:6px 12px; font-size:13px;" onchange="window._filterProofs()">
-              <option value="all">All</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
-        </div>
-        <table class="table" id="proofsTable">
-          <thead>
-            <tr>
-              <th>Donor</th>
-              <th>Blood</th>
-              <th>Donation Date</th>
-              <th>Units</th>
-              <th>Proof</th>
-              <th>Status</th>
-              <th>Submitted</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="proofsTableBody">
-        ${proofs.map(u => {
-          const proofImg = u.lastDonationProof || null;
-          const code = u.lastDonationCode || null;
-          const status = u.lastDonationApprovalStatus || 'pending';
-          
-          let proofDisplay = '—';
-          if (proofImg) {
-            proofDisplay = `<img src="${proofImg}" alt="Proof" class="proof-preview" onclick="window._viewProof('${proofImg}', '${code || ''}')" style="cursor:pointer;">`;
-          } else if (code) {
-            proofDisplay = `<span style="background:#f1f5f9; padding:4px 12px; border-radius:20px; font-family:monospace; cursor:pointer;" onclick="window._viewProof('', '${code}')">🔑 ${code}</span>`;
+          if (proofs.length === 0) {
+            html += `
+              <div class="table-card" style="padding:40px; text-align:center;">
+                <i class="fas fa-image" style="font-size:48px; color:#ccc;"></i>
+                <h3 style="margin-top:16px;">No Donation Proofs Submitted</h3>
+                <p style="color:var(--text-secondary);">Donors haven't submitted any donation proofs yet.</p>
+              </div>
+            `;
+            area.innerHTML = html;
+            return;
           }
 
-          const statusColors = {
-            'pending': '#f59e0b',
-            'approved': '#10b981',
-            'rejected': '#ef4444'
+          html += `
+            <div class="table-card">
+              <div class="card-header">
+                <h3>All Donation Submissions (${proofs.length})</h3>
+                <div style="display:flex; gap:8px;">
+                  <select id="proofFilter" class="form-select" style="padding:6px 12px; font-size:13px;" onchange="window._filterProofs()">
+                    <option value="all">All</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+              </div>
+              <table class="table" id="proofsTable">
+                <thead>
+                  <tr>
+                    <th>Donor</th>
+                    <th>Blood</th>
+                    <th>Donation Date</th>
+                    <th>Units</th>
+                    <th>Proof</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="proofsTableBody">
+              ${proofs.map(u => {
+                const proofImg = u.lastDonationProof || null;
+                const code = u.lastDonationCode || null;
+                const status = u.lastDonationApprovalStatus || 'pending';
+                
+                let proofDisplay = '—';
+                if (proofImg) {
+                  proofDisplay = `<img src="${proofImg}" alt="Proof" class="proof-preview" onclick="window._viewProof('${proofImg}', '${code || ''}')" style="cursor:pointer;">`;
+                } else if (code) {
+                  proofDisplay = `<span style="background:#f1f5f9; padding:4px 12px; border-radius:20px; font-family:monospace; cursor:pointer;" onclick="window._viewProof('', '${code}')">🔑 ${code}</span>`;
+                }
+
+                const statusColors = {
+                  'pending': '#f59e0b',
+                  'approved': '#10b981',
+                  'rejected': '#ef4444'
+                };
+
+                return `
+                  <tr data-status="${status}">
+                    <td><strong>${u.fullName || 'Unknown'}</strong><br><small style="color:var(--text-secondary);">${u.email || ''}</small></td>
+                    <td><span class="blood-badge">${u.bloodGroup || 'N/A'}</span></td>
+                    <td>${u.lastDonationDate ? new Date(u.lastDonationDate).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}) : '—'}</td>
+                    <td>${u.lastDonationUnits || 1}</td>
+                    <td>${proofDisplay}</td>
+                    <td><span class="status-badge" style="background:${statusColors[status] || '#64748b'};">${status.toUpperCase()}</span></td>
+                    <td><small>${u.lastDonationSubmittedAt ? formatTime(u.lastDonationSubmittedAt) + ' ' + formatDate(u.lastDonationSubmittedAt) : '—'}</small></td>
+                    <td>
+                      ${status === 'pending' ? `
+                        <button class="btn-icon success" onclick="window._approveDonationProof('${u.id}')" title="Approve"><i class="fas fa-check"></i></button>
+                        <button class="btn-icon danger" onclick="window._rejectDonationProof('${u.id}')" title="Reject"><i class="fas fa-times"></i></button>
+                      ` : `
+                        <button class="btn-icon" onclick="window._resetDonationProof('${u.id}')" title="Reset to Pending"><i class="fas fa-undo"></i></button>
+                      `}
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+                </tbody>
+              </table>
+            </div>
+          `;
+
+          area.innerHTML = html;
+
+          window._filterProofs = function() {
+            const filter = document.getElementById('proofFilter')?.value || 'all';
+            const rows = document.querySelectorAll('#proofsTableBody tr');
+            rows.forEach(row => {
+              const status = row.dataset.status || 'pending';
+              if (filter === 'all' || status === filter) {
+                row.style.display = '';
+              } else {
+                row.style.display = 'none';
+              }
+            });
           };
 
-          return `
-            <tr data-status="${status}">
-              <td><strong>${u.fullName || 'Unknown'}</strong><br><small style="color:var(--text-secondary);">${u.email || ''}</small></td>
-              <td><span class="blood-badge">${u.bloodGroup || 'N/A'}</span></td>
-              <td>${u.lastDonationDate ? new Date(u.lastDonationDate).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'}) : '—'}</td>
-              <td>${u.lastDonationUnits || 1}</td>
-              <td>${proofDisplay}</td>
-              <td><span class="status-badge" style="background:${statusColors[status] || '#64748b'};">${status.toUpperCase()}</span></td>
-              <td><small>${u.lastDonationSubmittedAt ? formatTime(u.lastDonationSubmittedAt) + ' ' + formatDate(u.lastDonationSubmittedAt) : '—'}</small></td>
-              <td>
-                ${status === 'pending' ? `
-                  <button class="btn-icon success" onclick="window._approveDonationProof('${u.id}')" title="Approve"><i class="fas fa-check"></i></button>
-                  <button class="btn-icon danger" onclick="window._rejectDonationProof('${u.id}')" title="Reject"><i class="fas fa-times"></i></button>
-                ` : `
-                  <button class="btn-icon" onclick="window._resetDonationProof('${u.id}')" title="Reset to Pending"><i class="fas fa-undo"></i></button>
-                `}
-              </td>
-            </tr>
-          `;
-        }).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
+          window._viewProof = function(imgUrl, code) {
+            const modal = document.getElementById('proofModal');
+            const imgEl = document.getElementById('proofModalImage');
+            const codeEl = document.getElementById('proofModalCode');
+            
+            if (imgUrl) {
+              imgEl.src = imgUrl;
+              imgEl.style.display = 'block';
+            } else {
+              imgEl.style.display = 'none';
+            }
+            
+            if (code) {
+              codeEl.innerHTML = `<strong>Verification Code:</strong> <code style="background:#f1f5f9; padding:4px 12px; border-radius:8px; font-size:18px;">${code}</code>`;
+            } else {
+              codeEl.textContent = '';
+            }
+            
+            modal.style.display = 'flex';
+          };
 
-    area.innerHTML = html;
+          window._approveDonationProof = async (userId) => {
+            if (!canManageDonationProofs()) {
+              showToast('You do not have permission to approve proofs', 'error');
+              return;
+            }
+            
+            if (!confirm('Approve this donation proof? This will update the donor\'s eligibility status.')) return;
+            
+            try {
+              const userDoc = await db.collection('users').doc(userId).get();
+              const userData = userDoc.data();
+              
+              await db.collection('users').doc(userId).update({
+                lastDonationApprovalStatus: 'approved',
+                lastDonationApprovedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                lastDonationApprovedBy: currentUser.uid,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+              
+              if (!userData.lastDonationApprovalStatus || userData.lastDonationApprovalStatus !== 'approved') {
+                const updates = {};
+                if (!userData.totalDonations) {
+                  updates.totalDonations = 1;
+                  updates.totalUnitsDonated = userData.lastDonationUnits || 1;
+                } else {
+                  updates.totalDonations = (userData.totalDonations || 0) + 1;
+                  updates.totalUnitsDonated = (userData.totalUnitsDonated || 0) + (userData.lastDonationUnits || 1);
+                }
+                await db.collection('users').doc(userId).update(updates);
+              }
+              
+              showToast('Donation proof approved successfully!', 'success');
+              refreshBadges();
+              loadDonationProofs();
+            } catch (error) {
+              showToast('Error approving proof: ' + error.message, 'error');
+            }
+          };
 
-    // Filter function
-    window._filterProofs = function() {
-      const filter = document.getElementById('proofFilter')?.value || 'all';
-      const rows = document.querySelectorAll('#proofsTableBody tr');
-      rows.forEach(row => {
-        const status = row.dataset.status || 'pending';
-        if (filter === 'all' || status === filter) {
-          row.style.display = '';
-        } else {
-          row.style.display = 'none';
+          window._rejectDonationProof = async (userId) => {
+            if (!canManageDonationProofs()) {
+              showToast('You do not have permission to reject proofs', 'error');
+              return;
+            }
+            
+            if (!confirm('Reject this donation proof? The donor will be notified.')) return;
+            
+            try {
+              await db.collection('users').doc(userId).update({
+                lastDonationApprovalStatus: 'rejected',
+                lastDonationRejectedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                lastDonationRejectedBy: currentUser.uid,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+              
+              showToast('Donation proof rejected', 'warning');
+              refreshBadges();
+              loadDonationProofs();
+            } catch (error) {
+              showToast('Error rejecting proof: ' + error.message, 'error');
+            }
+          };
+
+          window._resetDonationProof = async (userId) => {
+            if (!canManageDonationProofs()) {
+              showToast('You do not have permission to reset proofs', 'error');
+              return;
+            }
+            
+            if (!confirm('Reset this donation proof status to Pending?')) return;
+            
+            try {
+              await db.collection('users').doc(userId).update({
+                lastDonationApprovalStatus: 'pending',
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+              
+              showToast('Proof status reset to Pending', 'info');
+              refreshBadges();
+              loadDonationProofs();
+            } catch (error) {
+              showToast('Error resetting proof: ' + error.message, 'error');
+            }
+          };
+
+        } catch (error) {
+          area.innerHTML = `<p style="color:var(--danger);">Error loading donation proofs: ${error.message}</p>`;
         }
-      });
-    };
-
-    // View proof in modal
-    window._viewProof = function(imgUrl, code) {
-      const modal = document.getElementById('proofModal');
-      const imgEl = document.getElementById('proofModalImage');
-      const codeEl = document.getElementById('proofModalCode');
-      
-      if (imgUrl) {
-        imgEl.src = imgUrl;
-        imgEl.style.display = 'block';
-      } else {
-        imgEl.style.display = 'none';
       }
-      
-      if (code) {
-        codeEl.innerHTML = `<strong>Verification Code:</strong> <code style="background:#f1f5f9; padding:4px 12px; border-radius:8px; font-size:18px;">${code}</code>`;
-      } else {
-        codeEl.textContent = '';
-      }
-      
-      modal.style.display = 'flex';
-    };
-
-    // Approve Donation Proof
-    window._approveDonationProof = async (userId) => {
-      if (!canManageDonationProofs()) {
-        showToast('You do not have permission to approve proofs', 'error');
-        return;
-      }
-      
-      if (!confirm('Approve this donation proof? This will update the donor\'s eligibility status.')) return;
-      
-      try {
-        const userDoc = await db.collection('users').doc(userId).get();
-        const userData = userDoc.data();
-        
-        // Update approval status to approved
-        await db.collection('users').doc(userId).update({
-          lastDonationApprovalStatus: 'approved',
-          lastDonationApprovedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          lastDonationApprovedBy: currentUser.uid,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        // Also update total donations count if it's a new donation
-        if (!userData.lastDonationApprovalStatus || userData.lastDonationApprovalStatus !== 'approved') {
-          const updates = {};
-          if (!userData.totalDonations) {
-            updates.totalDonations = 1;
-            updates.totalUnitsDonated = userData.lastDonationUnits || 1;
-          } else {
-            updates.totalDonations = (userData.totalDonations || 0) + 1;
-            updates.totalUnitsDonated = (userData.totalUnitsDonated || 0) + (userData.lastDonationUnits || 1);
-          }
-          await db.collection('users').doc(userId).update(updates);
-        }
-        
-        showToast('Donation proof approved successfully!', 'success');
-        refreshBadges();
-        loadDonationProofs();
-      } catch (error) {
-        showToast('Error approving proof: ' + error.message, 'error');
-      }
-    };
-
-    // Reject Donation Proof
-    window._rejectDonationProof = async (userId) => {
-      if (!canManageDonationProofs()) {
-        showToast('You do not have permission to reject proofs', 'error');
-        return;
-      }
-      
-      if (!confirm('Reject this donation proof? The donor will be notified.')) return;
-      
-      try {
-        await db.collection('users').doc(userId).update({
-          lastDonationApprovalStatus: 'rejected',
-          lastDonationRejectedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          lastDonationRejectedBy: currentUser.uid,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        showToast('Donation proof rejected', 'warning');
-        refreshBadges();
-        loadDonationProofs();
-      } catch (error) {
-        showToast('Error rejecting proof: ' + error.message, 'error');
-      }
-    };
-
-    // Reset to Pending
-    window._resetDonationProof = async (userId) => {
-      if (!canManageDonationProofs()) {
-        showToast('You do not have permission to reset proofs', 'error');
-        return;
-      }
-      
-      if (!confirm('Reset this donation proof status to Pending?')) return;
-      
-      try {
-        await db.collection('users').doc(userId).update({
-          lastDonationApprovalStatus: 'pending',
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        showToast('Proof status reset to Pending', 'info');
-        refreshBadges();
-        loadDonationProofs();
-      } catch (error) {
-        showToast('Error resetting proof: ' + error.message, 'error');
-      }
-    };
-
-  } catch (error) {
-    area.innerHTML = `<p style="color:var(--danger);">Error loading donation proofs: ${error.message}</p>`;
-  }
-}
 
       // ============================================
       // PENDING APPROVALS
@@ -1645,7 +1950,6 @@ async function loadDonationProofs() {
         }
       }
 
-      // Open Create Notice Modal - GLOBALLY ACCESSIBLE
       window.openCreateNoticeModal = function() {
         if (!canManageNotices()) {
           showToast('You do not have permission to create notices', 'error');
@@ -1738,7 +2042,6 @@ async function loadDonationProofs() {
         });
       };
 
-      // Edit Notice (Admin/Moderator)
       window._editNotice = async function(noticeId) {
         if (!canManageNotices()) {
           showToast('You do not have permission to edit notices', 'error');
@@ -1841,7 +2144,6 @@ async function loadDonationProofs() {
         }
       };
 
-      // Toggle Notice Status (Active/Inactive)
       window._toggleNoticeStatus = async function(noticeId) {
         if (!canManageNotices()) {
           showToast('You do not have permission to manage notices', 'error');
@@ -1870,7 +2172,6 @@ async function loadDonationProofs() {
         }
       };
 
-      // Delete Notice
       window._deleteNotice = async function(noticeId) {
         if (!canManageNotices()) {
           showToast('You do not have permission to delete notices', 'error');
@@ -1949,11 +2250,11 @@ async function loadDonationProofs() {
       // ============================================
       window.addEventListener('hashchange', () => {
         const hash = window.location.hash.substring(1);
-        const validTabs = ['dashboard','pending','donation-proofs','users','donors','requests','contact-reveal-logs','certificates','notices','bulk-email','roles'];
+        const validTabs = ['dashboard','pending','donation-proofs','users','donors','requests','contact-reveal-logs','certificates','notices','bulk-email','roles','settings'];
         if(validTabs.includes(hash)) { const navItem = document.querySelector(`[data-tab="${hash}"]`); if(navItem) navItem.click(); }
       });
 
-      console.log('🩸 Blood Donor BD Admin Panel loaded with Donation Proofs System.');
+      console.log('🩸 Blood Donor BD Admin Panel loaded with Website Settings feature.');
     })();
   </script>
 </body>
