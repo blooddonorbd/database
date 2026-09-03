@@ -1,7 +1,7 @@
 // sw.js - Service Worker for Web Push Notifications
 
 // Cache name for static assets
-const CACHE_NAME = 'blood-donor-bd-v2.0.1';
+const CACHE_NAME = 'blood-donor-bd-v2.0.2';
 
 // Install event - cache static assets
 self.addEventListener('install', function(event) {
