@@ -1,0 +1,55 @@
+<!-- ============================================
+     FEATURE: core
+     এই ফাইলে এই ফিচারের HTML, CSS ও JavaScript একসাথে আছে
+     ============================================ -->
+
+<script>
+    // ============================================
+    // BLOOD DONOR BD - MAIN APPLICATION
+    // ============================================
+
+    // Bangladesh Districts List (64 Districts)
+    const bangladeshDistricts = [
+      'Bagerhat', 'Bandarban', 'Barguna', 'Barisal', 'Bhola', 'Bogra', 'Brahmanbaria', 'Chandpur',
+      'Chapainawabganj', 'Chattogram', 'Chuadanga', 'Comilla', 'Cox\'s Bazar', 'Dhaka', 'Dinajpur',
+      'Faridpur', 'Feni', 'Gaibandha', 'Gazipur', 'Gopalganj', 'Habiganj', 'Jamalpur', 'Jashore',
+      'Jhalokathi', 'Jhenaidah', 'Joypurhat', 'Khagrachari', 'Khulna', 'Kishoreganj', 'Kurigram',
+      'Kushtia', 'Lakshmipur', 'Lalmonirhat', 'Madaripur', 'Magura', 'Manikganj', 'Meherpur',
+      'Moulvibazar', 'Munshiganj', 'Mymensingh', 'Naogaon', 'Narail', 'Narayanganj', 'Narsingdi',
+      'Natore', 'Netrokona', 'Nilphamari', 'Noakhali', 'Pabna', 'Panchagarh', 'Patuakhali',
+      'Pirojpur', 'Rajbari', 'Rajshahi', 'Rangamati', 'Rangpur', 'Satkhira', 'Shariatpur',
+      'Sherpur', 'Sirajganj', 'Sunamganj', 'Sylhet', 'Tangail', 'Thakurgaon'
+    ];
+    
+    // Inject datalist globally for input hints
+    const datalist = document.createElement('datalist');
+    datalist.id = 'districtsList';
+    datalist.innerHTML = bangladeshDistricts.map(d => `<option value="${d}">`).join('');
+    document.body.appendChild(datalist);
+
+
+    // Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyCnky8bzx3KuFoujU5DSlLRYSZgiAF8840",
+  authDomain: "blood-donor-bd-2025.firebaseapp.com",
+  projectId: "blood-donor-bd-2025",
+  storageBucket: "blood-donor-bd-2025.firebasestorage.app",
+  messagingSenderId: "271945142840",
+  appId: "1:271945142840:web:b0edefddb55cac5f604ccd",
+  measurementId: "G-28KGSJREBR"
+};
+    
+    // After Firebase initialization
+const IMGBB_API_KEY = '54ffbc26529e5d05fa5cffad23712429';
+    
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    
+    // App State
+    let currentUser = null;
+    let userProfile = null;
+    let currentPage = 'home';
+    
+</script>

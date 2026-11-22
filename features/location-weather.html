@@ -1,0 +1,214 @@
+<!-- ============================================
+     FEATURE: location-weather
+     এই ফাইলে এই ফিচারের HTML, CSS ও JavaScript একসাথে আছে
+     ============================================ -->
+
+<script>
+// ============================================
+// GO TO PRIVATE DM FROM FIND DONORS
+// ============================================
+function goToPrivateDM(userId) {
+  if (!currentUser) {
+    promptRegistration();
+    return;
+  }
+  
+  // Navigate to DM page with the selected user
+  router.navigate('dm-donor');
+  
+  // After navigation, select the user
+  setTimeout(() => {
+    if (typeof selectDMUser === 'function') {
+      selectDMUser(userId);
+    }
+  }, 500);
+}
+// ============================================
+// WEATHER FUNCTION - USER'S LAT/LNG FROM FIRESTORE
+// ============================================
+
+async function fetchWeatherForUser() {
+    const API_KEY = '65189019721d35ad5c50f838e4a97225';
+    const widget = document.getElementById('weatherWidget');
+    if (!widget) return;
+    
+    // চেক করি ইউজার লগইন আছে কিনা
+    if (!currentUser || !userProfile) {
+        widget.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px; color: #aaa;">
+                <i class="fas fa-user-slash" style="font-size: 20px;"></i>
+                <span style="font-size: 14px;">Please login to see weather</span>
+            </div>
+        `;
+        return;
+    }
+    
+    // ইউজারের lat/lng চেক করি
+    const lat = userProfile.lat;
+    const lng = userProfile.lng;
+    
+    if (!lat || !lng) {
+        widget.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px; color: #aaa;">
+                <i class="fas fa-map-pin" style="font-size: 20px;"></i>
+                <span style="font-size: 14px;">📍 Location not set. Allow location access.</span>
+            </div>
+        `;
+        return;
+    }
+    
+    try {
+        // ওয়েদার ডাটা নেওয়া (সরাসরি lat/lng দিয়ে)
+        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&units=metric&appid=${API_KEY}`;
+        const weatherRes = await fetch(weatherUrl);
+        const weatherData = await weatherRes.json();
+        
+        if (weatherData.cod && weatherData.cod !== 200) {
+            throw new Error(weatherData.message || 'Weather API error');
+        }
+        
+        // UI আপডেট
+        const temp = Math.round(weatherData.main.temp);
+        const feelsLike = Math.round(weatherData.main.feels_like);
+        const description = weatherData.weather[0].description;
+        const windSpeed = Math.round(weatherData.wind.speed * 3.6); // m/s to km/h
+        const humidity = weatherData.main.humidity;
+        const iconCode = weatherData.weather[0].icon;
+        const cityName = weatherData.name || userProfile.district || 'Your Location';
+        
+        // আইকন ম্যাপিং (Font Awesome)
+        const iconMap = {
+            '01d': 'fa-sun',
+            '01n': 'fa-moon',
+            '02d': 'fa-cloud-sun',
+            '02n': 'fa-cloud-moon',
+            '03d': 'fa-cloud',
+            '03n': 'fa-cloud',
+            '04d': 'fa-cloud',
+            '04n': 'fa-cloud',
+            '09d': 'fa-cloud-rain',
+            '09n': 'fa-cloud-rain',
+            '10d': 'fa-cloud-sun-rain',
+            '10n': 'fa-cloud-moon-rain',
+            '11d': 'fa-bolt',
+            '11n': 'fa-bolt',
+            '13d': 'fa-snowflake',
+            '13n': 'fa-snowflake',
+            '50d': 'fa-smog',
+            '50n': 'fa-smog'
+        };
+        
+        const faIcon = iconMap[iconCode] || 'fa-cloud-sun';
+        
+        // আবহাওয়া অনুযায়ী গ্রেডিয়েন্ট ব্যাকগ্রাউন্ড
+        let gradient = 'linear-gradient(135deg, #1a237e, #0d47a1)';
+        if (temp > 35) gradient = 'linear-gradient(135deg, #d32f2f, #b71c1c)';
+        else if (temp > 30) gradient = 'linear-gradient(135deg, #e65100, #bf360c)';
+        else if (temp > 20) gradient = 'linear-gradient(135deg, #0d47a1, #00695c)';
+        else if (temp > 15) gradient = 'linear-gradient(135deg, #1565c0, #0d47a1)';
+        else if (temp < 10) gradient = 'linear-gradient(135deg, #37474f, #263238)';
+        else if (description.includes('rain')) gradient = 'linear-gradient(135deg, #263238, #37474f)';
+        
+        // Widget আপডেট
+        widget.style.background = gradient;
+        widget.style.color = 'white';
+        widget.style.transition = 'all 0.5s ease';
+        
+        document.getElementById('weatherIcon').className = `fas ${faIcon}`;
+        document.getElementById('weatherIcon').style.color = 'white';
+        document.getElementById('weatherTemp').textContent = `${temp}°C`;
+        document.getElementById('weatherTemp').style.color = 'white';
+        document.getElementById('weatherDesc').textContent = description.charAt(0).toUpperCase() + description.slice(1);
+        document.getElementById('weatherDesc').style.color = 'rgba(255,255,255,0.85)';
+        document.getElementById('weatherWind').textContent = windSpeed;
+        document.getElementById('weatherWind').style.color = 'rgba(255,255,255,0.7)';
+        
+        // লোকেশন নাম দেখান
+        let locationDisplay = document.getElementById('weatherLocation');
+        if (!locationDisplay) {
+            locationDisplay = document.createElement('div');
+            locationDisplay.id = 'weatherLocation';
+            locationDisplay.style.cssText = 'font-size: 11px; opacity: 0.7; margin-top: 2px;';
+            const tempContainer = document.getElementById('weatherTemp').parentElement;
+            if (tempContainer) {
+                tempContainer.appendChild(locationDisplay);
+            }
+        }
+        locationDisplay.textContent = `📍 ${cityName}`;
+        
+        // Humidity দেখান (ঐচ্ছিক)
+        let humidityDisplay = document.getElementById('weatherHumidity');
+        if (!humidityDisplay) {
+            humidityDisplay = document.createElement('div');
+            humidityDisplay.id = 'weatherHumidity';
+            humidityDisplay.style.cssText = 'font-size: 11px; opacity: 0.6; margin-top: 2px;';
+            const tempContainer = document.getElementById('weatherTemp').parentElement;
+            if (tempContainer) {
+                tempContainer.appendChild(humidityDisplay);
+            }
+        }
+        humidityDisplay.textContent = `💧 ${humidity}% humidity`;
+        
+    } catch (error) {
+        console.warn('Weather fetch error:', error);
+        widget.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px; color: #aaa; font-size: 13px;">
+                <i class="fas fa-cloud-rain" style="font-size: 20px;"></i>
+                <span>Weather unavailable</span>
+            </div>
+        `;
+    }
+}
+
+// ============================================
+// LIVE LOCATION UPDATE (উন্নত)
+// ============================================
+
+function updateLiveLocation() {
+    if (!navigator.geolocation) {
+        console.warn("Geolocation not supported");
+        return;
+    }
+    
+    if (!currentUser) {
+        console.warn("No user logged in");
+        return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+        try {
+            const { latitude, longitude } = pos.coords;
+            
+            await db.collection('users').doc(currentUser.uid).update({
+                lat: latitude,
+                lng: longitude,
+                lastLocationUpdate: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            console.log("📍 Location updated:", latitude, longitude);
+            
+            // প্রোফাইল রিলোড
+            await authSystem.loadUserProfile(currentUser.uid);
+            
+            // ওয়েদার আপডেট
+            if (typeof fetchWeatherForUser === 'function') {
+                setTimeout(fetchWeatherForUser, 300);
+            }
+            
+        } catch (e) {
+            console.error("Location update failed", e);
+        }
+    }, (err) => {
+        console.error("Geolocation error:", err.message);
+        // ফ্যালব্যাক: আগের লোকেশন ব্যবহার
+        if (userProfile?.lat && userProfile?.lng && typeof fetchWeatherForUser === 'function') {
+            fetchWeatherForUser();
+        }
+    }, { 
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+    });
+}
+
+</script>
