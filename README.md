@@ -1,60 +1,33 @@
-# 🩸 Blood Donor BD
+# Blood Donor BD — ফাইল কাঠামো
 
-### *Bangladesh's Lifeline – Connecting Blood Donors with Patients in Need*
+`index.html` এখন শুধু মূল কাঠামো ও ফিচার লোডার। প্রতিটি ফিচার `features/` ফোল্ডারে আলাদা ফাইলে আছে,
+আর প্রতিটি ফাইলের ভিতরেই সেই ফিচারের HTML, CSS ও JavaScript একসাথে থাকে।
 
-[![Website](https://img.shields.io/badge/Website-Live-b71c1c?style=for-the-badge&logo=google-chrome)](https://blooddonorbd.github.io/database/)
-[![GitHub stars](https://img.shields.io/github/stars/blooddo/database?style=for-the-badge&color=b71c1c)](https://github.com/blooddo/database/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/blooddo/database?style=for-the-badge&color=b71c1c)](https://github.com/blooddo/database/network)
-[![License](https://img.shields.io/badge/License-MIT-b71c1c?style=for-the-badge)](LICENSE)
-[![PWA](https://img.shields.io/badge/PWA-Enabled-b71c1c?style=for-the-badge&logo=pwa)](https://blooddonorbd.github.io/database/)
+```
+blood-donor-bd/
+├── index.html                    মূল পেজ: হেডার, নেভবার, ফুটার, লেআউট CSS, ফিচার লোডার
+└── features/
+    ├── core.html                 মূল কনফিগ ও শুরুর কোড
+    ├── biometric-lock.html       বায়োমেট্রিক লক (HTML + CSS + JS)
+    ├── notices.html              নোটিস বার ও নোটিস সিস্টেম, কুইজ, কম্প্যাটিবিলিটি টেবিল
+    ├── donors.html               ডোনার সার্চ, প্রোফাইল ছবি ক্রপ, ডোনার কার্ড
+    ├── private-dm.html           প্রাইভেট মেসেজ (DM) ও গ্রুপ চ্যাট
+    ├── success-stories.html      সাকসেস স্টোরি ও কমেন্ট
+    ├── story-details.html        স্টোরি শেয়ার ও বিস্তারিত পেজ
+    ├── location-weather.html     লাইভ লোকেশন ও আবহাওয়া
+    ├── last-donation.html        শেষ রক্তদানের তারিখ ও প্রমাণ
+    ├── offline-sync.html         অফলাইন ক্যাশ ও সিঙ্ক
+    ├── push-notifications.html   পুশ নোটিফিকেশন
+    ├── welcome-voice.html        লোড হলে ওয়েলকাম ভয়েস
+    └── ambition-popup.html       ambitions.popup.html পপআপ লোডার
+```
 
----
+## কীভাবে কাজ করে
+`index.html`-এর শেষে থাকা লোডার `features/` ফাইলগুলো ক্রমানুসারে আনে। প্রতিটি ফাইলের
+`<style>` হেডে যোগ হয়, HTML মার্কআপ নির্দিষ্ট জায়গায় (`data-slot`) বসে, আর `<script>` ক্রমানুসারে চলে।
 
-## ❤️ About Blood Donor BD
-
-**Blood Donor BD** is a life-saving platform that connects blood donors with patients in need across **all 64 districts of Bangladesh**. In a country where thousands die annually due to blood shortages, we provide a fast, reliable, and completely free solution.
-
-> **Our Mission:** *No one should die waiting for blood.*
-
-**Live Website:** [https://blooddonorbd.github.io/database/](https://blooddonorbd.github.io/database/)
-
----
-
-## 🚀 Key Features
-
-| Feature | Description |
-|---------|-------------|
-| 🔍 **Find Donors** | Search by blood group, district, and upazila |
-| 📍 **Live Map** | See nearby approved donors in real-time |
-| 💬 **Direct Messaging** | Private chat between donors and seekers |
-| 🚨 **Emergency Requests** | Post urgent blood needs instantly |
-| 📜 **Digital Certificates** | Verified certificates for donors |
-| 📖 **Success Stories** | Share and read inspiring experiences |
-| 🌤️ **Weather Widget** | Real-time weather based on location |
-| 🔔 **Notifications** | Instant alerts for new requests |
-| 📱 **PWA Support** | Install on mobile devices |
-| 🧪 **Eligibility Quiz** | Check if you can donate blood |
-| 🩸 **Compatibility Guide** | Know which blood groups match |
-| 📊 **Blood Value Calculator** | Understand the worth of your donation |
-
----
-
-## 🩸 Blood Groups Supported
-
-| A+ | A- | B+ | B- | O+ | O- | AB+ | AB- |
-|:--:|:--:|:--:|:--:|:--:|:--:|:--:|:--:|
-| ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-
----
-
-## 🛠️ Tech Stack
-
-```bash
-Frontend:    HTML5, CSS3, JavaScript (Vanilla)
-Backend:     Firebase Firestore (NoSQL)
-Auth:        Firebase Authentication
-Maps:        Leaflet.js + OpenStreetMap
-Hosting:     GitHub Pages
-PWA:         Progressive Web App (manifest.json)
-Icons:       Font Awesome
-Fonts:       Google Fonts (Poppins)
+## নিয়ম
+- নতুন ফিচার: `features/নতুন-নাম.html` বানান, তার ভিতরে HTML/CSS/JS লিখুন, তারপর `index.html`-এর লোডারে `FEATURES` তালিকায় নাম যোগ করুন।
+- ফিচার তালিকার ক্রম গুরুত্বপূর্ণ। একটি ফিচারের কোড যদি অন্যটির ফাংশন সরাসরি ব্যবহার করে, সেটির আগে লোড হতে হবে।
+- লোড হওয়ার জন্য HTTP সার্ভার লাগবে (যেমন `python3 -m http.server`)। শুধু ফাইল ডাবল-ক্লিক করে `file://`-এ খুললে `fetch` কাজ করবে না।
+- `manifest.json`, `ambitions.popup.html` ও ইমেজ ফাইলগুলো এই ফোল্ডারের পাশে রাখতে হবে।
